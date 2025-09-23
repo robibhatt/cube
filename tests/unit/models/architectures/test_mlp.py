@@ -1,0 +1,253 @@
+from dataclasses import replace
+
+import pytest
+import torch
+import torch.nn as nn
+from mup import Linear as MuLinear, MuReadout
+
+import src.models.bootstrap  # noqa: F401
+from src.models.architectures.model_factory import create_model
+from src.models.architectures.configs.mlp import MLPConfig
+from src.data.providers.data_provider import DataProvider
+
+
+@pytest.fixture
+def basic_config():
+    """Basic MLP config with 2 hidden layers."""
+    return MLPConfig(
+        input_dim=3,
+        hidden_dims=[4, 2],
+        activation="relu",
+        output_dim=1,
+        start_activation=False,
+        end_activation=False
+    )
+
+
+@pytest.fixture
+def model(basic_config):
+    """Basic MLP model with 2 hidden layers."""
+    return create_model(basic_config)
+
+
+def test_initialization(basic_config):
+    """Model should process input and produce output with configured dimensions."""
+    model = create_model(basic_config)
+
+    x = torch.randn(5, basic_config.input_dim)
+    y = model(x)
+
+    assert y.shape == (5, basic_config.output_dim)
+
+
+def test_forward_pass(model):
+    """Test that forward pass works and produces correct shapes."""
+    batch_size = 5
+    x = torch.randn(batch_size, 3)
+    y = model(x)
+    
+    assert y.shape == (batch_size, 1)
+    assert not torch.isnan(y).any()
+    assert not torch.isinf(y).any()
+
+
+def test_different_activations():
+    """Test that different activation functions work."""
+    activations = ["relu", "tanh", "sigmoid", "quadratic"]
+
+    for activation in activations:
+        config = MLPConfig(
+            input_dim=2,
+            hidden_dims=[3],
+            activation=activation,
+            output_dim=1,
+            start_activation=False,
+            end_activation=False,
+        )
+        model = create_model(config)
+
+        # Test forward pass
+        x = torch.randn(4, 2)
+        y = model(x)
+
+        assert y.shape == (4, 1)
+        assert not torch.isnan(y).any()
+        assert not torch.isinf(y).any()
+
+
+def test_invalid_activation():
+    """Test that invalid activation raises error."""
+    config = MLPConfig(
+        input_dim=2,
+        hidden_dims=[3],
+        activation="invalid_activation",
+        output_dim=1,
+        start_activation=False,
+        end_activation=False,
+    )
+
+    with pytest.raises(ValueError, match="Unsupported activation"):
+        create_model(config)
+
+
+
+
+def test_start_and_end_activation_flags():
+    """Verify the optional start‐ and end‐activation layers are inserted correctly."""
+    # --- start_activation=True, end_activation=False --------------------------
+    cfg_start = MLPConfig(
+        input_dim=3,
+        hidden_dims=[4, 2],
+        activation="relu",
+        output_dim=1,
+        start_activation=True,
+        end_activation=False,
+    )
+    m_start = create_model(cfg_start)
+
+    # Forward pass should respect configured dimensions
+    assert m_start(torch.randn(2, cfg_start.input_dim)).shape == (
+        2,
+        cfg_start.output_dim,
+    )
+
+    # --- start_activation=False, end_activation=True -------------------------
+    cfg_end = MLPConfig(
+        input_dim=3,
+        hidden_dims=[4, 2],
+        activation="relu",
+        output_dim=1,
+        start_activation=False,
+        end_activation=True,
+    )
+    m_end = create_model(cfg_end)
+
+    assert m_end(torch.randn(2, cfg_end.input_dim)).shape == (
+        2,
+        cfg_end.output_dim,
+    )
+
+    # --- start_activation=True, end_activation=True --------------------------
+    cfg_both = MLPConfig(
+        input_dim=3,
+        hidden_dims=[4, 2],
+        activation="relu",
+        output_dim=1,
+        start_activation=True,
+        end_activation=True,
+    )
+    m_both = create_model(cfg_both)
+
+    assert m_both(torch.randn(2, cfg_both.input_dim)).shape == (
+        2,
+        cfg_both.output_dim,
+    )
+
+
+def test_mup_initialization_uses_mup_layers(basic_config):
+    """MLP with ``mup=True`` in its config should use MuP layers."""
+    cfg = replace(basic_config, mup=True)
+    model = create_model(cfg)
+
+    # first hidden layer should be MuLinear and last layer MuReadout
+    assert isinstance(model.layers[0 if not basic_config.start_activation else 1], MuLinear)
+    assert isinstance(model.layers[-1], MuReadout)
+
+
+def test_mup_get_base_model(basic_config):
+    """``get_base_model`` should return a base-width ``MLP`` when ``mup=True``."""
+    cfg = replace(basic_config, mup=True)
+    model = create_model(cfg)
+    base = model.get_base_model()
+    assert base is not None and base.config.model_type == "MLP"
+    assert base.mup is True
+    assert base.config.hidden_dims == [64] * len(basic_config.hidden_dims)
+
+
+def test_get_base_model_none_without_mup(basic_config):
+    """Without MuP, ``get_base_model`` should return ``None``."""
+    model = create_model(basic_config)
+    assert model.get_base_model() is None
+
+
+def test_mup_disallows_end_activation(basic_config):
+    """MuP mode should reject ``end_activation=True``."""
+    cfg = MLPConfig(
+        input_dim=basic_config.input_dim,
+        hidden_dims=basic_config.hidden_dims,
+        activation=basic_config.activation,
+        output_dim=basic_config.output_dim,
+        start_activation=basic_config.start_activation,
+        end_activation=True,
+        mup=True,
+    )
+    with pytest.raises(ValueError):
+        create_model(cfg)
+
+
+def test_bias_flag_controls_bias_params():
+    """``bias=False`` removes bias terms while the default keeps them."""
+    cfg_no_bias = MLPConfig(
+        input_dim=3,
+        hidden_dims=[4],
+        activation="relu",
+        output_dim=1,
+        start_activation=False,
+        end_activation=False,
+        bias=False,
+    )
+    model_no_bias = create_model(cfg_no_bias)
+    linear_layers_no_bias = [
+        l for l in model_no_bias.layers if isinstance(l, (nn.Linear, MuLinear, MuReadout))
+    ]
+    assert linear_layers_no_bias, "No linear layers found"
+    assert all(layer.bias is None for layer in linear_layers_no_bias)
+
+    # default ``bias=True`` should retain bias parameters
+    cfg_bias = replace(cfg_no_bias, bias=True)
+    model_bias = create_model(cfg_bias)
+    linear_layers_bias = [
+        l for l in model_bias.layers if isinstance(l, (nn.Linear, MuLinear, MuReadout))
+    ]
+    assert all(layer.bias is not None for layer in linear_layers_bias)
+
+
+def test_export_neuron_input_gradients_layer_numbering(tmp_path):
+    """Layer indices in the exported CSV should start at 1."""
+    cfg = MLPConfig(
+        input_dim=2,
+        hidden_dims=[3],
+        activation="relu",
+        output_dim=1,
+        start_activation=False,
+        end_activation=False,
+    )
+    model = create_model(cfg)
+
+    class DummyProvider(DataProvider):
+        def __init__(self, X, y):
+            self.joint_distribution = None  # type: ignore[assignment]
+            self.dataset_dir = tmp_path
+            self.seed = 0
+            self.dataset_size = X.size(0)
+            self.batch_size = X.size(0)
+            self._X = X
+            self._y = y
+
+        def __iter__(self):  # type: ignore[override]
+            yield self._X, self._y
+
+    X = torch.randn(4, cfg.input_dim)
+    y = torch.zeros(4, cfg.output_dim)
+    provider = DummyProvider(X, y)
+    out_path = tmp_path / "grads.csv"
+    model.export_neuron_input_gradients(provider, out_path)
+
+    import csv
+
+    with out_path.open() as f:
+        rows = list(csv.DictReader(f))
+    layers = {int(row["layer"]) for row in rows}
+    assert layers == {1, 2}
+
+

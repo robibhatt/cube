@@ -1,0 +1,84 @@
+experiment_type: MLPRecovery
+teacher_trainer_config:
+    trainer_type: Trainer
+    model_config:
+        model_type: MLP
+        input_dim: 8
+        output_dim: 1
+        hidden_dims:
+        - 3
+        - 3
+        - 3
+        activation: relu
+        start_activation: false
+        end_activation: false
+        mup: false
+        bias: true
+    optimizer_config:
+        optimizer_type: sgd
+        lr: 0.01
+        mup: false
+    joint_distribution_config:
+        distribution_type: NoisyDistribution
+        base_distribution_config:
+            distribution_type: Gaussian
+            input_shape:
+            - 8
+            dtype: float32
+            mean: 0.0
+            std: 1.0
+        noise_distribution_config:
+            distribution_type: Gaussian
+            input_shape:
+            - 1
+            dtype: float32
+            mean: 0.0
+            std: 1.0
+    loss_config:
+        name: MSELoss
+        eval_type: regression
+    train_size: 64
+    test_size: 2048
+    batch_size: 32
+    epochs: 0
+    use_full_batch: false
+    weight_decay_l1: 0.0
+student_trainer_config:
+    trainer_type: Trainer
+    model_config:
+        model_type: MLP
+        input_dim: 8
+        output_dim: 1
+        hidden_dims:
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        activation: relu
+        start_activation: false
+        end_activation: false
+        mup: true
+        bias: true
+    optimizer_config:
+        optimizer_type: sgd
+        lr: 0.01
+        mup: true
+        weight_decay: 0.0
+    loss_config:
+        name: MSELoss
+        eval_type: regression
+    train_size: 4096
+    test_size: 2048
+    batch_size: 64
+    epochs: 2000
+    use_full_batch: false
+    weight_decay_l1: 0.01
+    early_stopping: 0.0000001
+noise_variance: 0.0
+home_directory: experiment_runs/production/visualizing_gaussian_stuff/dim_8_deep0p01lr0p01
+seed: 113121126
+start_layer: 0
+run_parallel: false

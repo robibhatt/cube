@@ -1,0 +1,58 @@
+import torch
+import pytest
+
+from src.training.trainer import Trainer
+from src.training.trainer_config import TrainerConfig
+from src.training.loss.configs.loss import LossConfig
+from src.training.optimizers.configs.adam import AdamConfig
+from src.models.architectures.configs.mlp import MLPConfig
+from src.models.architectures.mlp import MLP
+from tests.helpers.stubs import StubJointDistribution
+
+
+def _make_trainer(tmp_path, hidden_dims):
+    cfg = TrainerConfig(
+        model_config=MLPConfig(
+            input_dim=1,
+            output_dim=1,
+            hidden_dims=hidden_dims,
+            activation="relu",
+            start_activation=False,
+            end_activation=False,
+            bias=False,
+        ),
+        optimizer_config=AdamConfig(lr=0.01),
+        joint_distribution_config=StubJointDistribution._Config(
+            X=torch.zeros(4, 1),
+            y=torch.zeros(4, 1),
+        ),
+        train_size=4,
+        test_size=4,
+        batch_size=2,
+        epochs=0,
+        home_dir=tmp_path,
+        loss_config=LossConfig(name="MSELoss"),
+    )
+    trainer = Trainer(cfg)
+    model = MLP(cfg.model_config)
+    return trainer, model
+
+
+def test_l1_penalty_averages_hidden_layers(tmp_path):
+    trainer, model = _make_trainer(tmp_path, [1, 1, 1])
+    with torch.no_grad():
+        model.linear_layers[0].weight.fill_(1.0)
+        model.linear_layers[1].weight.fill_(2.0)
+        model.linear_layers[2].weight.fill_(3.0)
+        model.linear_layers[3].weight.fill_(4.0)
+    penalty = trainer._l1_penalty(model).item()
+    assert penalty == pytest.approx(7.5)
+
+
+def test_l1_penalty_single_hidden_layer(tmp_path):
+    trainer, model = _make_trainer(tmp_path, [1])
+    with torch.no_grad():
+        model.linear_layers[0].weight.fill_(1.0)
+        model.linear_layers[1].weight.fill_(4.0)
+    penalty = trainer._l1_penalty(model).item()
+    assert penalty == pytest.approx(5.0)

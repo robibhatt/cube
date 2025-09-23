@@ -1,0 +1,68 @@
+experiment_type: TrainMLP
+trainer_config:
+    trainer_type: Trainer
+    model_config:
+        model_type: MLP
+        input_dim: 16
+        output_dim: 1
+        hidden_dims:
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        - 128
+        activation: relu
+        start_activation: false
+        end_activation: false
+        mup: true
+        bias: true
+    optimizer_config:
+        optimizer_type: sgd
+        lr: 0.005
+        mup: true
+        weight_decay: 0.0
+    joint_distribution_config:
+        distribution_type: MappedJointDistribution
+        distribution_config:
+            distribution_type: Hypercube
+            input_shape:
+            - 16
+            dtype: float32
+        target_function_config:
+            model_type: SumProdTarget
+            input_shape:
+            - 16
+            indices_list:
+            - [0]
+            - [0, 1]
+            - [0, 1, 2]
+            - [0, 1, 2, 3]
+            - [0, 1, 2, 3, 4]
+            - [0, 1, 2, 3, 4, 5]
+            - [0, 1, 2, 3, 4, 5, 6]
+            - [0, 1, 2, 3, 4, 5, 6, 7]
+            - [0, 1, 2, 3, 4, 5, 6, 7, 8]
+            - [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            - [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            - [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        name: MSELoss
+        eval_type: regression
+    train_size: 8192
+    test_size: 8192
+    batch_size: 128
+    epochs: 10000
+    use_full_batch: false
+    weight_decay_l1: 0.0004
+home_directory: experiment_runs/stair_case/w128_d15_t8192_dim16_sc11
+seed: 12321245
+run_parallel: false

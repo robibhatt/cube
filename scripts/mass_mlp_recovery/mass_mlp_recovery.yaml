@@ -1,0 +1,91 @@
+experiment_type: MassMLPRecovery
+mlp_recovery_config:
+    experiment_type: MLPRecovery
+    teacher_trainer_config:
+        trainer_type: Trainer
+        model_config:
+            model_type: MLP
+            input_dim: 10
+            output_dim: 1
+            hidden_dims:
+            - 5
+            activation: relu
+            start_activation: false
+            end_activation: false
+            mup: false
+            bias: false
+        optimizer_config:
+            optimizer_type: Adam
+            lr: 0.001
+        joint_distribution_config:
+            distribution_type: Gaussian
+            input_shape:
+            - 10
+            dtype: float32
+            mean: 0.0
+            std: 1.0
+        loss_config:
+            name: MSELoss
+            eval_type: regression
+        train_size: 512
+        test_size: 2048
+        batch_size: 32
+        epochs: 0
+        use_full_batch: false
+        weight_decay_l1: 0.0
+    student_trainer_config:
+        trainer_type: Trainer
+        model_config:
+            model_type: MLP
+            input_dim: 10
+            output_dim: 1
+            hidden_dims:
+            - 512
+            activation: relu
+            start_activation: false
+            end_activation: false
+            mup: true
+            bias: false
+        optimizer_config:
+            optimizer_type: sgd
+            lr: 0.004
+            mup: true
+            weight_decay: 0.0
+        loss_config:
+            name: MSELoss
+            eval_type: regression
+        train_size: 512
+        test_size: 2048
+        batch_size: 64
+        epochs: 2000
+        use_full_batch: false
+        weight_decay_l1: 0.0
+        early_stopping: 0.00000001
+    noise_variance: 0.0
+    home_directory: experiment_runs/production/sgd_512
+    seed: 110
+    run_parallel: false
+train_sizes:
+    - 64
+    - 128
+    - 256
+    - 512
+    - 1024
+    - 2048
+    - 4096
+    - 8192
+learning_rates:
+    - 0.01
+    - 0.03
+    - 0.05
+weight_decays:
+    - 0.0
+    - 0.0001
+    - 0.0004
+    - 0.001
+    - 0.004
+    - 0.01
+home_directory: experiment_runs/production/mass_exp_2
+seed: 110
+run_parallel: true
+rerun_plots: true

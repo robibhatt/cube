@@ -1,0 +1,42 @@
+experiment_type: ClimbStairs
+trainer_config:
+    trainer_type: Trainer
+    model_config:
+        model_type: MLP
+        input_dim: 6
+        output_dim: 1
+        hidden_dims:
+        - 8
+        - 8
+        - 8
+        - 8
+        - 8
+        - 8
+        activation: relu
+        start_activation: false
+        end_activation: false
+        mup: true
+        bias: true
+    optimizer_config:
+        optimizer_type: sgd
+        lr: 0.01
+        mup: true
+        weight_decay: 0.001
+    joint_distribution_config:
+        distribution_type: Staircase
+        input_shape:
+        - 6
+        k: 6
+        dtype: float32
+    loss_config:
+        name: MSELoss
+        eval_type: regression
+    train_size: 32
+    test_size: 32
+    batch_size: 32
+    epochs: 1000
+    use_full_batch: false
+    weight_decay_l1: 0.0
+home_directory: experiment_runs/stair_climb/puny2
+seed: 223552
+run_parallel: false
