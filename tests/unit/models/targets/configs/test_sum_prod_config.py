@@ -1,5 +1,7 @@
 import torch
 
+import torch
+
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from src.models.targets.configs.target_function_config_registry import (
     TARGET_FUNCTION_CONFIG_REGISTRY,

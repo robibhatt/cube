@@ -7,7 +7,7 @@ from src.data.joint_distributions.configs.joint_distribution_config_registry imp
 )
 from src.data.joint_distributions.configs.mapped_joint_distribution import MappedJointDistributionConfig
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from tests.unit.data.conftest import (
     DummyJointDistribution,
     add_one_noise_dist_cfg,
@@ -40,7 +40,12 @@ def test_noisy_config_json_roundtrip(add_one_noise_dist_cfg):
         distribution_config=GaussianConfig(
             input_shape=torch.Size([2]), mean=0.0, std=1.0
         ),
-        target_function_config=LinearTargetFunctionConfig(input_shape=torch.Size([2])),
+        target_function_config=SumProdTargetConfig(
+            input_shape=torch.Size([2]),
+            indices_list=[[0], [1]],
+            weights=[1.0, 1.0],
+            normalize=False,
+        ),
     )
     cfg = NoisyDistributionConfig(
         base_distribution_config=base_cfg,
@@ -64,9 +69,11 @@ def test_noisy_config_from_dict_via_registry(add_one_noise_dist_cfg):
                 "std": 1.0,
             },
             "target_function_config": {
-                "model_type": "LinearTargetFunction",
+                "model_type": "SumProdTarget",
                 "input_shape": [2],
-                "output_shape": [1],
+                "indices_list": [[0], [1]],
+                "weights": [1.0, 1.0],
+                "normalize": False,
             },
         },
         "noise_distribution_config": {

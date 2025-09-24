@@ -3,6 +3,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
+import itertools
+import math
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -17,10 +20,8 @@ from src.data.joint_distributions.configs.staircase import StaircaseConfig
 from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.module_joint_distribution import ModuleJointDistribution
 from src.models.representors.mlp_representor import MLPRepresentor
-from src.models.targets.simple_functions import ProdKTarget, StaircaseTarget
-from src.models.targets.configs.prod_k import ProdKTargetConfig
-from src.models.targets.configs.staircase import StaircaseTargetConfig
-import itertools
+from src.models.targets.sum_prod import SumProdTarget
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @register_experiment("ClimbStairs")
@@ -134,11 +135,15 @@ class StaircaseExperiment(Experiment):
         """
 
         trainer_cfg = self.get_trainer_configs()[0][0]
-        prod_cfg = ProdKTargetConfig(
+        indices_list = [list(indices)]
+        weights = [1.0]
+        prod_cfg = SumProdTargetConfig(
             input_shape=trainer_cfg.joint_distribution_config.input_shape,
-            indices=indices,
+            indices_list=indices_list,
+            weights=weights,
+            normalize=False,
         )
-        y_module = ProdKTarget(prod_cfg)
+        y_module = SumProdTarget(prod_cfg)
 
         return self._layer_module_distribution(layer_number, y_module)
 
@@ -148,11 +153,16 @@ class StaircaseExperiment(Experiment):
         """Return a ``ModuleJointDistribution`` for a network layer and staircase target."""
 
         trainer_cfg = self.get_trainer_configs()[0][0]
-        stair_cfg = StaircaseTargetConfig(
+        indices_list = [list(range(i + 1)) for i in range(k)]
+        weight = 1.0 / math.sqrt(k)
+        weights = [weight] * k
+        stair_cfg = SumProdTargetConfig(
             input_shape=trainer_cfg.joint_distribution_config.input_shape,
-            k=k,
+            indices_list=indices_list,
+            weights=weights,
+            normalize=False,
         )
-        y_module = StaircaseTarget(stair_cfg)
+        y_module = SumProdTarget(stair_cfg)
 
         return self._layer_module_distribution(layer_number, y_module)
 

@@ -1,3 +1,4 @@
+import math
 import torch
 from torch import Tensor
 from typing import Tuple
@@ -7,8 +8,8 @@ from .joint_distribution_registry import register_joint_distribution
 from .configs.staircase import StaircaseConfig
 from .hypercube import Hypercube
 from .configs.hypercube import HypercubeConfig
-from src.models.targets.simple_functions import StaircaseTarget
-from src.models.targets.configs.staircase import StaircaseTargetConfig
+from src.models.targets.sum_prod import SumProdTarget
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @register_joint_distribution("Staircase")
@@ -26,8 +27,16 @@ class Staircase(JointDistribution):
         self.dtype = config.dtype
         hypercube_cfg = HypercubeConfig(input_shape=config.input_shape, dtype=config.dtype)
         self.hypercube = Hypercube(hypercube_cfg, device)
-        target_cfg = StaircaseTargetConfig(input_shape=config.input_shape, k=config.k)
-        self.target = StaircaseTarget(target_cfg).to(device)
+        indices_list = [list(range(i + 1)) for i in range(config.k)]
+        weight = 1.0 / math.sqrt(config.k)
+        weights = [weight] * config.k
+        target_cfg = SumProdTargetConfig(
+            input_shape=config.input_shape,
+            indices_list=indices_list,
+            weights=weights,
+            normalize=False,
+        )
+        self.target = SumProdTarget(target_cfg).to(device)
 
     def __str__(self) -> str:
         return f"Staircase(d={self.input_shape[0]}, k={self.k})"

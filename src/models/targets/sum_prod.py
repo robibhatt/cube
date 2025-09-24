@@ -14,12 +14,13 @@ class SumProdTarget(TargetFunction):
         super().__init__(config)
         self.indices_list = [list(group) for group in config.indices_list]
         self.weights = [float(weight) for weight in config.weights]
+        self.normalize = bool(config.normalize)
         if len(self.indices_list) != len(self.weights):
             raise ValueError("weights length must match indices_list length")
         self.max_index = max(max(group) for group in self.indices_list)
         weights_tensor = torch.tensor(self.weights, dtype=torch.float32)
         self.register_buffer("weights_tensor", weights_tensor)
-        self.scale = self._compute_normalization()
+        self.scale = self._compute_normalization() if self.normalize else 1.0
 
     def _forward(self, X: Tensor) -> Tensor:
         flat = X.reshape(*X.shape[:-len(self.input_shape)], -1)
@@ -56,5 +57,6 @@ class SumProdTarget(TargetFunction):
             "SumProdTarget("
             f"input_shape={tuple(self.input_shape)}, "
             f"indices_list={self.indices_list}, "
-            f"weights={self.weights})"
+            f"weights={self.weights}, "
+            f"normalize={self.normalize})"
         )

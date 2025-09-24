@@ -1,5 +1,6 @@
-import torch
 import pytest
+import torch
+
 from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
@@ -8,7 +9,7 @@ from src.data.joint_distributions.configs.mapped_joint_distribution import (
 from src.data.joint_distributions.configs.noisy_distribution import (
     NoisyDistributionConfig,
 )
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from tests.unit.data.conftest import (
     DummyJointDistribution,
     AddOneNoiseDistributionConfig,
@@ -24,7 +25,12 @@ def test_gaussian_variance_zero():
 
 def test_mapped_linear_variance_matches_dimension():
     base_cfg = GaussianConfig(input_shape=torch.Size([3]), mean=0.0, std=1.0)
-    target_cfg = LinearTargetFunctionConfig(input_shape=torch.Size([3]))
+    target_cfg = SumProdTargetConfig(
+        input_shape=torch.Size([3]),
+        indices_list=[[0], [1], [2]],
+        weights=[1.0, 1.0, 1.0],
+        normalize=False,
+    )
     cfg = MappedJointDistributionConfig(
         distribution_config=base_cfg,
         target_function_config=target_cfg,
@@ -45,7 +51,12 @@ def test_noisy_distribution_variance_zero():
 
 def test_average_output_variance_matches_empirical_mse():
     base_cfg = GaussianConfig(input_shape=torch.Size([3]), mean=0.0, std=1.0)
-    target_cfg = LinearTargetFunctionConfig(input_shape=torch.Size([3]))
+    target_cfg = SumProdTargetConfig(
+        input_shape=torch.Size([3]),
+        indices_list=[[0], [1], [2]],
+        weights=[1.0, 1.0, 1.0],
+        normalize=False,
+    )
     cfg = MappedJointDistributionConfig(
         distribution_config=base_cfg,
         target_function_config=target_cfg,

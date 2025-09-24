@@ -1,5 +1,5 @@
-import torch
 import pytest
+import torch
 
 from src.models.targets.sum_prod import SumProdTarget
 from src.models.targets.configs.sum_prod import SumProdTargetConfig

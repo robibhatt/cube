@@ -11,7 +11,7 @@ from src.data.joint_distributions.configs.representor_distribution import (
 )
 
 from tests.helpers.stubs import StubJointDistribution
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @pytest.mark.parametrize("dist_name", ["gaussian", "mapped", "representor"])
@@ -25,7 +25,12 @@ def test_sample_equivalence_base_forward(dist_name, model_representor, trained_t
         dist = create_joint_distribution(cfg, device)
     elif dist_name == "mapped":
         base_cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
-        target_cfg = LinearTargetFunctionConfig(input_shape=torch.Size([2]))
+        target_cfg = SumProdTargetConfig(
+            input_shape=torch.Size([2]),
+            indices_list=[[0], [1]],
+            weights=[1.0, 1.0],
+            normalize=False,
+        )
         cfg = MappedJointDistributionConfig(
             distribution_config=base_cfg,
             target_function_config=target_cfg,
