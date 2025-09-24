@@ -1,5 +1,4 @@
 import torch
-import pytest
 
 from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
@@ -9,7 +8,7 @@ from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.data.providers.tensor_data_provider import TensorDataProvider
 from src.data.providers import create_data_provider_from_distribution
 from tests.unit.data.conftest import gaussian_base, DummyJointDistribution
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def _make_distribution(base):
@@ -17,7 +16,12 @@ def _make_distribution(base):
         distribution_config=GaussianConfig(
             input_shape=base.config.input_shape, mean=0.0, std=1.0
         ),
-        target_function_config=LinearTargetFunctionConfig(input_shape=base.input_shape),
+        target_function_config=SumProdTargetConfig(
+            input_shape=base.input_shape,
+            indices_list=[[0]],
+            weights=[1.0],
+            normalize=False,
+        ),
     )
     return create_joint_distribution(cfg, torch.device("cpu"))
 

@@ -1,5 +1,5 @@
-import torch
 import pytest
+import torch
 
 from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
@@ -15,7 +15,7 @@ from tests.unit.data.conftest import (
     DummyJointDistribution,
     AddOneNoiseDistributionConfig,
 )
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def test_gaussian_forward_matches_forward_X():
@@ -29,7 +29,12 @@ def test_gaussian_forward_matches_forward_X():
 
 def test_mapped_forward_matches_forward_X():
     base_cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
-    target_cfg = LinearTargetFunctionConfig(input_shape=torch.Size([2]))
+    target_cfg = SumProdTargetConfig(
+        input_shape=torch.Size([2]),
+        indices_list=[[0], [1]],
+        weights=[1.0, 1.0],
+        normalize=False,
+    )
     cfg = MappedJointDistributionConfig(
         distribution_config=base_cfg,
         target_function_config=target_cfg,

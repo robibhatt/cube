@@ -1,4 +1,5 @@
 import torch
+
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
     MappedJointDistributionConfig,
 )
@@ -8,7 +9,7 @@ from src.data.joint_distributions.configs.joint_distribution_config_registry imp
     build_joint_distribution_config_from_dict,
 )
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def test_mapped_config_registered():
@@ -25,7 +26,12 @@ def test_build_mapped_config():
         distribution_config=GaussianConfig(
             input_shape=torch.Size([2]), mean=0.0, std=1.0
         ),
-        target_function_config=LinearTargetFunctionConfig(input_shape=torch.Size([2])),
+        target_function_config=SumProdTargetConfig(
+            input_shape=torch.Size([2]),
+            indices_list=[[0], [1]],
+            weights=[1.0, 1.0],
+            normalize=False,
+        ),
     )
     assert isinstance(cfg, MappedJointDistributionConfig)
     assert cfg.distribution_type == "MappedJointDistribution"
@@ -38,7 +44,12 @@ def test_mapped_config_json_roundtrip():
         distribution_config=GaussianConfig(
             input_shape=torch.Size([2]), mean=0.0, std=1.0
         ),
-        target_function_config=LinearTargetFunctionConfig(input_shape=torch.Size([2])),
+        target_function_config=SumProdTargetConfig(
+            input_shape=torch.Size([2]),
+            indices_list=[[0], [1]],
+            weights=[1.0, 1.0],
+            normalize=False,
+        ),
     )
     json_str = cfg.to_json()
     restored = MappedJointDistributionConfig.from_json(json_str)
@@ -56,9 +67,11 @@ def test_mapped_config_from_dict_via_registry():
             "std": 1.0,
         },
         "target_function_config": {
-            "model_type": "LinearTargetFunction",
+            "model_type": "SumProdTarget",
             "input_shape": [2],
-            "output_shape": [1],
+            "indices_list": [[0], [1]],
+            "weights": [1.0, 1.0],
+            "normalize": False,
         },
     }
     cfg = build_joint_distribution_config_from_dict(data)

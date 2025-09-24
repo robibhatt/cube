@@ -18,6 +18,8 @@ class SumProdTargetConfig(TargetFunctionConfig):
     ``indices_list`` is a list where each element is a list of indices for a
     product term. The resulting target function computes the weighted sum of
     the corresponding products of input coordinates using ``weights``.
+    Set ``normalize`` to ``False`` to disable the variance normalization
+    applied by :class:`SumProdTarget`.
     """
 
     input_shape: torch.Size = field(
@@ -25,6 +27,7 @@ class SumProdTargetConfig(TargetFunctionConfig):
     )
     indices_list: List[List[int]] = field(default_factory=list)
     weights: List[float] = field(default_factory=list)
+    normalize: bool = True
 
     def __post_init__(self) -> None:
         self.model_type = "SumProdTarget"
@@ -39,6 +42,4 @@ class SumProdTargetConfig(TargetFunctionConfig):
                 raise ValueError("each indices group must be non-empty")
             if any(i < 0 or i >= total_dim for i in idx_group):
                 raise ValueError("indices cannot exceed input dimension or be negative")
-            if len(set(idx_group)) != len(idx_group):
-                raise ValueError("indices within a group must be unique")
         super().__post_init__()

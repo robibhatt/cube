@@ -6,10 +6,7 @@ from .joint_distribution_config_registry import (
     register_joint_distribution_config,
     build_joint_distribution_config_from_dict,
 )
-from src.models.targets.configs.base import TargetFunctionConfig
-from src.models.targets.configs.target_function_config_registry import (
-    build_target_function_config_from_dict,
-)
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @register_joint_distribution_config("MappedJointDistribution")
@@ -22,10 +19,12 @@ class MappedJointDistributionConfig(JointDistributionConfig):
             decoder=lambda d: d if isinstance(d, JointDistributionConfig) else build_joint_distribution_config_from_dict(d),
         )
     )
-    target_function_config: TargetFunctionConfig = field(
+    target_function_config: SumProdTargetConfig = field(
         metadata=config(
             encoder=lambda c: c.to_dict(),
-            decoder=lambda d: d if isinstance(d, TargetFunctionConfig) else build_target_function_config_from_dict(d),
+            decoder=lambda d: d
+            if isinstance(d, SumProdTargetConfig)
+            else SumProdTargetConfig.from_dict(d),
         )
     )
 

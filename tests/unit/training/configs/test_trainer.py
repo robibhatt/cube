@@ -1,6 +1,7 @@
-import torch
 import pytest
 from dataclasses import dataclass
+
+import torch
 
 from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
@@ -8,7 +9,7 @@ from src.data.joint_distributions.configs.mapped_joint_distribution import Mappe
 from src.data.joint_distributions.configs.base import JointDistributionConfig
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.models.architectures.configs.mlp import MLPConfig
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def test_trainer_config_json_roundtrip(tmp_path):
@@ -25,7 +26,12 @@ def test_trainer_config_json_roundtrip(tmp_path):
             distribution_config=GaussianConfig(
                 input_shape=torch.Size([3]), mean=0.0, std=1.0
             ),
-            target_function_config=LinearTargetFunctionConfig(input_shape=torch.Size([3])),
+            target_function_config=SumProdTargetConfig(
+                input_shape=torch.Size([3]),
+                indices_list=[[0]],
+                weights=[1.0],
+                normalize=False,
+            ),
         ),
         train_size=10,
         test_size=5,

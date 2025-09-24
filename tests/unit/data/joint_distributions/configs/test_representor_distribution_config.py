@@ -1,4 +1,5 @@
 import torch
+
 # Import provider to register with the configuration registry for tests.
 import src.data.providers.tensor_data_provider
 from src.data.joint_distributions.configs.representor_distribution import (
@@ -11,7 +12,7 @@ from src.data.joint_distributions.configs.joint_distribution_config_registry imp
 )
 from src.data.joint_distributions.configs.mapped_joint_distribution import MappedJointDistributionConfig
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
-from conftest import LinearTargetFunctionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from tests.unit.data.conftest import DummyJointDistribution
 from tests.unit.data.conftest import trained_trainer
 
@@ -44,7 +45,12 @@ def test_representor_config_json_roundtrip(trained_trainer):
         distribution_config=GaussianConfig(
             input_shape=torch.Size([2]), mean=0.0, std=1.0
         ),
-        target_function_config=LinearTargetFunctionConfig(input_shape=torch.Size([2])),
+        target_function_config=SumProdTargetConfig(
+            input_shape=torch.Size([2]),
+            indices_list=[[0], [1]],
+            weights=[1.0, 1.0],
+            normalize=False,
+        ),
     )
     cfg = RepresentorDistributionConfig(
         base_distribution_config=trained_trainer.config.joint_distribution_config,
