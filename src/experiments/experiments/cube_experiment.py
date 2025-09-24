@@ -37,13 +37,17 @@ class CubeExperiment(Experiment):
             mup=config.mup,
         )
 
+        indices_list = [list(range(config.k))]
+        weights = [1.0 for _ in indices_list]
+
         dist_cfg = MappedJointDistributionConfig(
             distribution_config=HypercubeConfig(
                 input_shape=torch.Size([config.dimension])
             ),
             target_function_config=SumProdTargetConfig(
                 input_shape=torch.Size([config.dimension]),
-                indices_list=[list(range(config.k))],
+                indices_list=indices_list,
+                weights=weights,
             ),
         )
 

@@ -6,7 +6,6 @@ from src.models.targets.target_function_registry import register_target_function
 from src.models.targets.configs.prod_1234 import Prod1234Config
 from src.models.targets.configs.staircase import StaircaseTargetConfig
 from src.models.targets.configs.prod_k import ProdKTargetConfig
-from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @register_target_function("1234_prod")
@@ -55,54 +54,6 @@ class ProdKTarget(TargetFunction):
     def __str__(self) -> str:
         return f"ProdKTarget(input_shape={tuple(self.input_shape)}, indices={self.indices})"
 
-
-@register_target_function("SumProdTarget")
-class SumProdTarget(TargetFunction):
-    """Compute the sum of multiple product terms over selected coordinates.
-
-    ``indices_list`` specifies groups of indices; for each group the
-    corresponding coordinates are multiplied together and the results are
-    summed.
-    """
-
-    def __init__(self, config: SumProdTargetConfig):
-        super().__init__(config)
-        self.indices_list = [list(g) for g in config.indices_list]
-        self.scale = self._compute_normalization()
-
-    def _forward(self, X: Tensor) -> Tensor:
-        flat = X.reshape(*X.shape[:-len(self.input_shape)], -1)
-        max_idx = max(max(group) for group in self.indices_list)
-        if flat.shape[-1] <= max_idx:
-            raise ValueError(
-                f"SumProdTarget expects at least {max_idx + 1} elements in input_shape, but got {flat.shape[-1]}"
-            )
-        total = torch.zeros_like(flat[..., 0])
-        for group in self.indices_list:
-            total = total + flat[..., group].prod(dim=-1)
-        total = total * self.scale
-        return total.unsqueeze(-1)
-
-    def _compute_normalization(self) -> float:
-        num_samples = 2048
-        g = torch.Generator()
-        g.manual_seed(0)
-        X = torch.randint(0, 2, (num_samples, *self.input_shape), generator=g)
-        X = X.to(torch.float32) * 2 - 1
-        flat = X.view(num_samples, -1)
-        total = torch.zeros(num_samples, dtype=flat.dtype)
-        for group in self.indices_list:
-            total = total + flat[:, group].prod(dim=-1)
-        var = total.var(unbiased=False)
-        if var > 0:
-            return float(1.0 / torch.sqrt(var))
-        else:
-            return 1.0
-
-    def __str__(self) -> str:
-        return (
-            f"SumProdTarget(input_shape={tuple(self.input_shape)}, indices_list={self.indices_list})"
-        )
 
 @register_target_function("StaircaseTarget")
 class StaircaseTarget(TargetFunction):

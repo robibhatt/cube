@@ -16,20 +16,23 @@ class SumProdTargetConfig(TargetFunctionConfig):
     """Configuration for :class:`SumProdTarget`.
 
     ``indices_list`` is a list where each element is a list of indices for a
-    product term. The resulting target function computes the sum of the
-    corresponding products of input coordinates.
+    product term. The resulting target function computes the weighted sum of
+    the corresponding products of input coordinates using ``weights``.
     """
 
     input_shape: torch.Size = field(
         metadata=config(encoder=encode_shape, decoder=decode_shape)
     )
     indices_list: List[List[int]] = field(default_factory=list)
+    weights: List[float] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.model_type = "SumProdTarget"
         self.output_shape = torch.Size([1])
         if not self.indices_list:
             raise ValueError("indices_list must be a non-empty list")
+        if len(self.weights) != len(self.indices_list):
+            raise ValueError("weights must have the same length as indices_list")
         total_dim = int(torch.tensor(self.input_shape).prod().item())
         for idx_group in self.indices_list:
             if not idx_group:
