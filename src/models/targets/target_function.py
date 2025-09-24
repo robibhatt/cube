@@ -1,19 +1,38 @@
-import torch
-from abc import abstractmethod
+from __future__ import annotations
 
-from src.models.architectures.model import Model
+import torch
+import torch.nn as nn
+from abc import ABC, abstractmethod
+
 from .configs.base import TargetFunctionConfig
 
 
-class TargetFunction(Model):
+class TargetFunction(nn.Module, ABC):
     def __init__(self, config: TargetFunctionConfig):
-        super().__init__(config)
+        super().__init__()
+        self.config = config
         self.input_shape = config.input_shape
         self.output_shape = config.output_shape
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         self._validate_input(x)
         return self._forward(x)
+
+    def initialize_weights(self) -> None:  # pragma: no cover - default no-op
+        """Initialize model parameters.
+
+        Subclasses may override this to set up their parameters.
+        """
+        pass
+
+    def get_base_model(self) -> "TargetFunction | None":  # pragma: no cover - default no-op
+        """Return a base-width reference model if available.
+
+        Target functions that do not implement MuP-style width scaling simply
+        return ``None``.  Subclasses may override this to provide a concrete
+        model used for shape initialisation.
+        """
+        return None
 
     @abstractmethod
     def _forward(self, x: torch.Tensor) -> torch.Tensor:

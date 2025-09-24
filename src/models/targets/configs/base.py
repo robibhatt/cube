@@ -1,14 +1,18 @@
 from dataclasses import dataclass, field
-from src.models.architectures.configs.base import ModelConfig
+from abc import ABC
+
 import torch
 from dataclasses_json import dataclass_json, config
 
 from src.utils.serialization_utils import encode_shape, decode_shape
 
+
 @dataclass_json
 @dataclass(kw_only=True)
-class TargetFunctionConfig(ModelConfig):
+class TargetFunctionConfig(ABC):
     """Base configuration for target functions."""
+
+    model_type: str = field(init=False)
     input_shape: torch.Size = field(
         metadata=config(encoder=encode_shape, decoder=decode_shape)
     )
