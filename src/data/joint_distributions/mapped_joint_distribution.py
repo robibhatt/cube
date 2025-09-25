@@ -28,6 +28,14 @@ class MappedJointDistribution(JointDistribution):
         )
         self.target_function = SumProdTarget(config.target_function_config)
 
+        with torch.no_grad():
+            probe_X, _ = self.distribution.sample(1, seed=0)
+            y_probe = self.target_function(probe_X)
+        if y_probe.dim() != 2 or y_probe.size(1) != 1:
+            raise ValueError(
+                "target_function must return 2D tensors with a single output dimension"
+            )
+
         super().__init__(config, device)
 
     def sample(self, n_samples: int, seed: int) -> Tuple[Tensor, Tensor]:
@@ -39,8 +47,8 @@ class MappedJointDistribution(JointDistribution):
 
         Returns:
             A tuple (X, y):
-                X: Tensor of shape (n_samples, *input_shape)
-                y: Tensor of shape (n_samples, *output_shape)
+                X: Tensor of shape (n_samples, input_dim)
+                y: Tensor of shape (n_samples, output_dim)
         """
         x, _ = self.distribution.sample(n_samples, seed=seed)
         y = self.target_function(x)
@@ -70,7 +78,7 @@ class MappedJointDistribution(JointDistribution):
         """
         return (
             f"MappedJointDistribution: X ~ {self.distribution}, "
-            f"input_shape={self.input_shape}, "
-            f"output_shape={self.output_shape}, "
+            f"input_dim={self.input_dim}, "
+            f"output_dim={self.output_dim}, "
             f"target_function={self.target_function}"
         )

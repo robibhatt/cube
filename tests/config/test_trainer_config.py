@@ -20,7 +20,7 @@ def test_default_optimizer(tmp_path):
         ),
         joint_distribution_config=MappedJointDistributionConfig(
             distribution_config=GaussianConfig(
-                input_shape=torch.Size([3]), mean=0.0, std=1.0
+                input_dim=3, mean=0.0, std=1.0
             ),
             target_function_config=SumProdTargetConfig(
                 input_shape=torch.Size([3]),

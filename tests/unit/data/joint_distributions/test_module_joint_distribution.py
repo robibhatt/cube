@@ -64,25 +64,27 @@ def test_respects_base_forward():
 
     def forward(base_X):
         X = forward_X(base_X)
-        y = X.sum(dim=1, keepdim=True)
+        y = torch.zeros(X.size(0), 1)
         return X, y
 
     base_dist.forward_X = forward_X  # type: ignore[assignment]
     base_dist.forward = forward  # type: ignore[assignment]
 
     x_module = nn.Identity()
-    y_module = nn.Identity()
+    y_module = nn.Linear(2, 1, bias=False)
+    y_module.weight.data.fill_(1.0)
     dist = ModuleJointDistribution(base_dist, x_module, y_module)
 
     base_X, _ = base_dist.base_sample(2, seed=0)
     expected = forward_X(base_X)
+    expected_y = expected.sum(dim=1, keepdim=True)
 
     X, y = dist.forward(base_X)
     assert torch.allclose(X, expected)
-    assert torch.allclose(y, expected)
+    assert torch.allclose(y, expected_y)
     assert not torch.allclose(y, base_dist.forward(base_X)[1])
 
     X2 = dist.forward_X(base_X)
     y2 = dist.forward_Y(base_X)
     assert torch.allclose(X2, expected)
-    assert torch.allclose(y2, expected)
+    assert torch.allclose(y2, expected_y)

@@ -25,13 +25,13 @@ class Staircase(JointDistribution):
         super().__init__(config, device)
         self.k = config.k
         self.dtype = config.dtype
-        hypercube_cfg = HypercubeConfig(input_shape=config.input_shape, dtype=config.dtype)
+        hypercube_cfg = HypercubeConfig(input_dim=config.input_dim, dtype=config.dtype)
         self.hypercube = Hypercube(hypercube_cfg, device)
         indices_list = [list(range(i + 1)) for i in range(config.k)]
         weight = 1.0 / math.sqrt(config.k)
         weights = [weight] * config.k
         target_cfg = SumProdTargetConfig(
-            input_shape=config.input_shape,
+            input_shape=torch.Size([config.input_dim]),
             indices_list=indices_list,
             weights=weights,
             normalize=False,
@@ -39,7 +39,7 @@ class Staircase(JointDistribution):
         self.target = SumProdTarget(target_cfg).to(device)
 
     def __str__(self) -> str:
-        return f"Staircase(d={self.input_shape[0]}, k={self.k})"
+        return f"Staircase(d={self.input_dim}, k={self.k})"
 
     def sample(self, n_samples: int, seed: int) -> Tuple[Tensor, Tensor]:
         x, _ = self.hypercube.sample(n_samples, seed)

@@ -11,8 +11,7 @@ from .configs.base import JointDistributionConfig
 class _Config(JointDistributionConfig):
     """Lightweight config holding input and output shapes."""
 
-    input_shape: torch.Size
-    output_shape: torch.Size
+    input_dim: int
 
     def __post_init__(self) -> None:  # type: ignore[override]
         self.distribution_type = "ModuleJointDistribution"
@@ -46,7 +45,12 @@ class ModuleJointDistribution(JointDistribution):
             X_base, _ = base_distribution.sample(1, seed=0)
             x_dummy = self.x_module(X_base.to(device))
             y_dummy = self.y_module(X_base.to(device))
-        cfg = _Config(input_shape=x_dummy.shape[1:], output_shape=y_dummy.shape[1:])
+        if x_dummy.dim() != 2:
+            raise ValueError("x_module must return 2D tensors with shape (n, features)")
+        if y_dummy.dim() != 2 or y_dummy.size(1) != 1:
+            raise ValueError("y_module must return 2D tensors with a single output dimension")
+
+        cfg = _Config(input_dim=x_dummy.size(1))
         super().__init__(config=cfg, device=device)
 
     def __str__(self) -> str:

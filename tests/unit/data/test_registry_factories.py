@@ -17,18 +17,19 @@ def test_register_and_create_joint_distribution():
     class DummyJoint(JointDistribution):
         @dataclass
         class _Config(JointDistributionConfig):
-            input_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
-            output_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
+            input_dim: int = field(default=1)
 
             def __post_init__(self) -> None:
+                if self.input_dim <= 0:
+                    raise ValueError("input_dim must be positive")
                 self.distribution_type = "DummyJoint"
 
         def __init__(self, config: _Config, device: torch.device) -> None:
             super().__init__(config, device)
 
         def sample(self, n_samples: int, seed: int):
-            X = torch.zeros(n_samples, *self.input_shape, device=self.device)
-            y = torch.zeros(n_samples, *self.output_shape, device=self.device)
+            X = torch.zeros(n_samples, self.input_dim, device=self.device)
+            y = torch.zeros(n_samples, self.output_dim, device=self.device)
             return X, y
 
         def __str__(self) -> str:

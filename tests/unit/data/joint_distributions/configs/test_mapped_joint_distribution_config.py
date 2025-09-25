@@ -24,7 +24,7 @@ def test_build_mapped_config():
     cfg = build_joint_distribution_config(
         "MappedJointDistribution",
         distribution_config=GaussianConfig(
-            input_shape=torch.Size([2]), mean=0.0, std=1.0
+            input_dim=2, mean=0.0, std=1.0
         ),
         target_function_config=SumProdTargetConfig(
             input_shape=torch.Size([2]),
@@ -35,6 +35,7 @@ def test_build_mapped_config():
     )
     assert isinstance(cfg, MappedJointDistributionConfig)
     assert cfg.distribution_type == "MappedJointDistribution"
+    assert cfg.input_dim == 2
     assert cfg.input_shape == torch.Size([2])
     assert cfg.output_shape == torch.Size([1])
 
@@ -42,7 +43,7 @@ def test_build_mapped_config():
 def test_mapped_config_json_roundtrip():
     cfg = MappedJointDistributionConfig(
         distribution_config=GaussianConfig(
-            input_shape=torch.Size([2]), mean=0.0, std=1.0
+            input_dim=2, mean=0.0, std=1.0
         ),
         target_function_config=SumProdTargetConfig(
             input_shape=torch.Size([2]),
@@ -61,7 +62,7 @@ def test_mapped_config_from_dict_via_registry():
         "distribution_type": "MappedJointDistribution",
         "distribution_config": {
             "distribution_type": "Gaussian",
-            "input_shape": [2],
+            "input_dim": 2,
             "dtype": "float32",
             "mean": 0.0,
             "std": 1.0,
@@ -76,5 +77,5 @@ def test_mapped_config_from_dict_via_registry():
     }
     cfg = build_joint_distribution_config_from_dict(data)
     assert isinstance(cfg, MappedJointDistributionConfig)
-    assert cfg.input_shape == torch.Size([2])
+    assert cfg.input_dim == 2
     assert cfg.output_shape == torch.Size([1])

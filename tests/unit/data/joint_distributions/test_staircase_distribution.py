@@ -6,7 +6,7 @@ from src.data.joint_distributions.configs.staircase import StaircaseConfig
 
 
 def test_staircase_sample_values():
-    cfg = StaircaseConfig(input_shape=torch.Size([4]), k=3)
+    cfg = StaircaseConfig(input_dim=4, k=3)
     dist = create_joint_distribution(cfg, torch.device("cpu"))
     x, y = dist.sample(10, seed=0)
     assert x.shape == (10, 4)

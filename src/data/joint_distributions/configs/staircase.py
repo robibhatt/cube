@@ -4,14 +4,14 @@ import torch
 
 from .base import JointDistributionConfig
 from .joint_distribution_config_registry import register_joint_distribution_config
-from src.utils.serialization_utils import encode_shape, decode_shape, encode_dtype, decode_dtype
+from src.utils.serialization_utils import encode_dtype, decode_dtype
 
 
 @register_joint_distribution_config("Staircase")
 @dataclass_json
 @dataclass(kw_only=True)
 class StaircaseConfig(JointDistributionConfig):
-    input_shape: torch.Size = field(metadata=config(encoder=encode_shape, decoder=decode_shape))
+    input_dim: int
     k: int
     dtype: torch.dtype = field(
         default=torch.float32,
@@ -19,9 +19,10 @@ class StaircaseConfig(JointDistributionConfig):
     )
 
     def __post_init__(self) -> None:
+        if self.input_dim <= 0:
+            raise ValueError("input_dim must be a positive integer")
         if self.k < 1:
             raise ValueError("k must be >= 1")
-        if self.k > int(torch.tensor(self.input_shape).prod().item()):
+        if self.k > self.input_dim:
             raise ValueError("k cannot exceed input dimension")
-        self.output_shape = torch.Size([1])
         self.distribution_type = "Staircase"

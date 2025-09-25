@@ -14,8 +14,8 @@ class _LinearModule(nn.Module):
         self,
         weight: torch.Tensor,
         bias: torch.Tensor | None,
-        input_shape: torch.Size,
-        output_shape: torch.Size,
+        input_dim: int,
+        output_dim: int,
     ) -> None:
         super().__init__()
         self.weight = nn.Parameter(weight, requires_grad=False)
@@ -23,31 +23,44 @@ class _LinearModule(nn.Module):
             self.register_parameter("bias", None)
         else:
             self.bias = nn.Parameter(bias, requires_grad=False)
-        self.input_shape = input_shape
-        self.output_shape = output_shape
+        self.input_dim = input_dim
+        self.output_dim = output_dim
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore[override]
-        d_x = self.weight.size(1)
-        batch_shape = x.shape[:-len(self.input_shape)]
-        x_flat = x.reshape(-1, d_x)
+        if x.shape[-1] != self.input_dim:
+            raise RuntimeError(
+                f"Expected input_dim={self.input_dim}, got tensor with trailing dim {x.shape[-1]}"
+            )
+        x_flat = x.reshape(-1, self.input_dim)
         y_flat = x_flat @ self.weight.T
         if self.bias is not None:
             y_flat = y_flat + self.bias
-        return y_flat.reshape(*batch_shape, *self.output_shape)
+        return y_flat.reshape(*x.shape[:-1], self.output_dim)
 
 
 class JointDistribution(ABC):
     def __init__(self, config: JointDistributionConfig, device: torch.device) -> None:
         """Store shapes and the ``device`` from ``config``."""
 
-        self.input_shape: torch.Size = config.input_shape
-        self.output_shape: torch.Size = config.output_shape
+        self.input_dim: int = config.input_dim
         self.config = config
 
         # Accept the provided device without additional canonicalization.
         self.device: torch.device = torch.device(device)
 
         self.well_specified: bool = True
+
+    @property
+    def input_shape(self) -> torch.Size:
+        return torch.Size([self.input_dim])
+
+    @property
+    def output_dim(self) -> int:
+        return 1
+
+    @property
+    def output_shape(self) -> torch.Size:
+        return torch.Size([self.output_dim])
     
     @abstractmethod
     def sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -64,8 +77,8 @@ class JointDistribution(ABC):
         Returns
         -------
         (torch.Tensor, torch.Tensor)
-            Input and output tensors of shapes ``(n_samples, *input_shape)`` and
-            ``(n_samples, *output_shape)`` respectively.
+            Input and output tensors of shapes ``(n_samples, input_dim)`` and
+            ``(n_samples, output_dim)`` respectively.
         """
         raise NotImplementedError
 
@@ -240,7 +253,7 @@ class JointDistribution(ABC):
             b_flat = None
         A_flat = M.T
 
-        d_y_expected = int(torch.tensor(self.output_shape).prod().item())
+        d_y_expected = self.output_dim
         if A_flat.shape != (d_y_expected, d):
             raise RuntimeError(
                 f"Computed A has shape {tuple(A_flat.shape)}; expected {(d_y_expected, d)}."
@@ -251,11 +264,11 @@ class JointDistribution(ABC):
             )
 
         if bias:
-            module = _LinearModule(A_flat, b_flat, self.input_shape, self.output_shape).to(
+            module = _LinearModule(A_flat, b_flat, self.input_dim, self.output_dim).to(
                 device
             )
         else:
-            module = _LinearModule(A_flat, None, self.input_shape, self.output_shape).to(
+            module = _LinearModule(A_flat, None, self.input_dim, self.output_dim).to(
                 device
             )
 
@@ -281,7 +294,7 @@ class JointDistribution(ABC):
         returned module contains no bias parameter.
         """
         # Number of features in x after flattening
-        d_x = int(torch.tensor(self.input_shape).prod().item())
+        d_x = self.input_dim
         if n_samples is None:
             n_samples = max(10, d_x + 1)
 
@@ -335,7 +348,7 @@ class JointDistribution(ABC):
             The fitted linear module and the selected ``lambda`` value.
         """
 
-        d_x = int(torch.tensor(self.input_shape).prod().item())
+        d_x = self.input_dim
         if n_samples is None:
             n_samples = max(10, d_x + 1)
 

@@ -21,7 +21,7 @@ def _make_trainer_config() -> TrainerConfig:
         start_activation=False,
         end_activation=False,
     )
-    dist_cfg = GaussianConfig(input_shape=torch.Size([1]), mean=0.0, std=1.0)
+    dist_cfg = GaussianConfig(input_dim=1, mean=0.0, std=1.0)
     loss_cfg = LossConfig(name='MSELoss', eval_type='regression')
 
     return TrainerConfig(

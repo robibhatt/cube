@@ -13,14 +13,14 @@ from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def test_gaussian_variance_zero():
-    cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+    cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
     dist = create_joint_distribution(cfg, torch.device("cpu"))
     var = dist.average_output_variance(n_samples=1000, seed=0)
     assert var == pytest.approx(0.0, abs=1e-6)
 
 
 def test_mapped_linear_variance_matches_dimension():
-    base_cfg = GaussianConfig(input_shape=torch.Size([3]), mean=0.0, std=1.0)
+    base_cfg = GaussianConfig(input_dim=3, mean=0.0, std=1.0)
     target_cfg = SumProdTargetConfig(
         input_shape=torch.Size([3]),
         indices_list=[[0], [1], [2]],
@@ -50,7 +50,7 @@ def test_noisy_distribution_variance_zero():
     assert var == pytest.approx(0.0, abs=1e-6)
 
 def test_average_output_variance_matches_empirical_mse():
-    base_cfg = GaussianConfig(input_shape=torch.Size([3]), mean=0.0, std=1.0)
+    base_cfg = GaussianConfig(input_dim=3, mean=0.0, std=1.0)
     target_cfg = SumProdTargetConfig(
         input_shape=torch.Size([3]),
         indices_list=[[0], [1], [2]],

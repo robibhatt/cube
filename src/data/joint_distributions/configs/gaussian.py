@@ -4,15 +4,13 @@ import torch
 
 from .base import JointDistributionConfig
 from .joint_distribution_config_registry import register_joint_distribution_config
-from src.utils.serialization_utils import encode_shape, decode_shape, encode_dtype, decode_dtype
+from src.utils.serialization_utils import encode_dtype, decode_dtype
 
 @register_joint_distribution_config("Gaussian")
 @dataclass_json
 @dataclass(kw_only=True)
 class GaussianConfig(JointDistributionConfig):
-    input_shape: torch.Size = field(
-        metadata=config(encoder=encode_shape, decoder=decode_shape)
-    )
+    input_dim: int
     dtype: torch.dtype = field(
         default=torch.float32,
         metadata=config(encoder=encode_dtype, decoder=decode_dtype)
@@ -21,5 +19,6 @@ class GaussianConfig(JointDistributionConfig):
     std: float
 
     def __post_init__(self) -> None:
-        self.output_shape = torch.Size([1])
+        if self.input_dim <= 0:
+            raise ValueError("input_dim must be a positive integer")
         self.distribution_type = "Gaussian"

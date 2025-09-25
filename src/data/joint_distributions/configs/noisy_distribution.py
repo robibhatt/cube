@@ -50,15 +50,12 @@ class NoisyDistributionConfig(JointDistributionConfig):
                         "indices_list contains an index that is >= input_dim"
                     )
 
-        input_shape = torch.Size([self.input_dim])
         self.target_function_config = SumProdTargetConfig(
-            input_shape=input_shape,
+            input_shape=torch.Size([self.input_dim]),
             indices_list=self.indices_list,
             weights=self.weights,
             normalize=self.normalize,
         )
 
-        self.input_shape = input_shape
-        self.output_shape = self.target_function_config.output_shape
         self.distribution_type = "NoisyDistribution"
 

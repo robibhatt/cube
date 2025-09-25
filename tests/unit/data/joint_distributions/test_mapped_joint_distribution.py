@@ -1,5 +1,6 @@
 import pytest
 import torch
+import torch.nn as nn
 
 from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
@@ -31,7 +32,7 @@ def test_initialization(gaussian_base, indices_list):
     )
     cfg = MappedJointDistributionConfig(
         distribution_config=GaussianConfig(
-            input_shape=gaussian_base.config.input_shape, mean=0.0, std=1.0
+            input_dim=gaussian_base.config.input_dim, mean=0.0, std=1.0
         ),
         target_function_config=cfg_tf,
     )
@@ -60,7 +61,7 @@ def test_sample_shape(gaussian_base, indices_list):
     )
     cfg = MappedJointDistributionConfig(
         distribution_config=GaussianConfig(
-            input_shape=gaussian_base.config.input_shape, mean=0.0, std=1.0
+            input_dim=gaussian_base.config.input_dim, mean=0.0, std=1.0
         ),
         target_function_config=cfg_tf,
     )
@@ -89,7 +90,7 @@ def test_target_function_output(gaussian_base, indices_list, expected):
     )
     cfg = MappedJointDistributionConfig(
         distribution_config=GaussianConfig(
-            input_shape=gaussian_base.config.input_shape, mean=0.0, std=1.0
+            input_dim=gaussian_base.config.input_dim, mean=0.0, std=1.0
         ),
         target_function_config=cfg_tf,
     )
@@ -99,3 +100,34 @@ def test_target_function_output(gaussian_base, indices_list, expected):
 
     assert y.shape == (2, 1)
     assert torch.allclose(y, expected)
+
+
+def test_mapped_joint_distribution_requires_scalar_target(monkeypatch, gaussian_base):
+    class MultiOutputTarget(nn.Module):
+        def __init__(self, cfg):  # pragma: no cover - behavior tested via exception
+            super().__init__()
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:  # pragma: no cover - tested via exception
+            batch = x.shape[0]
+            return torch.zeros(batch, 2, device=x.device, dtype=x.dtype)
+
+    monkeypatch.setattr(
+        "src.models.targets.sum_prod.SumProdTarget",
+        MultiOutputTarget,
+    )
+
+    cfg_tf = SumProdTargetConfig(
+        input_shape=gaussian_base.input_shape,
+        indices_list=[[0]],
+        weights=[1.0],
+        normalize=False,
+    )
+    cfg = MappedJointDistributionConfig(
+        distribution_config=GaussianConfig(
+            input_dim=gaussian_base.config.input_dim, mean=0.0, std=1.0
+        ),
+        target_function_config=cfg_tf,
+    )
+
+    with pytest.raises(ValueError, match="single output dimension"):
+        create_joint_distribution(cfg, torch.device("cpu"))

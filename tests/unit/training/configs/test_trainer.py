@@ -1,5 +1,5 @@
 import pytest
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import torch
 
@@ -24,7 +24,7 @@ def test_trainer_config_json_roundtrip(tmp_path):
         ),
         joint_distribution_config=MappedJointDistributionConfig(
             distribution_config=GaussianConfig(
-                input_shape=torch.Size([3]), mean=0.0, std=1.0
+                input_dim=3, mean=0.0, std=1.0
             ),
             target_function_config=SumProdTargetConfig(
                 input_shape=torch.Size([3]),
@@ -50,10 +50,10 @@ def test_trainer_config_json_roundtrip(tmp_path):
 def test_trainer_config_requires_output_shape(tmp_path, mlp_config, adam_config):
     @dataclass
     class _Cfg(JointDistributionConfig):
+        input_dim: int = field(default_factory=lambda: mlp_config.input_dim + 1)
+
         def __post_init__(self) -> None:  # type: ignore[override]
-            self.input_shape = torch.Size([mlp_config.input_dim])
-            self.output_shape = None
-            self.distribution_type = "NoOutput"
+            self.distribution_type = "DimMismatch"
 
     cfg = TrainerConfig(
         model_config=mlp_config,

@@ -84,12 +84,14 @@ class StubJointDistribution(JointDistribution):
         y: torch.Tensor = field(
             metadata=config(encoder=lambda t: t.tolist(), decoder=lambda v: torch.tensor(v))
         )
-        input_shape: torch.Size = field(init=False)
-        output_shape: torch.Size = field(init=False)
+        input_dim: int = field(init=False)
 
         def __post_init__(self) -> None:  # type: ignore[override]
-            self.input_shape = self.X.shape[1:]
-            self.output_shape = self.y.shape[1:]
+            if self.X.dim() != 2:
+                raise ValueError("StubJointDistribution expects 2D input tensors")
+            if self.y.dim() != 2 or self.y.size(1) != 1:
+                raise ValueError("StubJointDistribution expects 2D targets with output_dim=1")
+            self.input_dim = self.X.size(1)
             self.distribution_type = "StubJointDistribution"
 
     def __init__(self, config: _Config, device: torch.device):
