@@ -43,7 +43,7 @@ def benchmark_logger():
             base = describe_distribution(dist.distribution)
             target = describe_target_function(dist.target_function)
             return f"MappedJointDistribution(base={base}, target={target})"
-        if dist.config.distribution_type == "NoisyDistribution":
+        if dist.config.distribution_type == "CubeDistribution":
             base = getattr(
                 dist,
                 "base_distribution_description",
@@ -54,7 +54,7 @@ def benchmark_logger():
                 "noise_distribution_description",
                 f"Normal(mean={dist.config.noise_mean}, std={dist.config.noise_std})",
             )
-            return f"NoisyDistribution(base={base}, noise={noise})"
+            return f"CubeDistribution(base={base}, noise={noise})"
         return dist.__class__.__name__
 
     def log(iterator, distribution, batch_size, dataset_size, epochs, elapsed):

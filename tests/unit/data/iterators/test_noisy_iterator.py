@@ -2,14 +2,14 @@ import pytest
 import torch
 
 from src.data.joint_distributions import create_joint_distribution
-from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.data.providers.noisy_provider import NoisyProvider
 from src.data.providers import create_data_provider_from_distribution
 from tests.unit.data.conftest import dummy_distribution
 
 
 def _make_distribution():
-    cfg = NoisyDistributionConfig(
+    cfg = CubeDistributionConfig(
         input_dim=2,
         indices_list=[[0]],
         weights=[0.0],
@@ -44,7 +44,7 @@ def test_noisy_iterator_deterministic(tmp_path):
     assert all(torch.equal(a[0], b[0]) and torch.equal(a[1], b[1]) for a, b in zip(first, second))
 
 
-def test_noisy_iterator_requires_noisy_distribution(tmp_path, dummy_distribution):
+def test_noisy_iterator_requires_cube_distribution(tmp_path, dummy_distribution):
     with pytest.raises(AssertionError):
         NoisyProvider(dummy_distribution, tmp_path, seed=0, batch_size=1, dataset_size=1)
 

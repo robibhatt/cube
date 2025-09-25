@@ -6,8 +6,8 @@ from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
     MappedJointDistributionConfig,
 )
-from src.data.joint_distributions.configs.noisy_distribution import (
-    NoisyDistributionConfig,
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
 )
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
@@ -36,8 +36,8 @@ def test_mapped_linear_variance_matches_dimension():
     assert var == pytest.approx(3.0, abs=0.2)
 
 
-def test_noisy_distribution_variance_zero():
-    noisy_cfg = NoisyDistributionConfig(
+def test_cube_distribution_variance_zero():
+    cube_cfg = CubeDistributionConfig(
         input_dim=2,
         indices_list=[[0]],
         weights=[0.0],
@@ -45,7 +45,7 @@ def test_noisy_distribution_variance_zero():
         noise_mean=1.0,
         noise_std=0.0,
     )
-    dist = create_joint_distribution(noisy_cfg, torch.device("cpu"))
+    dist = create_joint_distribution(cube_cfg, torch.device("cpu"))
     var = dist.average_output_variance(n_samples=1000, seed=0)
     assert var == pytest.approx(0.0, abs=1e-6)
 
