@@ -44,8 +44,16 @@ def benchmark_logger():
             target = describe_target_function(dist.target_function)
             return f"MappedJointDistribution(base={base}, target={target})"
         if dist.config.distribution_type == "NoisyDistribution":
-            base = describe_distribution(dist.base_joint_distribution)
-            noise = describe_distribution(dist.noise_distribution)
+            base = getattr(
+                dist,
+                "base_distribution_description",
+                "UniformHypercube",
+            )
+            noise = getattr(
+                dist,
+                "noise_distribution_description",
+                f"Normal(mean={dist.config.noise_mean}, std={dist.config.noise_std})",
+            )
             return f"NoisyDistribution(base={base}, noise={noise})"
         return dist.__class__.__name__
 

@@ -6,26 +6,25 @@ import random
 from .joint_distribution import JointDistribution
 from .configs.noisy_distribution import NoisyDistributionConfig
 from .joint_distribution_registry import register_joint_distribution
-from .hypercube import Hypercube
-from .configs.hypercube import HypercubeConfig
 from src.models.targets.sum_prod import SumProdTarget
 
 @register_joint_distribution("NoisyDistribution")
 class NoisyDistribution(JointDistribution):
     def __init__(self, config: NoisyDistributionConfig, device: torch.device) -> None:
-        hypercube_config = HypercubeConfig(input_shape=config.input_shape)
-        self.base_joint_distribution = Hypercube(hypercube_config, device)
+        self.base_input_shape = config.input_shape
+        self.base_input_size = math.prod(self.base_input_shape)
+        self.base_dtype = torch.float32
+        self._base_distribution_str = (
+            f"{self.base_input_shape}-dimensional UniformHypercube"
+        )
+        self.base_distribution_description = self._base_distribution_str
         self.target_function = SumProdTarget(config.target_function_config).to(device)
 
         super().__init__(config=config, device=device)
         self.well_specified = False
 
-        x, _ = self.base_joint_distribution.base_sample(1, seed=0)
-        x = x.to(self.device)
+        x = self._sample_base_inputs(1, seed=0).to(self.device)
         y_clean = self.target_function(x)
-
-        self.base_input_shape = x.shape[1:]
-        self.base_input_size = math.prod(self.base_input_shape)
 
         self.noise_shape = y_clean.shape[1:]
         noise_dtype = y_clean.dtype if torch.is_floating_point(y_clean) else torch.float32
@@ -34,9 +33,13 @@ class NoisyDistribution(JointDistribution):
             self.noise_shape, config.noise_mean, dtype=self.noise_dtype, device=self.device
         )
         self.noise_std = config.noise_std
+        self.noise_distribution_description = (
+            f"{self.noise_shape}-dimensional Normal(mean={self.config.noise_mean}, "
+            f"std={self.config.noise_std})"
+        )
 
     def __str__(self) -> str:
-        base_str = str(self.base_joint_distribution)
+        base_str = self._base_distribution_str
         noise_str = (
             f"{self.noise_shape}-dimensional Normal(mean={self.config.noise_mean}, "
             f"std={self.config.noise_std})"
@@ -53,7 +56,7 @@ class NoisyDistribution(JointDistribution):
         self, n_samples: int, seed: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         base_seed, noise_seed = self.get_seeds(seed)
-        x, _ = self.base_joint_distribution.sample(n_samples, seed=base_seed)
+        x = self._sample_base_inputs(n_samples, seed=base_seed)
         noise = self._sample_noise(n_samples, seed=noise_seed)
 
         # Ensure all tensors reside on the same device.  Some joint
@@ -66,10 +69,10 @@ class NoisyDistribution(JointDistribution):
         y_clean = self.target_function(x)
         y_noise = noise
         return x, y_clean + y_noise
-    
+
     def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
         base_seed, noise_seed = self.get_seeds(seed)
-        x, _ = self.base_joint_distribution.base_sample(n_samples, seed=base_seed)
+        x = self._sample_base_inputs(n_samples, seed=base_seed)
         noise = self._sample_noise(n_samples, seed=noise_seed)
 
         # ``DummyJointDistribution`` and similar fixtures return tensors on the
@@ -90,15 +93,18 @@ class NoisyDistribution(JointDistribution):
     
     def preferred_provider(self) -> str:
         return "NoisyProvider"
-    
+
     def forward(self, base_X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         assert False, "NoisyDistribution is not well-specified"
 
     def forward_X(self, base_X: torch.Tensor) -> torch.Tensor:
+        if base_X.shape[1:] == self.base_input_shape:
+            return base_X.to(self.device).to(self.base_dtype)
+
         batch_size = base_X.shape[0]
-        X_base_flat = base_X[:, : self.base_input_size]
+        X_base_flat = base_X.reshape(batch_size, -1)[:, : self.base_input_size]
         X_base = X_base_flat.reshape(batch_size, *self.base_input_shape)
-        return self.base_joint_distribution.forward_X(X_base)
+        return X_base.to(self.device).to(self.base_dtype)
 
     def _sample_noise(self, n_samples: int, seed: int) -> torch.Tensor:
         generator = torch.Generator(device=self.device)
@@ -111,3 +117,17 @@ class NoisyDistribution(JointDistribution):
         )
         noise = noise * self.noise_std + self.noise_mean_tensor
         return noise
+
+    def _sample_base_inputs(self, n_samples: int, seed: int) -> torch.Tensor:
+        generator = torch.Generator(device=self.device)
+        generator.manual_seed(seed)
+        x = torch.randint(
+            0,
+            2,
+            (n_samples, *self.base_input_shape),
+            device=self.device,
+            generator=generator,
+            dtype=torch.int64,
+        )
+        x = x * 2 - 1
+        return x.to(self.base_dtype)
