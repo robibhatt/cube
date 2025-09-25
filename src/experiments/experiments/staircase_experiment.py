@@ -130,8 +130,8 @@ class StaircaseExperiment(Experiment):
             The layer of the trained network whose representation should be
             used.
         indices:
-            A list of zero-based input indices whose product forms the target
-            function.
+            A list of zero-based input indices whose product forms the
+            ``SumProdTarget`` term.
         """
 
         trainer_cfg = self.get_trainer_configs()[0][0]
@@ -175,10 +175,11 @@ class StaircaseExperiment(Experiment):
         from the corresponding :class:`ModuleJointDistribution`. The fitted
         model is then evaluated on a separate fresh test set.  The resulting
         mean squared errors are collected into two tables: one for all non-empty
-        subsets of the first ``k`` coordinates under ``ProdK`` targets and one
-        for ``Staircase`` targets with orders ``1..k``.  If the network has
-        ``L`` layers, the product table has size ``(2^k - 1)×L`` and the
-        staircase table has size ``k×L``.
+        subsets of the first ``k`` coordinates using ``SumProdTarget`` instances
+        configured with single product terms and one for staircase targets built
+        from ``SumProdTarget`` weights representing orders ``1..k``.  If the
+        network has ``L`` layers, the product table has size ``(2^k - 1)×L`` and
+        the staircase table has size ``k×L``.
 
         Returns
         -------

@@ -50,9 +50,7 @@ src/
 
 #### Target Functions
 
-- **`TargetFunction`** – subclass of `Model`. Its ``forward()`` method validates tensor shapes before delegating to an internal ``_forward`` implementation. Target function configs are ordinary ``ModelConfig`` objects, so they serialize like other models.
-- Example implementation in `simple_functions.py`:
-  - `1234_prod`
+- **`SumProdTarget`** – computes weighted products of selected coordinates and returns their (optionally normalized) sum. Configuration lives in :class:`~src.models.targets.configs.sum_prod.SumProdTargetConfig`, which specifies the coordinate groups and weights.
 
 #### Data Providers
 
@@ -146,15 +144,18 @@ The project relies on small registries for models, optimizers, and other
 plugins. Each package's ``__init__`` module calls
 ``import_submodules(__name__)`` from :mod:`src.utils.plugin_loader`, which walks
 the package and imports every submodule. Importing a module executes decorators
-like ``@register_optimizer`` that populate the relevant registry.
+like ``@register_optimizer`` that populate the relevant registry. Target
+functions are simpler: the only implementation, :class:`SumProdTarget`, is
+imported directly and constructed from its config.
 
 The training loop itself is provided by the concrete :class:`Trainer` in
 ``src/training/trainer.py`` and configured via :class:`TrainerConfig` from
 ``src/training/trainer_config.py``; no registry is involved.
 
-Adding a new experiment, optimizer, or target function therefore only requires
-placing the module inside the appropriate package and decorating the class. No
-manual import statements are needed to enable discovery.
+Adding a new experiment or optimizer therefore only requires placing the module
+inside the appropriate package and decorating the class. No manual import
+statements are needed to enable discovery. Target functions do not participate
+in this plugin mechanism anymore because they are instantiated explicitly.
 
 ## Device Placement
 
@@ -165,10 +166,10 @@ inherit placement from the ``JointDistribution``.
 ```python
 from pathlib import Path
 import torch
-from src.data.distributions.configs.gaussian import GaussianConfig
+from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.data.joint_distributions.joint_distribution_factory import create_joint_distribution
-from src.models.targets.simple_functions import Prod1234
-from src.models.targets.configs.prod_1234 import Prod1234Config
+from src.models.targets.sum_prod import SumProdTarget
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
     MappedJointDistributionConfig,
 )
@@ -180,9 +181,14 @@ from src.training.trainer import Trainer
 
 dist_cfg = GaussianConfig(input_shape=torch.Size([4]), mean=0.0, std=1.0)
 dist = create_joint_distribution(dist_cfg, device=torch.device("cpu"))
+target_cfg = SumProdTargetConfig(
+    input_shape=dist.input_shape,
+    indices_list=[[0, 1], [2, 3]],
+    weights=[0.5, 1.5],
+)
 joint_cfg = MappedJointDistributionConfig(
     distribution_config=dist_cfg,
-    target_function_config=Prod1234Config(input_shape=dist.input_shape),
+    target_function_config=target_cfg,
 )
 cfg = TrainerConfig(
     model_config=MLPConfig(
@@ -205,11 +211,12 @@ cfg = TrainerConfig(
 )
 
 trainer = Trainer(cfg)
+target = SumProdTarget(target_cfg)
 ```
 
 ## Non‑Public Functions Used Elsewhere
 
-Methods such as `ready_for_trainer` and `_create_directories` in `Trainer` and `_call` methods in subclasses of `TargetFunction` are named with a leading underscore but are invoked across the codebase (e.g., in unit tests).  They should therefore be considered part of the semi-public interface.
+Methods such as `ready_for_trainer` and `_create_directories` in `Trainer` and helper methods like `_forward` inside `SumProdTarget` are named with a leading underscore but are invoked across the codebase (e.g., in unit tests).  They should therefore be considered part of the semi-public interface.
 
 ## Side Effects
 

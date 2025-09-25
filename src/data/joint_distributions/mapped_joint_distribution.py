@@ -21,14 +21,12 @@ class MappedJointDistribution(JointDistribution):
 
     def __init__(self, config: MappedJointDistributionConfig, device: torch.device) -> None:
         from .joint_distribution_factory import create_joint_distribution
-        from src.models.targets.target_function_factory import create_target_function
+        from src.models.targets.sum_prod import SumProdTarget
 
         self.distribution = create_joint_distribution(
             config.distribution_config, device
         )
-        self.target_function = create_target_function(
-            config.target_function_config
-        )
+        self.target_function = SumProdTarget(config.target_function_config)
 
         super().__init__(config, device)
 

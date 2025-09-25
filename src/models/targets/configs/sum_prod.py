@@ -4,11 +4,9 @@ from typing import List
 import torch
 from dataclasses_json import dataclass_json, config
 
-from .target_function_config_registry import register_target_function_config
 from src.utils.serialization_utils import encode_shape, decode_shape
 
 
-@register_target_function_config("SumProdTarget")
 @dataclass_json
 @dataclass(kw_only=True)
 class SumProdTargetConfig:
