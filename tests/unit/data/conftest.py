@@ -19,7 +19,6 @@ from src.training.loss.configs.loss import LossConfig
 from tests.helpers.stubs import StubJointDistribution
 import src.data.providers.noisy_provider  # Register NoisyIterator
 from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
-from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @pytest.fixture
@@ -226,13 +225,10 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
         model_config=model_cfg,
         optimizer_config=adam_config,
         joint_distribution_config=NoisyDistributionConfig(
-            base_distribution_config=DummyJointDistribution._Config(),
-            target_function_config=SumProdTargetConfig(
-                input_shape=torch.Size([2]),
-                indices_list=[[0]],
-                weights=[0.0],
-                normalize=False,
-            ),
+            input_dim=2,
+            indices_list=[[0]],
+            weights=[0.0],
+            normalize=False,
             noise_mean=1.0,
             noise_std=0.0,
         ),

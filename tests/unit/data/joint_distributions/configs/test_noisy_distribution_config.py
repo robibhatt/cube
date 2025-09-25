@@ -1,15 +1,12 @@
 import pytest
 import torch
+
 from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
 from src.data.joint_distributions.configs.joint_distribution_config_registry import (
     JOINT_DISTRIBUTION_CONFIG_REGISTRY,
     build_joint_distribution_config,
     build_joint_distribution_config_from_dict,
 )
-from src.data.joint_distributions.configs.mapped_joint_distribution import MappedJointDistributionConfig
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
-from src.models.targets.configs.sum_prod import SumProdTargetConfig
-from tests.unit.data.conftest import DummyJointDistribution
 
 
 def test_noisy_config_registered():
@@ -20,50 +17,32 @@ def test_noisy_config_registered():
     )
 
 
-def test_build_noisy_config(dummy_distribution):
-    target_cfg = SumProdTargetConfig(
-        input_shape=torch.Size([2]),
+def test_build_noisy_config():
+    cfg = build_joint_distribution_config(
+        "NoisyDistribution",
+        input_dim=2,
         indices_list=[[0]],
         weights=[0.0],
         normalize=False,
-    )
-    cfg = build_joint_distribution_config(
-        "NoisyDistribution",
-        base_distribution_config=DummyJointDistribution._Config(),
-        target_function_config=target_cfg,
         noise_mean=1.0,
         noise_std=0.5,
     )
     assert isinstance(cfg, NoisyDistributionConfig)
     assert cfg.distribution_type == "NoisyDistribution"
-    assert cfg.target_function_config == target_cfg
-    dummy_cfg = DummyJointDistribution._Config()
-    assert cfg.input_shape == dummy_cfg.input_shape
-    assert cfg.output_shape == target_cfg.output_shape
+    assert cfg.input_shape == torch.Size([2])
+    assert cfg.output_shape == torch.Size([1])
     assert cfg.noise_mean == pytest.approx(1.0)
     assert cfg.noise_std == pytest.approx(0.5)
+    assert cfg.base_distribution_config.distribution_type == "Hypercube"
+    assert cfg.target_function_config.indices_list == [[0]]
 
 
 def test_noisy_config_json_roundtrip():
-    base_cfg = MappedJointDistributionConfig(
-        distribution_config=GaussianConfig(
-            input_shape=torch.Size([2]), mean=0.0, std=1.0
-        ),
-        target_function_config=SumProdTargetConfig(
-            input_shape=torch.Size([2]),
-            indices_list=[[0], [1]],
-            weights=[1.0, 1.0],
-            normalize=False,
-        ),
-    )
     cfg = NoisyDistributionConfig(
-        base_distribution_config=base_cfg,
-        target_function_config=SumProdTargetConfig(
-            input_shape=torch.Size([2]),
-            indices_list=[[0]],
-            weights=[1.0],
-            normalize=False,
-        ),
+        input_dim=2,
+        indices_list=[[0], [1]],
+        weights=[1.0, 1.0],
+        normalize=False,
         noise_mean=0.0,
         noise_std=1.0,
     )
@@ -75,30 +54,10 @@ def test_noisy_config_json_roundtrip():
 def test_noisy_config_from_dict_via_registry():
     data = {
         "distribution_type": "NoisyDistribution",
-        "base_distribution_config": {
-            "distribution_type": "MappedJointDistribution",
-            "distribution_config": {
-                "distribution_type": "Gaussian",
-                "input_shape": [2],
-                "dtype": "float32",
-                "mean": 0.0,
-                "std": 1.0,
-            },
-            "target_function_config": {
-                "model_type": "SumProdTarget",
-                "input_shape": [2],
-                "indices_list": [[0], [1]],
-                "weights": [1.0, 1.0],
-                "normalize": False,
-            },
-        },
-        "target_function_config": {
-            "model_type": "SumProdTarget",
-            "input_shape": [2],
-            "indices_list": [[0]],
-            "weights": [1.0],
-            "normalize": False,
-        },
+        "input_dim": 2,
+        "indices_list": [[0], [1]],
+        "weights": [1.0, 1.0],
+        "normalize": False,
         "noise_mean": 0.25,
         "noise_std": 0.75,
     }
