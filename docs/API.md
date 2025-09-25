@@ -45,7 +45,7 @@ src/
         to build the provider.  Device placement is inherited from ``dist`` and
         the factory resolves the provider class via :data:`DATA_PROVIDER_REGISTRY`.
   - **`MappedJointDistribution`** – pairs a `Distribution` with a `TargetFunction`; `sample(seed)` draws `X` then computes `y = f(X)`.
-- **`NoisyDistribution`** – wraps another `JointDistribution` and adds noise sampled from a separate `Distribution`.
+- **`NoisyDistribution`** – wraps another `JointDistribution` and adds Gaussian noise with configurable mean and standard deviation.
   - **`RepresentorDistribution`** – *loaded lazily*; produces datasets from intermediate model representations using a `ModelRepresentor`.
 
 #### Target Functions

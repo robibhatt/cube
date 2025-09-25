@@ -1,8 +1,6 @@
 import pytest
 import torch
 from dataclasses import dataclass, field
-from dataclasses_json import dataclass_json, config
-from src.utils.serialization_utils import encode_dtype, decode_dtype
 from typing import Tuple
 
 import src.models.bootstrap  # noqa: F401
@@ -91,55 +89,6 @@ class DummyJointDistribution(JointDistribution):
         return "TensorDataProvider"
 
 
-
-
-@register_joint_distribution_config("AddOneNoiseDistribution")
-@dataclass_json
-@dataclass(kw_only=True)
-class AddOneNoiseDistributionConfig(JointDistributionConfig):
-    input_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
-    dtype: torch.dtype = field(
-        default=torch.float32,
-        metadata=config(encoder=encode_dtype, decoder=decode_dtype),
-    )
-
-    def __post_init__(self) -> None:
-        self.output_shape = torch.Size([1])
-        self.distribution_type = "AddOneNoiseDistribution"
-
-
-@register_joint_distribution("AddOneNoiseDistribution")
-class AddOneNoiseDistribution(JointDistribution):
-    def __init__(self, config: AddOneNoiseDistributionConfig, device: torch.device) -> None:
-        super().__init__(config, device)
-        self._shape = config.input_shape
-        self.dtype = config.dtype
-
-    def sample(self, n_samples: int, seed: int):
-        x = torch.ones((n_samples, *self._shape), device=self.device, dtype=self.dtype)
-        y = torch.zeros(n_samples, 1, device=self.device, dtype=self.dtype)
-        return x, y
-
-    def __str__(self) -> str:
-        return "AddOneNoiseDistribution"
-
-    def preferred_provider(self) -> str:
-        return "TensorDataProvider"
-
-    def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.sample(n_samples, seed)
-
-    def forward(
-        self, X: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        return X, torch.zeros(X.size(0), 1)
-
-    def forward_X(
-        self, X: torch.Tensor
-    ) -> torch.Tensor:
-        return X
-
-
 class BadTypeDistribution(JointDistribution):
     """sample() returns non-tensors."""
 
@@ -215,14 +164,6 @@ def dummy_distribution():
     return DummyJointDistribution(cfg, torch.device("cpu"))
 
 
-
-
-@pytest.fixture
-def add_one_noise_dist_cfg():
-    """Return an AddOneNoiseDistributionConfig fixture."""
-    return AddOneNoiseDistributionConfig()
-
-
 @pytest.fixture
 def create_mlp_config(tmp_path) -> MLPConfig:
     """Return an ``MLPConfig`` with weights saved to ``tmp_path``."""
@@ -285,7 +226,8 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
         optimizer_config=adam_config,
         joint_distribution_config=NoisyDistributionConfig(
             base_distribution_config=DummyJointDistribution._Config(),
-            noise_distribution_config=AddOneNoiseDistributionConfig(),
+            noise_mean=1.0,
+            noise_std=0.0,
         ),
         train_size=4,
         test_size=2,

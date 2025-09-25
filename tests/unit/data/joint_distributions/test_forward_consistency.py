@@ -11,10 +11,7 @@ from src.data.joint_distributions.configs.representor_distribution import (
 )
 
 from tests.helpers.stubs import StubJointDistribution
-from tests.unit.data.conftest import (
-    DummyJointDistribution,
-    AddOneNoiseDistributionConfig,
-)
+from tests.unit.data.conftest import DummyJointDistribution
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 

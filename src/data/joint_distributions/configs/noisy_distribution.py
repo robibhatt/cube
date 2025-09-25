@@ -15,15 +15,13 @@ class NoisyDistributionConfig(JointDistributionConfig):
     base_distribution_config: JointDistributionConfig = field(
         metadata=config(
             encoder=lambda c: c.to_dict(),
-            decoder=lambda d: d if isinstance(d, JointDistributionConfig) else build_joint_distribution_config_from_dict(d),
+            decoder=lambda d: d
+            if isinstance(d, JointDistributionConfig)
+            else build_joint_distribution_config_from_dict(d),
         )
     )
-    noise_distribution_config: JointDistributionConfig = field(
-        metadata=config(
-            encoder=lambda c: c.to_dict(),
-            decoder=lambda d: d if isinstance(d, JointDistributionConfig) else build_joint_distribution_config_from_dict(d),
-        )
-    )
+    noise_mean: float = 0.0
+    noise_std: float = 1.0
 
     def __post_init__(self) -> None:
         self.input_shape = self.base_distribution_config.input_shape

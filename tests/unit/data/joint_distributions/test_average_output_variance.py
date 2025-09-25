@@ -10,10 +10,7 @@ from src.data.joint_distributions.configs.noisy_distribution import (
     NoisyDistributionConfig,
 )
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
-from tests.unit.data.conftest import (
-    DummyJointDistribution,
-    AddOneNoiseDistributionConfig,
-)
+from tests.unit.data.conftest import DummyJointDistribution
 
 
 def test_gaussian_variance_zero():
@@ -43,7 +40,8 @@ def test_mapped_linear_variance_matches_dimension():
 def test_noisy_distribution_variance_zero():
     noisy_cfg = NoisyDistributionConfig(
         base_distribution_config=DummyJointDistribution._Config(),
-        noise_distribution_config=AddOneNoiseDistributionConfig(),
+        noise_mean=1.0,
+        noise_std=0.0,
     )
     dist = create_joint_distribution(noisy_cfg, torch.device("cpu"))
     var = dist.average_output_variance(n_samples=1000, seed=0)
