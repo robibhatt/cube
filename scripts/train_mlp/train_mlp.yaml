@@ -68,6 +68,7 @@ trainer_config:
             - 1.0
             - 1.0
             - 1.0
+    loss_config:
         name: MSELoss
         eval_type: regression
     train_size: 8192
