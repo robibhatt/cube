@@ -18,7 +18,7 @@ trainer_config:
         lr: 0.005
         mup: true
         weight_decay: 0.0
-    joint_distribution_config:
+    cube_distribution_config:
         distribution_type: CubeDistribution
         input_dim: 16
         indices_list:

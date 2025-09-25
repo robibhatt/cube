@@ -4,8 +4,7 @@ from dataclasses import dataclass, field
 from typing import Tuple
 
 import src.models.bootstrap  # noqa: F401
-from src.data.joint_distributions import create_joint_distribution
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
+import src.data.providers.noisy_provider  # Register NoisyIterator
 from src.data.joint_distributions.joint_distribution import JointDistribution
 from src.data.joint_distributions.joint_distribution_registry import register_joint_distribution
 from src.data.joint_distributions.configs.base import JointDistributionConfig
@@ -15,15 +14,7 @@ from src.models.architectures.model_factory import create_model
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
-from tests.helpers.stubs import StubJointDistribution
-import src.data.providers.noisy_provider  # Register NoisyIterator
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
-
-
-@pytest.fixture
-def gaussian_base():
-    cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
-    return create_joint_distribution(cfg, torch.device("cpu"))
 
 
 @register_joint_distribution("DummyJointDistribution")
@@ -193,9 +184,12 @@ def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
     cfg = TrainerConfig(
         model_config=mlp_config,
         optimizer_config=adam_config,
-        joint_distribution_config=StubJointDistribution._Config(
-            X=torch.zeros(4, mlp_config.input_dim),
-            y=torch.zeros(4, mlp_config.output_dim),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=mlp_config.input_dim,
+            indices_list=[[i] for i in range(mlp_config.input_dim)],
+            weights=[1.0 for _ in range(mlp_config.input_dim)],
+            noise_mean=0.0,
+            noise_std=0.0,
         ),
         train_size=4,
         test_size=2,
@@ -226,7 +220,7 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     cfg = TrainerConfig(
         model_config=model_cfg,
         optimizer_config=adam_config,
-        joint_distribution_config=CubeDistributionConfig(
+        cube_distribution_config=CubeDistributionConfig(
             input_dim=2,
             indices_list=[[0]],
             weights=[0.0],

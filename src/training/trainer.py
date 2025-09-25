@@ -25,7 +25,7 @@ from src.utils.seed_manager import SeedManager
 from torch.optim import Optimizer as TorchOptimizer
 
 from src.training.trainer_config import TrainerConfig
-from src.data.joint_distributions import create_joint_distribution
+from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.providers import create_data_provider_from_distribution
 from src.data.providers.data_provider import DataProvider
 from src.models.architectures.model import Model
@@ -176,8 +176,8 @@ class Trainer:
         self.evaluator = self.config.loss_config.get_evaluator()
 
         # Instantiate the joint distribution on the given device
-        self.joint_distribution = create_joint_distribution(
-            self.config.joint_distribution_config, self.device
+        self.joint_distribution = CubeDistribution(
+            self.config.cube_distribution_config, self.device
         )
 
         self._create_directories()

@@ -1,15 +1,15 @@
 import csv
-import torch
 import src.models.bootstrap  # noqa: F401
-import src.data.joint_distributions.bootstrap  # noqa: F401
 
 from src.training.trainer_config import TrainerConfig
 from src.models.architectures.configs.mlp import MLPConfig
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.training.loss.configs.loss import LossConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
 from src.utils.seed_manager import SeedManager
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
+)
 
 
 def _make_trainer_config() -> TrainerConfig:
@@ -21,12 +21,18 @@ def _make_trainer_config() -> TrainerConfig:
         start_activation=False,
         end_activation=False,
     )
-    dist_cfg = GaussianConfig(input_dim=1, mean=0.0, std=1.0)
+    dist_cfg = CubeDistributionConfig(
+        input_dim=1,
+        indices_list=[[0]],
+        weights=[1.0],
+        noise_mean=0.0,
+        noise_std=0.0,
+    )
     loss_cfg = LossConfig(name='MSELoss', eval_type='regression')
 
     return TrainerConfig(
         model_config=model_cfg,
-        joint_distribution_config=dist_cfg,
+        cube_distribution_config=dist_cfg,
         loss_config=loss_cfg,
         train_size=1,
         test_size=1,

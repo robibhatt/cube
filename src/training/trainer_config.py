@@ -9,9 +9,8 @@ import torch
 
 from src.models.architectures.configs.base import ModelConfig
 from src.models.architectures.configs.model_config_registry import build_model_config_from_dict
-from src.data.joint_distributions.configs.base import JointDistributionConfig
-from src.data.joint_distributions.configs.joint_distribution_config_registry import (
-    build_joint_distribution_config_from_dict,
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
 )
 from src.training.loss.configs.loss import LossConfig
 from src.utils.serialization_utils import encode_path, decode_path
@@ -32,11 +31,11 @@ class TrainerConfig:
             decoder=lambda d: None if d is None else build_model_config_from_dict(d),
         ),
     )
-    joint_distribution_config: Optional[JointDistributionConfig] = field(
+    cube_distribution_config: Optional[CubeDistributionConfig] = field(
         default=None,
         metadata=config(
             encoder=lambda jd: None if jd is None else jd.to_dict(),
-            decoder=lambda d: None if d is None else build_joint_distribution_config_from_dict(d),
+            decoder=lambda d: None if d is None else CubeDistributionConfig.from_dict(d),
         ),
     )
     loss_config: Optional[LossConfig] = field(
@@ -76,8 +75,8 @@ class TrainerConfig:
     def ready_for_trainer(self) -> None:
         assert self.model_config is not None, "model_config must be specified"
         assert (
-            self.joint_distribution_config is not None
-        ), "joint_distribution_config must be specified"
+            self.cube_distribution_config is not None
+        ), "cube_distribution_config must be specified"
         assert self.loss_config is not None, "loss_config must be specified"
         assert hasattr(torch.nn, self.loss_config.name), (
             f"Loss '{self.loss_config.name}' must exist in torch.nn"
@@ -87,21 +86,21 @@ class TrainerConfig:
         assert self.home_dir is not None, "home_dir must be specified"
         assert self.weight_decay_l1 >= 0.0, "weight_decay_l1 must be non-negative"
 
-        assert self.model_config.input_shape == self.joint_distribution_config.input_shape, (
+        assert self.model_config.input_shape == self.cube_distribution_config.input_shape, (
             f"Model input shape must match distribution input shape. "
             f"Model: {self.model_config.input_shape}, "
-            f"Distribution: {self.joint_distribution_config.input_shape}"
+            f"Distribution: {self.cube_distribution_config.input_shape}"
         )
         assert (
             self.model_config.output_shape is not None
         ), "Model output shape must not be None"
         assert (
-            self.joint_distribution_config.output_shape is not None
-        ), "Joint distribution output shape must not be None"
-        assert self.model_config.output_shape == self.joint_distribution_config.output_shape, (
+            self.cube_distribution_config.output_shape is not None
+        ), "Cube distribution output shape must not be None"
+        assert self.model_config.output_shape == self.cube_distribution_config.output_shape, (
             f"Model output shape must match distribution output shape. "
             f"Model: {self.model_config.output_shape}, "
-            f"Distribution: {self.joint_distribution_config.output_shape}"
+            f"Distribution: {self.cube_distribution_config.output_shape}"
         )
         assert self.home_dir.exists(), f"Home directory {self.home_dir} does not exist"
         if self.batch_size is not None and self.epochs is not None:

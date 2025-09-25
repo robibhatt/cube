@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from src.data.joint_distributions import create_joint_distribution
+from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 
 
@@ -14,7 +14,7 @@ def test_cube_distribution_construct_and_sample():
         noise_mean=1.0,
         noise_std=0.0,
     )
-    dist = create_joint_distribution(cfg, torch.device("cpu"))
+    dist = CubeDistribution(cfg, torch.device("cpu"))
 
     x, y = dist.sample(3, seed=0)
     assert x.shape == (3, *dist.input_shape)
@@ -44,4 +44,4 @@ def test_cube_distribution_requires_scalar_target(monkeypatch):
     )
 
     with pytest.raises(ValueError, match="single output dimension"):
-        create_joint_distribution(cfg, torch.device("cpu"))
+        CubeDistribution(cfg, torch.device("cpu"))

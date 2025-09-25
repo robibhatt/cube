@@ -1,15 +1,11 @@
 import pytest
-from dataclasses import dataclass, field
-
-import torch
-
 from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
-from src.data.joint_distributions.configs.mapped_joint_distribution import MappedJointDistributionConfig
-from src.data.joint_distributions.configs.base import JointDistributionConfig
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.models.architectures.configs.mlp import MLPConfig
-from src.models.targets.configs.sum_prod import SumProdTargetConfig
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
+)
+import pytest
 
 
 def test_trainer_config_json_roundtrip(tmp_path):
@@ -22,16 +18,12 @@ def test_trainer_config_json_roundtrip(tmp_path):
             start_activation=False,
             end_activation=False,
         ),
-        joint_distribution_config=MappedJointDistributionConfig(
-            distribution_config=GaussianConfig(
-                input_dim=3, mean=0.0, std=1.0
-            ),
-            target_function_config=SumProdTargetConfig(
-                input_shape=torch.Size([3]),
-                indices_list=[[0]],
-                weights=[1.0],
-                normalize=False,
-            ),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=3,
+            indices_list=[[0]],
+            weights=[1.0],
+            noise_mean=0.0,
+            noise_std=0.0,
         ),
         train_size=10,
         test_size=5,
@@ -48,16 +40,13 @@ def test_trainer_config_json_roundtrip(tmp_path):
 
 
 def test_trainer_config_requires_output_shape(tmp_path, mlp_config, adam_config):
-    @dataclass
-    class _Cfg(JointDistributionConfig):
-        input_dim: int = field(default_factory=lambda: mlp_config.input_dim + 1)
-
-        def __post_init__(self) -> None:  # type: ignore[override]
-            self.distribution_type = "DimMismatch"
-
     cfg = TrainerConfig(
         model_config=mlp_config,
-        joint_distribution_config=_Cfg(),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=mlp_config.input_dim + 1,
+            indices_list=[[0]],
+            weights=[1.0],
+        ),
         train_size=1,
         test_size=1,
         batch_size=1,

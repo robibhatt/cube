@@ -7,7 +7,9 @@ from src.training.loss.configs.loss import LossConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.models.architectures.mlp import MLP
-from tests.helpers.stubs import StubJointDistribution
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
+)
 
 
 def _make_trainer(tmp_path, hidden_dims):
@@ -22,9 +24,12 @@ def _make_trainer(tmp_path, hidden_dims):
             bias=False,
         ),
         optimizer_config=AdamConfig(lr=0.01),
-        joint_distribution_config=StubJointDistribution._Config(
-            X=torch.zeros(4, 1),
-            y=torch.zeros(4, 1),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=1,
+            indices_list=[[0]],
+            weights=[1.0],
+            noise_mean=0.0,
+            noise_std=0.0,
         ),
         train_size=4,
         test_size=4,

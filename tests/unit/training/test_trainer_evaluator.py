@@ -6,7 +6,9 @@ from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
-from tests.helpers.stubs import StubJointDistribution
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
+)
 
 
 def test_trainer_uses_evaluator(tmp_path, monkeypatch):
@@ -27,9 +29,12 @@ def test_trainer_uses_evaluator(tmp_path, monkeypatch):
             bias=False,
         ),
         optimizer_config=AdamConfig(lr=0.01),
-        joint_distribution_config=StubJointDistribution._Config(
-            X=torch.zeros(4, 1),
-            y=torch.zeros(4, 1),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=1,
+            indices_list=[[0]],
+            weights=[1.0],
+            noise_mean=0.0,
+            noise_std=0.0,
         ),
         train_size=4,
         test_size=4,
