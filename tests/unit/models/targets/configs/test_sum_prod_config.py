@@ -3,21 +3,10 @@ import torch
 import torch
 
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
-from src.models.targets.configs.target_function_config_registry import (
-    TARGET_FUNCTION_CONFIG_REGISTRY,
-    build_target_function_config,
-    build_target_function_config_from_dict,
-)
-
-
-def test_sum_prod_config_registered():
-    assert "SumProdTarget" in TARGET_FUNCTION_CONFIG_REGISTRY
-    assert TARGET_FUNCTION_CONFIG_REGISTRY["SumProdTarget"] is SumProdTargetConfig
 
 
 def test_build_sum_prod_config():
-    cfg = build_target_function_config(
-        "SumProdTarget",
+    cfg = SumProdTargetConfig(
         input_shape=torch.Size([5]),
         indices_list=[[0, 1], [2, 3, 4]],
         weights=[0.5, 1.5],
@@ -39,16 +28,14 @@ def test_sum_prod_config_json_roundtrip():
     json_str = original.to_json()
     restored = SumProdTargetConfig.from_json(json_str)
     assert restored == original
-
-
-def test_sum_prod_config_from_dict_via_registry():
+def test_sum_prod_config_from_dict():
     data = {
         "model_type": "SumProdTarget",
         "input_shape": [3],
         "indices_list": [[0, 1], [2]],
         "weights": [1.0, 0.25],
     }
-    cfg = build_target_function_config_from_dict(data)
+    cfg = SumProdTargetConfig.from_dict(data)
     assert isinstance(cfg, SumProdTargetConfig)
     assert cfg.input_shape == torch.Size([3])
     assert cfg.indices_list == [[0, 1], [2]]

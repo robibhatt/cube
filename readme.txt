@@ -41,7 +41,8 @@ from pathlib import Path
 import torch
 from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.data.joint_distributions.joint_distribution_factory import create_joint_distribution
-from src.models.targets.simple_functions import ProductTanhOfCoords
+from src.models.targets.sum_prod import SumProdTarget
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from src.data.joint_distributions.configs.mapped_joint_distribution import (
     MappedJointDistributionConfig,
 )
@@ -53,9 +54,14 @@ from src.training.trainer import Trainer
 
 dist_cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
 dist = create_joint_distribution(dist_cfg, device=torch.device("cpu"))
+target_cfg = SumProdTargetConfig(
+    input_shape=dist.input_shape,
+    indices_list=[[0, 1]],
+    weights=[1.0],
+)
 joint_cfg = MappedJointDistributionConfig(
     distribution_config=dist_cfg,
-    target_function_config=ProductTanhOfCoordsConfig(input_shape=dist.input_shape),
+    target_function_config=target_cfg,
 )
 cfg = TrainerConfig(
     model_config=MLPConfig(
@@ -78,6 +84,7 @@ cfg = TrainerConfig(
 )
 
 trainer = Trainer(cfg)
+target = SumProdTarget(target_cfg)
 # To construct a μP-scaled network instead of the standard variant, set
 # ``cfg.model_config.mup = True`` before creating the model.
 gen = torch.Generator(device=trainer.device)

@@ -1,9 +1,6 @@
 import importlib
 
 
-import importlib
-
-
 def test_optimizer_registry_bootstrap():
     import src.training.optimizers as optimizers
     importlib.reload(optimizers)
@@ -40,11 +37,3 @@ def test_representor_registry_bootstrap():
     import src.models.representors as reps
     importlib.reload(reps)
     assert "MLP" in reps.REPRESENTOR_REGISTRY
-
-
-def test_target_function_registry_bootstrap():
-    import src.models.targets as targets
-    importlib.reload(targets)
-    assert "1234_prod" in targets.TARGET_FUNCTION_REGISTRY
-    assert "ProdKTarget" in targets.TARGET_FUNCTION_REGISTRY
-    assert "SumProdTarget" in targets.TARGET_FUNCTION_REGISTRY

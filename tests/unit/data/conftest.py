@@ -12,9 +12,6 @@ from src.data.joint_distributions.joint_distribution import JointDistribution
 from src.data.joint_distributions.joint_distribution_registry import register_joint_distribution
 from src.data.joint_distributions.configs.base import JointDistributionConfig
 from src.data.joint_distributions.configs.joint_distribution_config_registry import register_joint_distribution_config
-from src.models.targets.target_function_registry import register_target_function
-from src.models.targets.configs.target_function_config_registry import register_target_function_config
-from src.models.targets.configs.base import TargetFunctionConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.models.representors.mlp_representor import MLPRepresentor
 from src.models.architectures.model_factory import create_model

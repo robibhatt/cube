@@ -4,11 +4,9 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from src.models.targets.target_function_registry import register_target_function
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
-@register_target_function("SumProdTarget")
 class SumProdTarget(nn.Module):
     """Compute a weighted sum of product terms over selected coordinates."""
 
