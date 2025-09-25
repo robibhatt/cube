@@ -41,10 +41,11 @@ class GPUJointDistribution(JointDistribution):
     @dataclass_json
     @dataclass(kw_only=True)
     class _Config(JointDistributionConfig):
-        input_shape: torch.Size = field(default_factory=lambda: torch.Size([3]))
-        output_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
+        input_dim: int = field(default=3)
 
         def __post_init__(self) -> None:  # type: ignore[override]
+            if self.input_dim <= 0:
+                raise ValueError("input_dim must be positive")
             self.distribution_type = "GPUJointDistribution"
 
     def __init__(self, config: _Config, device: torch.device):
@@ -81,7 +82,7 @@ def test_gaussian_sample_device():
     device = available_gpu()
     if device is None:
         pytest.skip("GPU not available")
-    cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+    cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
     g = create_joint_distribution(cfg, device)
     samples, _ = g.sample(3, seed=0)
     assert samples.device == device

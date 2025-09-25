@@ -14,7 +14,7 @@ from src.models.targets.configs.sum_prod import SumProdTargetConfig
 def _make_distribution(base):
     cfg = MappedJointDistributionConfig(
         distribution_config=GaussianConfig(
-            input_shape=base.config.input_shape, mean=0.0, std=1.0
+            input_dim=base.config.input_dim, mean=0.0, std=1.0
         ),
         target_function_config=SumProdTargetConfig(
             input_shape=base.input_shape,

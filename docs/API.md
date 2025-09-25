@@ -168,10 +168,10 @@ from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
 from src.training.trainer import Trainer
 
-dist_cfg = GaussianConfig(input_shape=torch.Size([4]), mean=0.0, std=1.0)
+dist_cfg = GaussianConfig(input_dim=4, mean=0.0, std=1.0)
 dist = create_joint_distribution(dist_cfg, device=torch.device("cpu"))
 target_cfg = SumProdTargetConfig(
-    input_shape=dist.input_shape,
+    input_shape=torch.Size([dist_cfg.input_dim]),
     indices_list=[[0, 1], [2, 3]],
     weights=[0.5, 1.5],
 )
@@ -181,7 +181,7 @@ joint_cfg = MappedJointDistributionConfig(
 )
 cfg = TrainerConfig(
     model_config=MLPConfig(
-        input_dim=2,
+        input_dim=dist_cfg.input_dim,
         output_dim=1,
         hidden_dims=[4],
         activation="relu",

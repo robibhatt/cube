@@ -13,7 +13,7 @@ from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def test_gaussian_forward_matches_forward_X():
-    cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+    cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
     dist = create_joint_distribution(cfg, torch.device("cpu"))
     X, _ = dist.sample(5, seed=0)
     X_fwd, _ = dist.forward(X)
@@ -22,7 +22,7 @@ def test_gaussian_forward_matches_forward_X():
 
 
 def test_mapped_forward_matches_forward_X():
-    base_cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+    base_cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
     target_cfg = SumProdTargetConfig(
         input_shape=torch.Size([2]),
         indices_list=[[0], [1]],

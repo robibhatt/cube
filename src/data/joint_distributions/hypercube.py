@@ -17,7 +17,7 @@ class Hypercube(JointDistribution):
 
     def __str__(self) -> str:
         """Return a description of the uniform hypercube."""
-        return f"{self.input_shape}-dimensional UniformHypercube"
+        return f"{self.input_dim}-dimensional UniformHypercube"
 
     def _sample(self, n_samples: int, seed: int) -> torch.Tensor:
         g = torch.Generator(device=self.device)

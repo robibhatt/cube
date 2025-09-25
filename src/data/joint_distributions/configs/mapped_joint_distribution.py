@@ -29,6 +29,5 @@ class MappedJointDistributionConfig(JointDistributionConfig):
     )
 
     def __post_init__(self) -> None:
-        self.input_shape = self.distribution_config.input_shape
-        self.output_shape = self.target_function_config.output_shape
+        self.input_dim = self.distribution_config.input_dim
         self.distribution_type = "MappedJointDistribution"

@@ -15,7 +15,7 @@ class NoisyDistribution(JointDistribution):
         self.base_input_size = math.prod(self.base_input_shape)
         self.base_dtype = torch.float32
         self._base_distribution_str = (
-            f"{self.base_input_shape}-dimensional UniformHypercube"
+            f"{config.input_dim}-dimensional UniformHypercube"
         )
         self.base_distribution_description = self._base_distribution_str
         self.target_function = SumProdTarget(config.target_function_config).to(device)
@@ -25,6 +25,10 @@ class NoisyDistribution(JointDistribution):
 
         x = self._sample_base_inputs(1, seed=0).to(self.device)
         y_clean = self.target_function(x)
+        if y_clean.dim() != 2 or y_clean.size(1) != 1:
+            raise ValueError(
+                "target_function must return 2D tensors with a single output dimension"
+            )
 
         self.noise_shape = y_clean.shape[1:]
         noise_dtype = y_clean.dtype if torch.is_floating_point(y_clean) else torch.float32
@@ -34,14 +38,14 @@ class NoisyDistribution(JointDistribution):
         )
         self.noise_std = config.noise_std
         self.noise_distribution_description = (
-            f"{self.noise_shape}-dimensional Normal(mean={self.config.noise_mean}, "
+            f"{self.output_dim}-dimensional Normal(mean={self.config.noise_mean}, "
             f"std={self.config.noise_std})"
         )
 
     def __str__(self) -> str:
         base_str = self._base_distribution_str
         noise_str = (
-            f"{self.noise_shape}-dimensional Normal(mean={self.config.noise_mean}, "
+            f"{self.output_dim}-dimensional Normal(mean={self.config.noise_mean}, "
             f"std={self.config.noise_std})"
         )
         return f"NoisyDistribution with {base_str} and {noise_str}"

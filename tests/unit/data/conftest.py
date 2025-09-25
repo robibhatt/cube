@@ -22,7 +22,7 @@ from src.data.joint_distributions.configs.noisy_distribution import NoisyDistrib
 
 @pytest.fixture
 def gaussian_base():
-    cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+    cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
     return create_joint_distribution(cfg, torch.device("cpu"))
 
 
@@ -33,10 +33,11 @@ class DummyJointDistribution(JointDistribution):
     @dataclass
     @register_joint_distribution_config("DummyJointDistribution")
     class _Config(JointDistributionConfig):
-        input_shape: torch.Size = field(default_factory=lambda: torch.Size([2]))
-        output_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
+        input_dim: int = field(default=2)
 
         def __post_init__(self) -> None:  # type: ignore[override]
+            if self.input_dim <= 0:
+                raise ValueError("input_dim must be positive")
             self.distribution_type = "DummyJointDistribution"
 
     def __init__(self, config: _Config, device: torch.device):
@@ -52,11 +53,11 @@ class DummyJointDistribution(JointDistribution):
         """
 
         x = (
-            torch.arange(n_samples * 2, dtype=torch.float32, device=self.device)
-            .reshape(n_samples, 2)
+            torch.arange(n_samples * self.input_dim, dtype=torch.float32, device=self.device)
+            .reshape(n_samples, self.input_dim)
         )
         y = torch.full(
-            (n_samples, 1), 5.0, dtype=torch.float32, device=self.device
+            (n_samples, self.output_dim), 5.0, dtype=torch.float32, device=self.device
         )
         return x, y
 
@@ -75,7 +76,7 @@ class DummyJointDistribution(JointDistribution):
         # device-mismatch errors.
         X = X.to(self.device)
         y = torch.full(
-            (X.size(0), 1), 5.0, dtype=torch.float32, device=self.device
+            (X.size(0), self.output_dim), 5.0, dtype=torch.float32, device=self.device
         )
         return X, y
 
@@ -93,10 +94,11 @@ class BadTypeDistribution(JointDistribution):
 
     @dataclass
     class _Config(JointDistributionConfig):
-        input_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
-        output_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
+        input_dim: int = field(default=1)
 
         def __post_init__(self) -> None:  # type: ignore[override]
+            if self.input_dim <= 0:
+                raise ValueError("input_dim must be positive")
             self.distribution_type = "BadTypeDistribution"
 
     def __init__(self, config: _Config, device: torch.device):
@@ -126,18 +128,19 @@ class BadShapeDistribution(JointDistribution):
 
     @dataclass
     class _Config(JointDistributionConfig):
-        input_shape: torch.Size = field(default_factory=lambda: torch.Size([2]))
-        output_shape: torch.Size = field(default_factory=lambda: torch.Size([1]))
+        input_dim: int = field(default=2)
 
         def __post_init__(self) -> None:  # type: ignore[override]
+            if self.input_dim <= 0:
+                raise ValueError("input_dim must be positive")
             self.distribution_type = "BadShapeDistribution"
 
     def __init__(self, config: _Config, device: torch.device):
         super().__init__(config, device)
 
     def sample(self, n_samples: int, seed: int):
-        x = torch.zeros(n_samples, 3)  # should be (n_samples,2)
-        y = torch.zeros(n_samples, 2)  # should be (n_samples,1)
+        x = torch.zeros(n_samples, self.input_dim + 1)  # wrong feature dim
+        y = torch.zeros(n_samples, self.output_dim + 1)  # wrong target dim
         return x, y
 
     def __str__(self):

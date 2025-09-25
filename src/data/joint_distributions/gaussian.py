@@ -22,7 +22,7 @@ class Gaussian(JointDistribution):
     def __str__(self) -> str:
         """Return a readable description of the Gaussian distribution."""
         return (
-            f"{self.input_shape}-dimensional Normal(mean={self.config.mean}, "
+            f"{self.input_dim}-dimensional Normal(mean={self.config.mean}, "
             f"std={self.config.std})"
         )
 

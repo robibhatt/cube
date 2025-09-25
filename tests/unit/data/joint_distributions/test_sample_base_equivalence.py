@@ -18,10 +18,10 @@ def test_sample_equivalence_base_forward(dist_name, trained_trainer):
     n = 4
 
     if dist_name == "gaussian":
-        cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+        cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
         dist = create_joint_distribution(cfg, device)
     elif dist_name == "mapped":
-        base_cfg = GaussianConfig(input_shape=torch.Size([2]), mean=0.0, std=1.0)
+        base_cfg = GaussianConfig(input_dim=2, mean=0.0, std=1.0)
         target_cfg = SumProdTargetConfig(
             input_shape=torch.Size([2]),
             indices_list=[[0], [1]],

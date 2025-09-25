@@ -5,7 +5,7 @@ from src.data.joint_distributions.configs.hypercube import HypercubeConfig
 
 
 def test_hypercube_sample_values():
-    cfg = HypercubeConfig(input_shape=torch.Size([3]))
+    cfg = HypercubeConfig(input_dim=3)
     dist = create_joint_distribution(cfg, torch.device("cpu"))
 
     x, y = dist.sample(100, seed=0)
