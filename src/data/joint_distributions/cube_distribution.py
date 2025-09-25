@@ -102,13 +102,7 @@ class CubeDistribution(JointDistribution):
         assert False, "CubeDistribution is not well-specified"
 
     def forward_X(self, base_X: torch.Tensor) -> torch.Tensor:
-        if base_X.shape[1:] == self.base_input_shape:
-            return base_X.to(self.device).to(self.base_dtype)
-
-        batch_size = base_X.shape[0]
-        X_base_flat = base_X.reshape(batch_size, -1)[:, : self.base_input_size]
-        X_base = X_base_flat.reshape(batch_size, *self.base_input_shape)
-        return X_base.to(self.device).to(self.base_dtype)
+        return base_X.to(self.device).to(self.base_dtype)
 
     def _sample_noise(self, n_samples: int, seed: int) -> torch.Tensor:
         generator = torch.Generator(device=self.device)
