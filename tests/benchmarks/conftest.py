@@ -47,10 +47,6 @@ def benchmark_logger():
             base = describe_distribution(dist.base_joint_distribution)
             noise = describe_distribution(dist.noise_distribution)
             return f"NoisyDistribution(base={base}, noise={noise})"
-        if dist.config.distribution_type == "RepresentorDistribution":
-            base = describe_distribution(dist.base_joint_distribution)
-            model = describe_model(dist.model_representor.model_config)
-            return f"RepresentorDistribution(base={base}, model={model})"
         return dist.__class__.__name__
 
     def log(iterator, distribution, batch_size, dataset_size, epochs, elapsed):

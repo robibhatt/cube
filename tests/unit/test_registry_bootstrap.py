@@ -31,9 +31,3 @@ def test_model_registry_bootstrap():
     from src.models.architectures import MODEL_REGISTRY
 
     assert "MLP" in MODEL_REGISTRY
-
-
-def test_representor_registry_bootstrap():
-    import src.models.representors as reps
-    importlib.reload(reps)
-    assert "MLP" in reps.REPRESENTOR_REGISTRY
