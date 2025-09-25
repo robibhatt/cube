@@ -9,3 +9,4 @@
 - Removed `coordinate_model` and `composed_model` along with associated configs and tests.
 - Added `SumProdTarget` for summing multiple product terms via configurable index groups.
 - Removed representor distributions, model representors, and related helpers.
+- Removed the cube experiment script, configuration, implementation, and associated tests.
