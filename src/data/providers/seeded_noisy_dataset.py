@@ -18,13 +18,13 @@ class SeededNoisyDataset(Dataset):
         seed: int = 0,
     ) -> None:
         assert (
-            distribution.config.distribution_type == "NoisyDistribution"
-        ), "SeededNoisyDataset requires a NoisyDistribution"
+            distribution.config.distribution_type == "CubeDistribution"
+        ), "SeededNoisyDataset requires a CubeDistribution"
         self.distribution = distribution
         self.size = size
         self.seed = seed
 
-        # Cache shape metadata provided directly by ``NoisyDistribution`` so
+        # Cache shape metadata provided directly by ``CubeDistribution`` so
         # that ``__getitem__`` does not need to recompute it for every sample.
         self._base_size = distribution.base_input_size
         self._base_shape = distribution.base_input_shape
@@ -35,7 +35,7 @@ class SeededNoisyDataset(Dataset):
         return self.size
 
     def __getitem__(self, idx: int):  # type: ignore[override]
-        # ``NoisyDistribution.base_sample`` concatenates the flattened base
+        # ``CubeDistribution.base_sample`` concatenates the flattened base
         # features with a noise sample. Draw a single combined sample and then
         # split it back into the two components.
 

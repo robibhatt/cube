@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.data.joint_distributions.configs.joint_distribution_config_registry import (
     JOINT_DISTRIBUTION_CONFIG_REGISTRY,
     build_joint_distribution_config,
@@ -9,17 +9,17 @@ from src.data.joint_distributions.configs.joint_distribution_config_registry imp
 )
 
 
-def test_noisy_config_registered():
-    assert "NoisyDistribution" in JOINT_DISTRIBUTION_CONFIG_REGISTRY
+def test_cube_config_registered():
+    assert "CubeDistribution" in JOINT_DISTRIBUTION_CONFIG_REGISTRY
     assert (
-        JOINT_DISTRIBUTION_CONFIG_REGISTRY["NoisyDistribution"]
-        is NoisyDistributionConfig
+        JOINT_DISTRIBUTION_CONFIG_REGISTRY["CubeDistribution"]
+        is CubeDistributionConfig
     )
 
 
-def test_build_noisy_config():
+def test_build_cube_config():
     cfg = build_joint_distribution_config(
-        "NoisyDistribution",
+        "CubeDistribution",
         input_dim=2,
         indices_list=[[0]],
         weights=[0.0],
@@ -27,8 +27,8 @@ def test_build_noisy_config():
         noise_mean=1.0,
         noise_std=0.5,
     )
-    assert isinstance(cfg, NoisyDistributionConfig)
-    assert cfg.distribution_type == "NoisyDistribution"
+    assert isinstance(cfg, CubeDistributionConfig)
+    assert cfg.distribution_type == "CubeDistribution"
     assert cfg.input_shape == torch.Size([2])
     assert cfg.output_shape == torch.Size([1])
     assert cfg.noise_mean == pytest.approx(1.0)
@@ -36,8 +36,8 @@ def test_build_noisy_config():
     assert cfg.target_function_config.indices_list == [[0]]
 
 
-def test_noisy_config_json_roundtrip():
-    cfg = NoisyDistributionConfig(
+def test_cube_config_json_roundtrip():
+    cfg = CubeDistributionConfig(
         input_dim=2,
         indices_list=[[0], [1]],
         weights=[1.0, 1.0],
@@ -46,13 +46,13 @@ def test_noisy_config_json_roundtrip():
         noise_std=1.0,
     )
     json_str = cfg.to_json()
-    restored = NoisyDistributionConfig.from_json(json_str)
+    restored = CubeDistributionConfig.from_json(json_str)
     assert restored == cfg
 
 
-def test_noisy_config_from_dict_via_registry():
+def test_cube_config_from_dict_via_registry():
     data = {
-        "distribution_type": "NoisyDistribution",
+        "distribution_type": "CubeDistribution",
         "input_dim": 2,
         "indices_list": [[0], [1]],
         "weights": [1.0, 1.0],
@@ -61,7 +61,7 @@ def test_noisy_config_from_dict_via_registry():
         "noise_std": 0.75,
     }
     cfg = build_joint_distribution_config_from_dict(data)
-    assert isinstance(cfg, NoisyDistributionConfig)
+    assert isinstance(cfg, CubeDistributionConfig)
     assert cfg.input_shape == torch.Size([2])
     assert cfg.output_shape == torch.Size([1])
     assert cfg.noise_mean == pytest.approx(0.25)

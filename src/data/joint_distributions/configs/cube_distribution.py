@@ -9,10 +9,10 @@ from .joint_distribution_config_registry import register_joint_distribution_conf
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
-@register_joint_distribution_config("NoisyDistribution")
+@register_joint_distribution_config("CubeDistribution")
 @dataclass_json
 @dataclass(kw_only=True)
-class NoisyDistributionConfig(JointDistributionConfig):
+class CubeDistributionConfig(JointDistributionConfig):
     input_dim: int
     indices_list: List[List[int]] = field(default_factory=list)
     weights: List[float] = field(default_factory=list)
@@ -57,5 +57,5 @@ class NoisyDistributionConfig(JointDistributionConfig):
             normalize=self.normalize,
         )
 
-        self.distribution_type = "NoisyDistribution"
+        self.distribution_type = "CubeDistribution"
 

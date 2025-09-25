@@ -19,8 +19,8 @@ class NoisyProvider(DataProvider):
     def __post_init__(self) -> None:
         assert (
             self.joint_distribution.config.distribution_type
-            == "NoisyDistribution"
-        ), "NoisyIterator can only be used with NoisyDistribution"
+            == "CubeDistribution"
+        ), "NoisyIterator can only be used with CubeDistribution"
         self.data_loader = self.make_loader()
 
     def make_loader(self) -> DataLoader:

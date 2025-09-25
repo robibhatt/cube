@@ -4,13 +4,13 @@ import torch
 import random
 
 from .joint_distribution import JointDistribution
-from .configs.noisy_distribution import NoisyDistributionConfig
+from .configs.cube_distribution import CubeDistributionConfig
 from .joint_distribution_registry import register_joint_distribution
 from src.models.targets.sum_prod import SumProdTarget
 
-@register_joint_distribution("NoisyDistribution")
-class NoisyDistribution(JointDistribution):
-    def __init__(self, config: NoisyDistributionConfig, device: torch.device) -> None:
+@register_joint_distribution("CubeDistribution")
+class CubeDistribution(JointDistribution):
+    def __init__(self, config: CubeDistributionConfig, device: torch.device) -> None:
         self.base_input_shape = config.input_shape
         self.base_input_size = math.prod(self.base_input_shape)
         self.base_dtype = torch.float32
@@ -48,7 +48,7 @@ class NoisyDistribution(JointDistribution):
             f"{self.output_dim}-dimensional Normal(mean={self.config.noise_mean}, "
             f"std={self.config.noise_std})"
         )
-        return f"NoisyDistribution with {base_str} and {noise_str}"
+        return f"CubeDistribution with {base_str} and {noise_str}"
     
     def get_seeds(self, seed: int) -> Tuple[int, int]:
         splitter = random.Random(seed)
@@ -99,7 +99,7 @@ class NoisyDistribution(JointDistribution):
         return "NoisyProvider"
 
     def forward(self, base_X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        assert False, "NoisyDistribution is not well-specified"
+        assert False, "CubeDistribution is not well-specified"
 
     def forward_X(self, base_X: torch.Tensor) -> torch.Tensor:
         if base_X.shape[1:] == self.base_input_shape:

@@ -17,7 +17,7 @@ from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
 from tests.helpers.stubs import StubJointDistribution
 import src.data.providers.noisy_provider  # Register NoisyIterator
-from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 
 
 @pytest.fixture
@@ -212,7 +212,7 @@ def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
 
 @pytest.fixture
 def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
-    """Return a Trainer using a NoisyDistribution trained for one epoch."""
+    """Return a Trainer using a CubeDistribution trained for one epoch."""
     home = tmp_path / "noisy_trainer_home"
     home.mkdir()
     model_cfg = MLPConfig(
@@ -226,7 +226,7 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     cfg = TrainerConfig(
         model_config=model_cfg,
         optimizer_config=adam_config,
-        joint_distribution_config=NoisyDistributionConfig(
+        joint_distribution_config=CubeDistributionConfig(
             input_dim=2,
             indices_list=[[0]],
             weights=[0.0],

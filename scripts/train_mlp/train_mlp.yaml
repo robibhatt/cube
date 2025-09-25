@@ -19,7 +19,7 @@ trainer_config:
         mup: true
         weight_decay: 0.0
     joint_distribution_config:
-        distribution_type: NoisyDistribution
+        distribution_type: CubeDistribution
         input_dim: 16
         indices_list:
         - [0]

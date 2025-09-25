@@ -3,11 +3,11 @@ import torch
 import torch.nn as nn
 
 from src.data.joint_distributions import create_joint_distribution
-from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 
 
-def test_noisy_distribution_construct_and_sample():
-    cfg = NoisyDistributionConfig(
+def test_cube_distribution_construct_and_sample():
+    cfg = CubeDistributionConfig(
         input_dim=2,
         indices_list=[[0]],
         weights=[1.0],
@@ -21,7 +21,7 @@ def test_noisy_distribution_construct_and_sample():
     assert y.shape == (3, *dist.output_shape)
 
 
-def test_noisy_distribution_requires_scalar_target(monkeypatch):
+def test_cube_distribution_requires_scalar_target(monkeypatch):
     class MultiTarget(nn.Module):
         def __init__(self, cfg):  # pragma: no cover - validation occurs via exception
             super().__init__()
@@ -31,11 +31,11 @@ def test_noisy_distribution_requires_scalar_target(monkeypatch):
             return torch.zeros(batch, 2, device=x.device, dtype=x.dtype)
 
     monkeypatch.setattr(
-        "src.data.joint_distributions.noisy_distribution.SumProdTarget",
+        "src.data.joint_distributions.cube_distribution.SumProdTarget",
         MultiTarget,
     )
 
-    cfg = NoisyDistributionConfig(
+    cfg = CubeDistributionConfig(
         input_dim=2,
         indices_list=[[0]],
         weights=[1.0],
