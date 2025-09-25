@@ -5,6 +5,7 @@ from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
 from src.data.providers.noisy_provider import NoisyProvider
 from src.data.providers import create_data_provider_from_distribution
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 from tests.unit.data.conftest import (
     DummyJointDistribution,
     dummy_distribution,
@@ -14,6 +15,12 @@ from tests.unit.data.conftest import (
 def _make_distribution():
     cfg = NoisyDistributionConfig(
         base_distribution_config=DummyJointDistribution._Config(),
+        target_function_config=SumProdTargetConfig(
+            input_shape=torch.Size([2]),
+            indices_list=[[0]],
+            weights=[0.0],
+            normalize=False,
+        ),
         noise_mean=1.0,
         noise_std=0.0,
     )
@@ -30,7 +37,7 @@ def test_noisy_iterator_batches_apply_noise(tmp_path):
     for X, y in batches:
         assert X.shape == (2, *dist.input_shape)
         assert y.shape == (2, *dist.output_shape)
-        assert torch.allclose(y, torch.full((2, 1), 6.0))
+        assert torch.allclose(y, torch.full((2, 1), 1.0))
 
 
 def test_noisy_iterator_deterministic(tmp_path):

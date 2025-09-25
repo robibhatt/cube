@@ -1,10 +1,12 @@
 from typing import Tuple
+import math
 import torch
 import random
 
 from .joint_distribution import JointDistribution
 from .configs.noisy_distribution import NoisyDistributionConfig
 from .joint_distribution_registry import register_joint_distribution
+from src.models.targets.sum_prod import SumProdTarget
 
 @register_joint_distribution("NoisyDistribution")
 class NoisyDistribution(JointDistribution):
@@ -14,15 +16,20 @@ class NoisyDistribution(JointDistribution):
         self.base_joint_distribution = create_joint_distribution(
             config.base_distribution_config, device
         )
+        self.target_function = SumProdTarget(config.target_function_config).to(device)
 
         super().__init__(config=config, device=device)
         self.well_specified = False
-        x, y = self.base_joint_distribution.base_sample(1, seed=0)
-        self.base_input_shape = x.shape[1:]
-        self.base_input_size = torch.prod(torch.tensor(self.base_input_shape)).item()
 
-        self.noise_shape = self.base_joint_distribution.output_shape
-        noise_dtype = y.dtype if torch.is_floating_point(y) else torch.float32
+        x, _ = self.base_joint_distribution.base_sample(1, seed=0)
+        x = x.to(self.device)
+        y_clean = self.target_function(x)
+
+        self.base_input_shape = x.shape[1:]
+        self.base_input_size = math.prod(self.base_input_shape)
+
+        self.noise_shape = y_clean.shape[1:]
+        noise_dtype = y_clean.dtype if torch.is_floating_point(y_clean) else torch.float32
         self.noise_dtype = noise_dtype
         self.noise_mean_tensor = torch.full(
             self.noise_shape, config.noise_mean, dtype=self.noise_dtype, device=self.device
@@ -47,7 +54,7 @@ class NoisyDistribution(JointDistribution):
         self, n_samples: int, seed: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         base_seed, noise_seed = self.get_seeds(seed)
-        x, y = self.base_joint_distribution.sample(n_samples, seed=base_seed)
+        x, _ = self.base_joint_distribution.sample(n_samples, seed=base_seed)
         noise = self._sample_noise(n_samples, seed=noise_seed)
 
         # Ensure all tensors reside on the same device.  Some joint
@@ -55,15 +62,15 @@ class NoisyDistribution(JointDistribution):
         # ignore the ``device`` argument and default to CPU, which causes
         # failures when the trainer runs on a GPU.
         x = x.to(self.device)
-        y = y.to(self.device)
         noise = noise.to(self.device)
 
+        y_clean = self.target_function(x)
         y_noise = noise
-        return x, y + y_noise
+        return x, y_clean + y_noise
     
     def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
         base_seed, noise_seed = self.get_seeds(seed)
-        x, y = self.base_joint_distribution.base_sample(n_samples, seed=base_seed)
+        x, _ = self.base_joint_distribution.base_sample(n_samples, seed=base_seed)
         noise = self._sample_noise(n_samples, seed=noise_seed)
 
         # ``DummyJointDistribution`` and similar fixtures return tensors on the
@@ -72,14 +79,15 @@ class NoisyDistribution(JointDistribution):
         # devices.  Explicitly move everything to the distribution's device to
         # keep them consistent across platforms.
         x = x.to(self.device)
-        y = y.to(self.device)
         noise = noise.to(self.device)
+
+        y_clean = self.target_function(x)
 
         # Keep batch dimension (dim 0) and flatten the rest
         x_flat = x.reshape(n_samples, -1)
         noise_flat = noise.reshape(n_samples, -1)
         x_with_noise = torch.cat([x_flat, noise_flat], dim=1)
-        return x_with_noise, y
+        return x_with_noise, y_clean
     
     def preferred_provider(self) -> str:
         return "NoisyProvider"
@@ -89,7 +97,7 @@ class NoisyDistribution(JointDistribution):
 
     def forward_X(self, base_X: torch.Tensor) -> torch.Tensor:
         batch_size = base_X.shape[0]
-        X_base_flat = base_X[:, :self.base_input_size]
+        X_base_flat = base_X[:, : self.base_input_size]
         X_base = X_base_flat.reshape(batch_size, *self.base_input_shape)
         return self.base_joint_distribution.forward_X(X_base)
 

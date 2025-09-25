@@ -65,8 +65,16 @@ class MLPRecovery(Experiment):
         )
 
         if self.config.noise_variance > 0.0:
+            student_base_cfg = trainer_cfg.joint_distribution_config
+            if student_base_cfg is None or not hasattr(
+                student_base_cfg, "target_function_config"
+            ):
+                raise ValueError(
+                    "Student trainer must define a target_function_config when using a NoisyDistribution"
+                )
             trainer_cfg.joint_distribution_config = NoisyDistributionConfig(
                 base_distribution_config=representor_cfg,
+                target_function_config=student_base_cfg.target_function_config,
                 noise_mean=0.0,
                 noise_std=math.sqrt(self.config.noise_variance),
             )

@@ -17,6 +17,11 @@ from src.data.joint_distributions.configs.representor_distribution import (
 from src.data.joint_distributions.configs.noisy_distribution import (
     NoisyDistributionConfig,
 )
+from src.data.joint_distributions.configs.mapped_joint_distribution import (
+    MappedJointDistributionConfig,
+)
+from src.data.joint_distributions.configs.gaussian import GaussianConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 def test_mlp_recovery_runs(tmp_path, monkeypatch):
@@ -302,7 +307,17 @@ def test_student_distribution_with_noise(tmp_path):
     )
 
     student_cfg = teacher_cfg.deep_copy()
-    student_cfg.joint_distribution_config = None
+    student_cfg.joint_distribution_config = MappedJointDistributionConfig(
+        distribution_config=GaussianConfig(
+            input_shape=torch.Size([1]), mean=0.0, std=1.0
+        ),
+        target_function_config=SumProdTargetConfig(
+            input_shape=torch.Size([1]),
+            indices_list=[[0]],
+            weights=[1.0],
+            normalize=False,
+        ),
+    )
 
     cfg = MLPRecoveryConfig(
         teacher_trainer_config=teacher_cfg,
@@ -319,6 +334,10 @@ def test_student_distribution_with_noise(tmp_path):
     jd_cfg = student_trainer.joint_distribution_config
     assert isinstance(jd_cfg, NoisyDistributionConfig)
     assert isinstance(jd_cfg.base_distribution_config, RepresentorDistributionConfig)
+    assert (
+        jd_cfg.target_function_config
+        == student_cfg.joint_distribution_config.target_function_config
+    )
     assert jd_cfg.noise_mean == pytest.approx(0.0)
     assert jd_cfg.noise_std == pytest.approx(0.2)
 
