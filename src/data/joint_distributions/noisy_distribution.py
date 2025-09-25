@@ -6,16 +6,15 @@ import random
 from .joint_distribution import JointDistribution
 from .configs.noisy_distribution import NoisyDistributionConfig
 from .joint_distribution_registry import register_joint_distribution
+from .hypercube import Hypercube
+from .configs.hypercube import HypercubeConfig
 from src.models.targets.sum_prod import SumProdTarget
 
 @register_joint_distribution("NoisyDistribution")
 class NoisyDistribution(JointDistribution):
     def __init__(self, config: NoisyDistributionConfig, device: torch.device) -> None:
-        from .joint_distribution_factory import create_joint_distribution
-
-        self.base_joint_distribution = create_joint_distribution(
-            config.base_distribution_config, device
-        )
+        hypercube_config = HypercubeConfig(input_shape=config.input_shape)
+        self.base_joint_distribution = Hypercube(hypercube_config, device)
         self.target_function = SumProdTarget(config.target_function_config).to(device)
 
         super().__init__(config=config, device=device)

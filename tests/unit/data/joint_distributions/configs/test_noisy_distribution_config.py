@@ -33,7 +33,6 @@ def test_build_noisy_config():
     assert cfg.output_shape == torch.Size([1])
     assert cfg.noise_mean == pytest.approx(1.0)
     assert cfg.noise_std == pytest.approx(0.5)
-    assert cfg.base_distribution_config.distribution_type == "Hypercube"
     assert cfg.target_function_config.indices_list == [[0]]
 
 
