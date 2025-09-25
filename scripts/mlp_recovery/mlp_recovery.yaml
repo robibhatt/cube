@@ -27,6 +27,15 @@ teacher_trainer_config:
             dtype: float32
             mean: 0.0
             std: 1.0
+        target_function_config:
+            model_type: SumProdTarget
+            input_shape:
+            - 8
+            indices_list:
+            - [0]
+            weights:
+            - 0.0
+            normalize: false
         noise_mean: 0.0
         noise_std: 1.0
     loss_config:
