@@ -19,6 +19,7 @@ from src.training.loss.configs.loss import LossConfig
 from tests.helpers.stubs import StubJointDistribution
 import src.data.providers.noisy_provider  # Register NoisyIterator
 from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
 @pytest.fixture
