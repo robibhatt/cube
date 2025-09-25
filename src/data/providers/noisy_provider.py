@@ -49,5 +49,5 @@ class NoisyProvider(DataProvider):
             X_base = batch[0]
             y_base = batch[1]
             y_noise = batch[2]
-            X_final = self.joint_distribution.base_joint_distribution.forward_X(X_base)
+            X_final = self.joint_distribution.forward_X(X_base)
             yield X_final, y_base + y_noise
