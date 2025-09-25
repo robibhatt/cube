@@ -8,19 +8,6 @@ trainer_config:
         hidden_dims:
         - 128
         - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
-        - 128
         activation: relu
         start_activation: false
         end_activation: false
@@ -80,12 +67,12 @@ trainer_config:
     loss_config:
         name: MSELoss
         eval_type: regression
-    train_size: 8192
-    test_size: 8192
+    train_size: 1024
+    test_size: 1024
     batch_size: 128
-    epochs: 5
+    epochs: 3
     use_full_batch: false
     weight_decay_l1: 0.0004
-home_directory: experiment_runs/test/1
+home_directory: experiment_runs/test/1a
 seed: 12321245
 run_parallel: false
