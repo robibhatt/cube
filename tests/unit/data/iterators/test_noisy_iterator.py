@@ -7,7 +7,6 @@ from src.data.providers.noisy_provider import NoisyProvider
 from src.data.providers import create_data_provider_from_distribution
 from tests.unit.data.conftest import (
     DummyJointDistribution,
-    AddOneNoiseDistributionConfig,
     dummy_distribution,
 )
 
@@ -15,7 +14,8 @@ from tests.unit.data.conftest import (
 def _make_distribution():
     cfg = NoisyDistributionConfig(
         base_distribution_config=DummyJointDistribution._Config(),
-        noise_distribution_config=AddOneNoiseDistributionConfig(),
+        noise_mean=1.0,
+        noise_std=0.0,
     )
     return create_joint_distribution(cfg, torch.device("cpu"))
 

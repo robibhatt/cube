@@ -18,7 +18,6 @@ from src.data.joint_distributions.configs.representor_distribution import (
 from src.data.joint_distributions.configs.noisy_distribution import (
     NoisyDistributionConfig,
 )
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
 
 @register_experiment("MLPRecovery")
 class MLPRecovery(Experiment):
@@ -66,14 +65,10 @@ class MLPRecovery(Experiment):
         )
 
         if self.config.noise_variance > 0.0:
-            noise_cfg = GaussianConfig(
-                input_shape=representor_cfg.output_shape,
-                mean=0.0,
-                std=math.sqrt(self.config.noise_variance),
-            )
             trainer_cfg.joint_distribution_config = NoisyDistributionConfig(
                 base_distribution_config=representor_cfg,
-                noise_distribution_config=noise_cfg,
+                noise_mean=0.0,
+                noise_std=math.sqrt(self.config.noise_variance),
             )
         else:
             trainer_cfg.joint_distribution_config = representor_cfg

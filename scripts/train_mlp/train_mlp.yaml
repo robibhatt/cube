@@ -57,13 +57,8 @@ trainer_config:
                 - 1.0
                 - 1.0
                 - 1.0
-        noise_distribution_config:
-            distribution_type: Gaussian
-            input_shape:
-            - 1
-            dtype: float32
-            mean: 0.0
-            std: 0.1
+        noise_mean: 0.0
+        noise_std: 0.1
     loss_config:
         name: MSELoss
         eval_type: regression

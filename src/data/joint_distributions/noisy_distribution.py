@@ -4,6 +4,7 @@ import random
 
 from .joint_distribution import JointDistribution
 from .configs.noisy_distribution import NoisyDistributionConfig
+from .configs.gaussian import GaussianConfig
 from .joint_distribution_registry import register_joint_distribution
 
 @register_joint_distribution("NoisyDistribution")
@@ -14,15 +15,21 @@ class NoisyDistribution(JointDistribution):
         self.base_joint_distribution = create_joint_distribution(
             config.base_distribution_config, device
         )
-        self.noise_distribution = create_joint_distribution(
-            config.noise_distribution_config, device
-        )
 
         super().__init__(config=config, device=device)
         self.well_specified = False
-        x, _ = self.base_joint_distribution.base_sample(1, seed=0)
+        x, y = self.base_joint_distribution.base_sample(1, seed=0)
         self.base_input_shape = x.shape[1:]
         self.base_input_size = torch.prod(torch.tensor(self.base_input_shape)).item()
+
+        noise_dtype = y.dtype if torch.is_floating_point(y) else torch.float32
+        noise_config = GaussianConfig(
+            input_shape=self.base_joint_distribution.output_shape,
+            dtype=noise_dtype,
+            mean=config.noise_mean,
+            std=config.noise_std,
+        )
+        self.noise_distribution = create_joint_distribution(noise_config, device)
 
     def __str__(self) -> str:
         base_str = str(self.base_joint_distribution)

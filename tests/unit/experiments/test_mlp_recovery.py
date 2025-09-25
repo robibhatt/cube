@@ -17,7 +17,6 @@ from src.data.joint_distributions.configs.representor_distribution import (
 from src.data.joint_distributions.configs.noisy_distribution import (
     NoisyDistributionConfig,
 )
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
 
 
 def test_mlp_recovery_runs(tmp_path, monkeypatch):
@@ -320,5 +319,6 @@ def test_student_distribution_with_noise(tmp_path):
     jd_cfg = student_trainer.joint_distribution_config
     assert isinstance(jd_cfg, NoisyDistributionConfig)
     assert isinstance(jd_cfg.base_distribution_config, RepresentorDistributionConfig)
-    assert isinstance(jd_cfg.noise_distribution_config, GaussianConfig)
+    assert jd_cfg.noise_mean == pytest.approx(0.0)
+    assert jd_cfg.noise_std == pytest.approx(0.2)
 

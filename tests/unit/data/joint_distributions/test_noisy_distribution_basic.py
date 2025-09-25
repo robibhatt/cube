@@ -1,13 +1,14 @@
 import torch
 from src.data.joint_distributions import create_joint_distribution
 from src.data.joint_distributions.configs.noisy_distribution import NoisyDistributionConfig
-from tests.unit.data.conftest import DummyJointDistribution, AddOneNoiseDistributionConfig
+from tests.unit.data.conftest import DummyJointDistribution
 
 
 def test_noisy_distribution_construct_and_sample():
     cfg = NoisyDistributionConfig(
         base_distribution_config=DummyJointDistribution._Config(),
-        noise_distribution_config=AddOneNoiseDistributionConfig(),
+        noise_mean=1.0,
+        noise_std=0.0,
     )
     dist = create_joint_distribution(cfg, torch.device("cpu"))
 
