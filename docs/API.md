@@ -155,33 +155,25 @@ Data providers inherit placement from the ``JointDistribution``.
 ```python
 from pathlib import Path
 import torch
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
-from src.data.joint_distributions.joint_distribution_factory import create_joint_distribution
+from src.data.joint_distributions.cube_distribution import CubeDistribution
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
-from src.models.targets.configs.sum_prod import SumProdTargetConfig
-from src.data.joint_distributions.configs.mapped_joint_distribution import (
-    MappedJointDistributionConfig,
-)
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
 from src.training.trainer import Trainer
 
-dist_cfg = GaussianConfig(input_dim=4, mean=0.0, std=1.0)
-dist = create_joint_distribution(dist_cfg, device=torch.device("cpu"))
-target_cfg = SumProdTargetConfig(
-    input_shape=torch.Size([dist_cfg.input_dim]),
-    indices_list=[[0, 1], [2, 3]],
-    weights=[0.5, 1.5],
-)
-joint_cfg = MappedJointDistributionConfig(
-    distribution_config=dist_cfg,
-    target_function_config=target_cfg,
+cube_cfg = CubeDistributionConfig(
+    input_dim=4,
+    indices_list=[[0], [1], [2], [3]],
+    weights=[0.5, 1.5, 0.25, 0.75],
+    noise_mean=0.0,
+    noise_std=0.1,
 )
 cfg = TrainerConfig(
     model_config=MLPConfig(
-        input_dim=dist_cfg.input_dim,
+        input_dim=cube_cfg.input_dim,
         output_dim=1,
         hidden_dims=[4],
         activation="relu",
@@ -189,7 +181,7 @@ cfg = TrainerConfig(
         end_activation=False,
     ),
     optimizer_config=AdamConfig(lr=1e-3),
-    joint_distribution_config=joint_cfg,
+    cube_distribution_config=cube_cfg,
     training_size=32,
     test_size=16,
     batch_size=8,
@@ -200,7 +192,8 @@ cfg = TrainerConfig(
 )
 
 trainer = Trainer(cfg)
-target = SumProdTarget(target_cfg)
+target = SumProdTarget(cube_cfg.target_function_config)
+dist = CubeDistribution(cube_cfg, trainer.device)
 ```
 
 ## Non‑Public Functions Used Elsewhere

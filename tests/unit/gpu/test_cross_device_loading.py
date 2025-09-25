@@ -3,7 +3,7 @@ import pytest
 import torch
 
 import src.models.bootstrap  # noqa: F401
-from tests.unit.gpu.test_gpu_compatibility import available_gpu, GPUJointDistribution
+from tests.unit.gpu.test_gpu_compatibility import available_gpu, _cube_config
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
@@ -28,11 +28,10 @@ def test_cross_device_loading(tmp_path, mlp_config, adam_config):
     home = tmp_path / "trainer_gpu"
     home.mkdir()
 
-    dist_cfg = GPUJointDistribution._Config()
     cfg = TrainerConfig(
         model_config=mlp_config,
         optimizer_config=adam_config,
-        joint_distribution_config=dist_cfg,
+        cube_distribution_config=_cube_config(mlp_config.input_dim),
         train_size=4,
         test_size=2,
         batch_size=2,

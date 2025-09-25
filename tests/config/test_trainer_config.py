@@ -1,11 +1,10 @@
-import torch
 from src.training.trainer_config import TrainerConfig
 from src.training.loss.configs.loss import LossConfig
-from src.data.joint_distributions.configs.mapped_joint_distribution import MappedJointDistributionConfig
-from src.data.joint_distributions.configs.gaussian import GaussianConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
-from src.models.targets.configs.sum_prod import SumProdTargetConfig
+from src.data.joint_distributions.configs.cube_distribution import (
+    CubeDistributionConfig,
+)
 
 
 def test_default_optimizer(tmp_path):
@@ -18,16 +17,10 @@ def test_default_optimizer(tmp_path):
             start_activation=False,
             end_activation=False,
         ),
-        joint_distribution_config=MappedJointDistributionConfig(
-            distribution_config=GaussianConfig(
-                input_dim=3, mean=0.0, std=1.0
-            ),
-            target_function_config=SumProdTargetConfig(
-                input_shape=torch.Size([3]),
-                indices_list=[[0]],
-                weights=[1.0],
-                normalize=False,
-            ),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=3,
+            indices_list=[[0]],
+            weights=[1.0],
         ),
         train_size=10,
         test_size=5,

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.data.joint_distributions import create_joint_distribution
+from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.data.providers.noisy_provider import NoisyProvider
 from src.data.providers import create_data_provider_from_distribution
@@ -17,7 +17,7 @@ def _make_distribution():
         noise_mean=1.0,
         noise_std=0.0,
     )
-    return create_joint_distribution(cfg, torch.device("cpu"))
+    return CubeDistribution(cfg, torch.device("cpu"))
 
 
 def test_noisy_iterator_batches_apply_noise(tmp_path):
