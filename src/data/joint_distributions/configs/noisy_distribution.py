@@ -5,11 +5,7 @@ import torch
 from dataclasses_json import dataclass_json, config
 
 from .base import JointDistributionConfig
-from .hypercube import HypercubeConfig
-from .joint_distribution_config_registry import (
-    register_joint_distribution_config,
-    build_joint_distribution_config_from_dict,
-)
+from .joint_distribution_config_registry import register_joint_distribution_config
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
@@ -23,15 +19,6 @@ class NoisyDistributionConfig(JointDistributionConfig):
     normalize: bool = False
     noise_mean: float = 0.0
     noise_std: float = 1.0
-    base_distribution_config: JointDistributionConfig = field(
-        init=False,
-        metadata=config(
-            encoder=lambda c: c.to_dict(),
-            decoder=lambda d: d
-            if isinstance(d, JointDistributionConfig)
-            else build_joint_distribution_config_from_dict(d),
-        ),
-    )
     target_function_config: SumProdTargetConfig = field(
         init=False,
         metadata=config(
@@ -64,7 +51,6 @@ class NoisyDistributionConfig(JointDistributionConfig):
                     )
 
         input_shape = torch.Size([self.input_dim])
-        self.base_distribution_config = HypercubeConfig(input_shape=input_shape)
         self.target_function_config = SumProdTargetConfig(
             input_shape=input_shape,
             indices_list=self.indices_list,
@@ -72,7 +58,7 @@ class NoisyDistributionConfig(JointDistributionConfig):
             normalize=self.normalize,
         )
 
-        self.input_shape = self.base_distribution_config.input_shape
+        self.input_shape = input_shape
         self.output_shape = self.target_function_config.output_shape
         self.distribution_type = "NoisyDistribution"
 
