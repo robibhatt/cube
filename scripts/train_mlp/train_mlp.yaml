@@ -83,9 +83,9 @@ trainer_config:
     train_size: 8192
     test_size: 8192
     batch_size: 128
-    epochs: 10000
+    epochs: 5
     use_full_batch: false
     weight_decay_l1: 0.0004
-home_directory: experiment_runs/stair_case/w128_d15_t8192_dim16_sc11
+home_directory: experiment_runs/test/1
 seed: 12321245
 run_parallel: false
