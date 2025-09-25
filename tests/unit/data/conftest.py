@@ -11,7 +11,6 @@ from src.data.joint_distributions.joint_distribution_registry import register_jo
 from src.data.joint_distributions.configs.base import JointDistributionConfig
 from src.data.joint_distributions.configs.joint_distribution_config_registry import register_joint_distribution_config
 from src.models.architectures.configs.mlp import MLPConfig
-from src.models.representors.mlp_representor import MLPRepresentor
 from src.models.architectures.model_factory import create_model
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
@@ -242,7 +241,7 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     )
     trainer = Trainer(cfg)
     trainer.train()
-    # Overwrite model weights so representor outputs constant 5
+    # Overwrite model weights so the trained model outputs a constant value
     model, _ = trainer._load_model_and_optimizer()
     with torch.no_grad():
         for p in model.parameters():
@@ -255,17 +254,3 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     checkpoint = Checkpoint.from_dir(trainer.checkpoint_dir)
     checkpoint.save(model=model, optimizer=None)
     return trainer
-
-
-@pytest.fixture
-def model_representor(trained_trainer) -> MLPRepresentor:
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu"
-    )
-    return MLPRepresentor(
-        trained_trainer.config.model_config,
-        trained_trainer.checkpoint_dir,
-        device=device,
-    )
-
-

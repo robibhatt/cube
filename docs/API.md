@@ -46,7 +46,6 @@ src/
         the factory resolves the provider class via :data:`DATA_PROVIDER_REGISTRY`.
   - **`MappedJointDistribution`** – pairs a `Distribution` with a `TargetFunction`; `sample(seed)` draws `X` then computes `y = f(X)`.
 - **`NoisyDistribution`** – mirrors a `MappedJointDistribution` built from a base distribution and target function, then adds Gaussian noise with configurable mean and standard deviation to its targets.
-  - **`RepresentorDistribution`** – *loaded lazily*; produces datasets from intermediate model representations using a `ModelRepresentor`.
 
 #### Target Functions
 
@@ -74,14 +73,6 @@ src/
 
 - `ModelConfig` – dataclass base with optional `input_shape`, `output_shape`.
 - `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag to enable μP layers.
-
-#### Representors
-
-- **`ModelRepresentor`** – abstract helper exposing internal representations. Its constructor accepts a `device` argument controlling tensor placement.
-  - `forward_config(from_rep, to_rep)` – configuration of sub-network between representations.
-  - `forward(input_tensor, from_rep, to_rep, target=None)` – run model from `from_rep` to `to_rep` optionally applying `target`.
-- **`MLPRepresentor`** – implementation for the `MLP` architecture using `MLPRepresentation` objects.
-- **`Representation`** – abstract representation node; exposes `forward`, `get_module`, and `get_shape`.
 
 ### `src/training`
 
@@ -135,7 +126,6 @@ Configuration throughout the codebase is captured via small dataclasses rather t
 
 - `Trainer` relies on `Checkpoint` for saving/loading model parameters and optimizer state.
 - `Experiments` compose multiple `Trainer` instances and use various `JointDistribution` implementations to generate data.
- - `ModelRepresentor` uses `create_model` to instantiate networks for extracting intermediate representations; the lazily loaded `RepresentorDistribution` pairs these with `JointDistribution` for downstream training.
  - `Optimizer` instances are created per model via `create_optimizer` and are stored in checkpoints.
 
 ## Automatic Plugin Imports
@@ -160,8 +150,7 @@ in this plugin mechanism anymore because they are instantiated explicitly.
 ## Device Placement
 
 `Trainer` automatically selects ``cuda`` if available, falling back to ``cpu``.
-`ModelRepresentor` still accepts a ``device`` argument, while data providers
-inherit placement from the ``JointDistribution``.
+Data providers inherit placement from the ``JointDistribution``.
 
 ```python
 from pathlib import Path
@@ -227,5 +216,5 @@ Several operations interact with the filesystem:
 
 ## Summary
 
-The project provides a collection of small, composable building blocks for studying neural network generalization.  Models and optimizers are configured via dataclasses and linked together by factory functions, while the training loop uses the :class:`Trainer` class configured by :class:`TrainerConfig`.  Experiments orchestrate multiple trainers, while representors expose intermediate activations for further study.
+The project provides a collection of small, composable building blocks for studying neural network generalization.  Models and optimizers are configured via dataclasses and linked together by factory functions, while the training loop uses the :class:`Trainer` class configured by :class:`TrainerConfig`.  Experiments orchestrate multiple trainers to evaluate training recipes on different data distributions.
 
