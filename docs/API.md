@@ -156,7 +156,6 @@ from src.models.targets.sum_prod import SumProdTarget
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 from src.training.trainer import Trainer
 
 cube_cfg = CubeDistributionConfig(
@@ -182,7 +181,6 @@ cfg = TrainerConfig(
     batch_size=8,
     epochs=1,
     home_dir=Path("/tmp/home"),
-    loss_config=LossConfig(name="MSELoss"),
     seed=0,
 )
 

@@ -1,9 +1,9 @@
 import torch
+import torch.nn.functional as F
 import pytest
 
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.data.joint_distributions.configs.cube_distribution import (
@@ -11,13 +11,7 @@ from src.data.joint_distributions.configs.cube_distribution import (
 )
 
 
-def test_trainer_uses_evaluator(tmp_path, monkeypatch):
-    class ConstEval(torch.nn.Module):
-        def forward(self, input, target):
-            return torch.tensor(5.0)
-
-    monkeypatch.setattr(LossConfig, "get_evaluator", lambda self: ConstEval())
-
+def test_trainer_reports_mse_loss(tmp_path):
     cfg = TrainerConfig(
         model_config=MLPConfig(
             input_dim=1,
@@ -41,11 +35,24 @@ def test_trainer_uses_evaluator(tmp_path, monkeypatch):
         batch_size=2,
         epochs=0,
         home_dir=tmp_path,
-        loss_config=LossConfig(name="MSELoss"),
     )
 
     trainer = Trainer(cfg)
     model, _ = trainer._initialize_model_and_optimizer()
 
-    assert trainer.test_loss(model) == pytest.approx(5.0)
+    test_loader = trainer.get_iterator("test")
+    total_loss = 0.0
+    total_samples = 0
+    model.eval()
+    with torch.no_grad():
+        for X, y in test_loader:
+            X, y = X.to(trainer.device), y.to(trainer.device)
+            batch_size = X.size(0)
+            preds = model(X)
+            batch_loss = F.mse_loss(preds, y).item()
+            total_loss += batch_loss * batch_size
+            total_samples += batch_size
+
+    expected_loss = total_loss / total_samples
+    assert trainer.test_loss(model) == pytest.approx(expected_loss)
 

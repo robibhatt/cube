@@ -3,7 +3,6 @@ import src.models.bootstrap  # noqa: F401
 
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.data.joint_distributions.configs.cube_distribution import (
@@ -35,7 +34,6 @@ def test_optimizer_values_written(tmp_path):
         batch_size=2,
         epochs=1,
         home_dir=tmp_path,
-        loss_config=LossConfig(name="MSELoss"),
         seed=0,
     )
     trainer = Trainer(cfg)
