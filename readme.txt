@@ -55,7 +55,7 @@ cube_cfg = CubeDistributionConfig(
     noise_std=0.0,
 )
 cfg = TrainerConfig(
-    model_config=MLPConfig(
+    mlp_config=MLPConfig(
         input_dim=cube_cfg.input_dim,
         output_dim=1,
         hidden_dims=[4],
@@ -76,7 +76,7 @@ cfg = TrainerConfig(
 trainer = Trainer(cfg)
 target = SumProdTarget(cube_cfg.target_function_config)
 # To construct a μP-scaled network instead of the standard variant, set
-# ``cfg.model_config.mup = True`` before creating the model.
+# ``cfg.mlp_config.mup = True`` before creating the model.
 gen = torch.Generator(device=trainer.device)
 dist = CubeDistribution(cube_cfg, trainer.device)
 provider = create_data_provider_from_distribution(

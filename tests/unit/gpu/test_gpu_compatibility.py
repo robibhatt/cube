@@ -73,7 +73,7 @@ def test_trainer_runs_on_gpu(tmp_path, mlp_config, adam_config):
     home.mkdir()
 
     cfg = TrainerConfig(
-        model_config=mlp_config,
+        mlp_config=mlp_config,
         optimizer_config=adam_config,
         cube_distribution_config=_cube_config(mlp_config.input_dim),
         train_size=4,

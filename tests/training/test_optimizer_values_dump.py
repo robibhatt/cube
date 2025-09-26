@@ -12,7 +12,7 @@ from src.data.joint_distributions.configs.cube_distribution import (
 
 def test_optimizer_values_written(tmp_path):
     cfg = TrainerConfig(
-        model_config=MLPConfig(
+        mlp_config=MLPConfig(
             input_dim=1,
             output_dim=1,
             hidden_dims=[],

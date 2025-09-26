@@ -30,7 +30,6 @@ from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.providers import create_data_provider_from_distribution
 from src.data.providers.data_provider import DataProvider
 from src.models.architectures.model import Model
-from src.models.architectures.model_factory import create_model
 from src.models.architectures.mlp import MLP
 from src.models.architectures.mlp_utils import (
     export_neuron_input_gradients,
@@ -296,7 +295,8 @@ class Trainer:
     def _initialize_model_and_optimizer(self) -> tuple[Model, Optimizer]:
         assert not self.started_training, "Training already started"
         torch.manual_seed(self.model_seed)
-        model = create_model(self.config.model_config)
+        assert self.config.mlp_config is not None
+        model = MLP(self.config.mlp_config)
         model.to(self.device)
 
         # Save an independent copy of the initial model before any training
@@ -331,7 +331,8 @@ class Trainer:
     def _load_model_and_optimizer(self) -> tuple[Model, Optimizer]:
         checkpoint = Checkpoint.from_dir(self.checkpoint_dir)
         torch.manual_seed(self.model_seed)
-        model = create_model(self.config.model_config)
+        assert self.config.mlp_config is not None
+        model = MLP(self.config.mlp_config)
         torch.manual_seed(self.optimizer_seed)
         optimizer = create_optimizer(self.optimizer_config, model)
         checkpoint.load(model=model, optimizer=optimizer.stepper)

@@ -1,7 +1,7 @@
 experiment_type: TrainMLP
 trainer_config:
     trainer_type: Trainer
-    model_config:
+    mlp_config:
         model_type: MLP
         input_dim: 16
         output_dim: 1

@@ -13,7 +13,7 @@ from src.data.joint_distributions.configs.cube_distribution import (
 
 def _make_trainer(tmp_path, hidden_dims):
     cfg = TrainerConfig(
-        model_config=MLPConfig(
+        mlp_config=MLPConfig(
             input_dim=1,
             output_dim=1,
             hidden_dims=hidden_dims,
@@ -37,7 +37,8 @@ def _make_trainer(tmp_path, hidden_dims):
         home_dir=tmp_path,
     )
     trainer = Trainer(cfg)
-    model = MLP(cfg.model_config)
+    assert cfg.mlp_config is not None
+    model = MLP(cfg.mlp_config)
     return trainer, model
 
 

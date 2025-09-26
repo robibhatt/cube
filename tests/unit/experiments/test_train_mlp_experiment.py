@@ -28,7 +28,7 @@ def _make_trainer_config() -> TrainerConfig:
         noise_std=0.0,
     )
     return TrainerConfig(
-        model_config=model_cfg,
+        mlp_config=model_cfg,
         cube_distribution_config=dist_cfg,
         train_size=1,
         test_size=1,

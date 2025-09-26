@@ -13,7 +13,7 @@ def test_trainer_completes_epoch(tmp_path):
     """Ensure the :class:`Trainer` can run a minimal training loop."""
 
     cfg = TrainerConfig(
-        model_config=MLPConfig(
+        mlp_config=MLPConfig(
             input_dim=1,
             output_dim=1,
             hidden_dims=[],

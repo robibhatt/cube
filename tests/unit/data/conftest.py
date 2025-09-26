@@ -56,7 +56,7 @@ def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
     home = tmp_path / "trainer_home"
     home.mkdir()
     cfg = TrainerConfig(
-        model_config=mlp_config,
+        mlp_config=mlp_config,
         optimizer_config=adam_config,
         cube_distribution_config=CubeDistributionConfig(
             input_dim=mlp_config.input_dim,
@@ -92,7 +92,7 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
         end_activation=False,
     )
     cfg = TrainerConfig(
-        model_config=model_cfg,
+        mlp_config=model_cfg,
         optimizer_config=adam_config,
         cube_distribution_config=CubeDistributionConfig(
             input_dim=2,

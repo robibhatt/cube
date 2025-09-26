@@ -11,7 +11,7 @@ def test_trainer_config_json_roundtrip(tmp_path):
     home_dir = tmp_path / "trainer_home"
     home_dir.mkdir()
     cfg = TrainerConfig(
-        model_config=MLPConfig(
+        mlp_config=MLPConfig(
             input_dim=3,
             output_dim=1,
             hidden_dims=[4, 2],
@@ -43,7 +43,7 @@ def test_trainer_config_requires_output_shape(tmp_path, mlp_config, adam_config)
     home_dir = tmp_path / "h"
     home_dir.mkdir()
     cfg = TrainerConfig(
-        model_config=mlp_config,
+        mlp_config=mlp_config,
         cube_distribution_config=CubeDistributionConfig(
             input_dim=mlp_config.input_dim + 1,
             indices_list=[[0]],
