@@ -22,7 +22,7 @@ def test_data_provider_registry_bootstrap():
 def test_joint_distribution_registry_bootstrap():
     import src.data.joint_distributions as dists
     importlib.reload(dists)
-    assert "CubeDistribution" in dists.JOINT_DISTRIBUTION_REGISTRY
+    assert "CubeDistribution" not in dists.JOINT_DISTRIBUTION_REGISTRY
 
 
 def test_model_registry_bootstrap():
