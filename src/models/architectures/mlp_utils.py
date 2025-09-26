@@ -18,11 +18,11 @@ from mup import Linear as MuLinear, MuReadout
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .mlp import MLP
-    from src.data.providers.data_provider import DataProvider
+    from src.data.providers.noisy_provider import NoisyProvider
 
 
 def export_neuron_input_gradients(
-    mlp: "MLP", data_provider: "DataProvider", path: Path
+    mlp: "MLP", data_provider: "NoisyProvider", path: Path
 ) -> None:
     """Compute average absolute input gradients for each neuron and save CSV."""
 

@@ -7,7 +7,7 @@ from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.joint_distributions.configs.cube_distribution import (
     CubeDistributionConfig,
 )
-from src.data.providers import create_data_provider_from_distribution
+from src.data.providers.noisy_provider import NoisyProvider
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 
@@ -51,11 +51,11 @@ def test_noisy_provider_yields_on_device():
         pytest.skip("GPU not available")
 
     dist = CubeDistribution(_cube_config(3), device)
-    provider = create_data_provider_from_distribution(
+    provider = NoisyProvider(
         dist,
-        batch_size=2,
-        dataset_size=4,
         seed=0,
+        dataset_size=4,
+        batch_size=2,
     )
     xb, yb = next(iter(provider))
     assert xb.device == device

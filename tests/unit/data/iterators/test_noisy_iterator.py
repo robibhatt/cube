@@ -4,7 +4,6 @@ import torch
 from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.data.providers.noisy_provider import NoisyProvider
-from src.data.providers import create_data_provider_from_distribution
 
 
 def _make_distribution():
@@ -48,14 +47,3 @@ def test_noisy_iterator_requires_cube_distribution():
     dist.config.distribution_type = "NotCubeDistribution"
     with pytest.raises(AssertionError):
         NoisyProvider(dist, seed=0, batch_size=1, dataset_size=1)
-
-
-def test_preferred_provider():
-    dist = _make_distribution()
-    provider = create_data_provider_from_distribution(
-        dist,
-        batch_size=2,
-        dataset_size=4,
-        seed=0,
-    )
-    assert isinstance(provider, NoisyProvider)

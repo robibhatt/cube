@@ -27,7 +27,6 @@ from torch.optim import Optimizer as TorchOptimizer
 
 from src.training.trainer_config import TrainerConfig
 from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.providers.data_provider import DataProvider
 from src.data.providers.noisy_provider import NoisyProvider
 from src.models.architectures.model import Model
 from src.models.architectures.mlp import MLP
@@ -258,7 +257,7 @@ class Trainer:
             with open(self.test_log_file, "a") as f:
                 f.write(f"{epoch},{test_loss}\n")
 
-    def get_iterator(self, split: str) -> DataProvider:
+    def get_iterator(self, split: str) -> NoisyProvider:
         size = self.config.train_size if split == "train" else self.config.test_size
         seed = self.train_seed if split == "train" else self.test_seed
         batch_size = self.config.batch_size or 1024
@@ -269,7 +268,7 @@ class Trainer:
             batch_size=batch_size,
         )
 
-    def get_fresh_iterator(self, size: int | None = None) -> DataProvider:
+    def get_fresh_iterator(self, size: int | None = None) -> NoisyProvider:
         """Return a data provider with a new, unique seed.
 
         Parameters
@@ -471,7 +470,7 @@ class Trainer:
     def _mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return F.mse_loss(pred, target)
 
-    def _loss(self, model: Model, iterator: DataProvider) -> float:
+    def _loss(self, model: Model, iterator: NoisyProvider) -> float:
         total_loss = 0.0
         total_samples = 0
 

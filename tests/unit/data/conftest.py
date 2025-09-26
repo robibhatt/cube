@@ -1,8 +1,8 @@
 import pytest
 import torch
+import pytest
 
 import src.models.bootstrap  # noqa: F401
-import src.data.providers.noisy_provider  # Register NoisyProvider
 from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.models.architectures.configs.mlp import MLPConfig
