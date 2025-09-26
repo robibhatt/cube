@@ -1,9 +1,6 @@
-# Import all concrete model architectures and their configs so that
-# registration decorators execute at import time.
+"""Ensure core model components are importable with a single import."""
 
-# Concrete model architectures
-from .architectures import mlp  # noqa: F401
-
-# Corresponding config modules
-from .architectures.configs import mlp as mlp_config  # noqa: F401
+# Importing these modules re-exports the key classes via ``src.models``.
+from . import mlp  # noqa: F401
+from . import mlp_config  # noqa: F401
 

@@ -16,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import src.models.bootstrap  # noqa: F401
 import src.models.targets  # noqa: F401
 import src.models.targets.configs  # noqa: F401
-import src.data.providers  # noqa: F401
+import src.data  # noqa: F401
 
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig

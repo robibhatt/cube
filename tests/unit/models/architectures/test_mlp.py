@@ -6,12 +6,12 @@ import torch.nn as nn
 from mup import Linear as MuLinear, MuReadout
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.mlp import MLP
-from src.models.architectures.configs.mlp import MLPConfig
-from src.models.architectures.mlp_utils import export_neuron_input_gradients
-from src.data.providers.noisy_provider import NoisyProvider
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
+from src.models.mlp import MLP
+from src.models.mlp_config import MLPConfig
+from src.models.mlp_utils import export_neuron_input_gradients
+from src.data.noisy_data_provider import NoisyProvider
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
 
 
 @pytest.fixture

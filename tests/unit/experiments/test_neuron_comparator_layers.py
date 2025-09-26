@@ -1,6 +1,6 @@
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.configs.mlp import MLPConfig
-from src.models.architectures.mlp import MLP
+from src.models.mlp_config import MLPConfig
+from src.models.mlp import MLP
 
 def _make_mlp(**kwargs):
     cfg = MLPConfig(

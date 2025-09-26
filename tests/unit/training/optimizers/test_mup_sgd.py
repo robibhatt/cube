@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.mlp import MLP
+from src.models.mlp import MLP
 from src.training.optimizers.optimizer_factory import create_optimizer
 from src.training.optimizers.configs.sgd import SgdConfig
 

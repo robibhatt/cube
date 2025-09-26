@@ -2,11 +2,11 @@ import csv
 import src.models.bootstrap  # noqa: F401
 
 from src.training.trainer_config import TrainerConfig
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp_config import MLPConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
 from src.utils.seed_manager import SeedManager
-from src.data.joint_distributions.configs.cube_distribution import (
+from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
 

@@ -39,10 +39,10 @@ Instantiate distributions directly by constructing
 ```python
 from pathlib import Path
 import torch
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp_config import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.training.trainer_config import TrainerConfig
 from src.training.trainer import Trainer

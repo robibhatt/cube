@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from torch.utils.data import Dataset
 
-from src.data.joint_distributions.cube_distribution import CubeDistribution
+from .cube_distribution import CubeDistribution
 
 
 class SeededNoisyDataset(Dataset):

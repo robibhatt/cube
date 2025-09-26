@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from typing import Iterator, Tuple
 import random
 
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.providers.seeded_noisy_dataset import SeededNoisyDataset
+from .cube_distribution import CubeDistribution
+from .seeded_noisy_dataset import SeededNoisyDataset
 
 @dataclass
 class NoisyProvider:

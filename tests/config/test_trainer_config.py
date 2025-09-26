@@ -1,7 +1,7 @@
 from src.training.trainer_config import TrainerConfig
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp_config import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
-from src.data.joint_distributions.configs.cube_distribution import (
+from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
 
