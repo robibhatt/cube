@@ -1,16 +1,19 @@
-from typing import Tuple
+from typing import Optional, Tuple
 import math
 import torch
 import random
 
-from .joint_distribution import JointDistribution
 from .configs.cube_distribution import CubeDistributionConfig
-from .joint_distribution_registry import register_joint_distribution
 from src.models.targets.sum_prod import SumProdTarget
 
-@register_joint_distribution("CubeDistribution")
-class CubeDistribution(JointDistribution):
+
+class CubeDistribution:
     def __init__(self, config: CubeDistributionConfig, device: torch.device) -> None:
+        self.config = config
+        self.device = torch.device(device)
+        self.input_dim = config.input_dim
+        self.well_specified = False
+
         self.base_input_shape = config.input_shape
         self.base_input_size = math.prod(self.base_input_shape)
         self.base_dtype = torch.float32
@@ -20,8 +23,7 @@ class CubeDistribution(JointDistribution):
         self.base_distribution_description = self._base_distribution_str
         self.target_function = SumProdTarget(config.target_function_config).to(device)
 
-        super().__init__(config=config, device=device)
-        self.well_specified = False
+        self._output_dim: Optional[int] = None
 
         x = self._sample_base_inputs(1, seed=0).to(self.device)
         y_clean = self.target_function(x)
@@ -30,6 +32,7 @@ class CubeDistribution(JointDistribution):
                 "target_function must return 2D tensors with a single output dimension"
             )
 
+        self._output_dim = y_clean.size(1)
         self.noise_shape = y_clean.shape[1:]
         noise_dtype = y_clean.dtype if torch.is_floating_point(y_clean) else torch.float32
         self.noise_dtype = noise_dtype
@@ -129,3 +132,25 @@ class CubeDistribution(JointDistribution):
         )
         x = x * 2 - 1
         return x.to(self.base_dtype)
+
+    @property
+    def input_shape(self) -> torch.Size:
+        return torch.Size([self.input_dim])
+
+    @property
+    def output_dim(self) -> int:
+        if self._output_dim is None:
+            raise RuntimeError("CubeDistribution output dimension has not been initialised")
+        return self._output_dim
+
+    @property
+    def output_shape(self) -> torch.Size:
+        return torch.Size([self.output_dim])
+
+    def average_output_variance(
+        self, n_samples: int = 1000, seed: int = 0
+    ) -> float:
+        _, y = self.sample(n_samples, seed)
+        y_flat = y.reshape(n_samples, -1)
+        var_per_coord = y_flat.var(dim=0, unbiased=False)
+        return var_per_coord.mean().item()
