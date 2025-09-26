@@ -1,12 +1,11 @@
 import pytest
 import torch
-import pytest
 
 import src.models.bootstrap  # noqa: F401
 from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.models.architectures.configs.mlp import MLPConfig
-from src.models.architectures.model_factory import create_model
+from src.models.architectures.mlp import MLP
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 
@@ -43,7 +42,7 @@ def create_mlp_config(tmp_path) -> MLPConfig:
         end_activation=False,
     )
 
-    model = create_model(config)
+    model = MLP(config)
     weight_file = tmp_path / "checkpoint.pth"
     torch.save(model.state_dict(), weight_file)
     return config

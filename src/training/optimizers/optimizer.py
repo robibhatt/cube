@@ -11,7 +11,7 @@ when no parameters are found.
 """
 
 from src.training.optimizers.configs.optimizer import OptimizerConfig
-from src.models.architectures.model import Model
+from src.models.architectures.mlp import MLP
 from abc import ABC
 from typing import List
 
@@ -41,7 +41,7 @@ class NullStepper:
         pass
 
 class Optimizer(ABC):
-    def __init__(self, config: OptimizerConfig, model: Model):
+    def __init__(self, config: OptimizerConfig, model: MLP):
         self.config = config
         self.model = model
 

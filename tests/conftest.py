@@ -1,7 +1,6 @@
 import pytest
 from src.training.optimizers.configs.sgd import SgdConfig
 from src.models.architectures.configs.mlp import MLPConfig
-import src.data.joint_distributions.bootstrap  # noqa: F401
 from src.training.optimizers.configs.adam import AdamConfig
 
 

@@ -7,16 +7,13 @@ from typing import TYPE_CHECKING
 
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
 
-from .model_registry import register_model
 from .activations import ACTIVATION_MAP
-from .model import Model
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .configs.mlp import MLPConfig
 
 
-@register_model("MLP")
-class MLP(Model):
+class MLP(nn.Module):
     """A configurable multi-layer perceptron.
 
     When ``config.mup`` is ``False`` (default) the network uses standard
@@ -29,7 +26,8 @@ class MLP(Model):
     # construction
     # ------------------------------------------------------------------
     def __init__(self, config: "MLPConfig") -> None:
-        super().__init__(config)
+        super().__init__()
+        self.config = config
         self.mup = config.mup
 
         # Honour the ``bias`` flag in the config (defaulting to ``True``)

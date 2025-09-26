@@ -1,6 +1,6 @@
 import src.models.bootstrap  # noqa: F401
 from src.models.architectures.configs.mlp import MLPConfig
-from src.models.architectures.model_factory import create_model
+from src.models.architectures.mlp import MLP
 
 def _make_mlp(**kwargs):
     cfg = MLPConfig(
@@ -12,7 +12,7 @@ def _make_mlp(**kwargs):
         end_activation=False,
         **kwargs,
     )
-    model = create_model(cfg)
+    model = MLP(cfg)
     return model
 
 def test_extract_weights_handles_custom_linear_layers(monkeypatch):

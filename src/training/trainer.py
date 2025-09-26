@@ -28,7 +28,6 @@ from torch.optim import Optimizer as TorchOptimizer
 from src.training.trainer_config import TrainerConfig
 from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.providers.noisy_provider import NoisyProvider
-from src.models.architectures.model import Model
 from src.models.architectures.mlp import MLP
 from src.models.architectures.mlp_utils import (
     export_neuron_input_gradients,
@@ -54,7 +53,7 @@ def detect_mup(optimizer: TorchOptimizer) -> bool:
 
 def dump_optimizer_values(
     optimizer: TorchOptimizer,
-    model: Model,
+    model: MLP,
     out_dir: Path,
     mup_used: bool = False,
 ) -> None:
@@ -236,7 +235,7 @@ class Trainer:
 
     def _save_checkpoint(
         self,
-        model: Model,
+        model: MLP,
         optimizer: Optimizer,
         training_loss: float,
         training_loss_with_l1: float,
@@ -287,7 +286,7 @@ class Trainer:
             batch_size=batch_size,
         )
 
-    def _initialize_model_and_optimizer(self) -> tuple[Model, Optimizer]:
+    def _initialize_model_and_optimizer(self) -> tuple[MLP, Optimizer]:
         assert not self.started_training, "Training already started"
         torch.manual_seed(self.model_seed)
         assert self.config.mlp_config is not None
@@ -323,7 +322,7 @@ class Trainer:
         )
         return model, optimizer
 
-    def _load_model_and_optimizer(self) -> tuple[Model, Optimizer]:
+    def _load_model_and_optimizer(self) -> tuple[MLP, Optimizer]:
         checkpoint = Checkpoint.from_dir(self.checkpoint_dir)
         torch.manual_seed(self.model_seed)
         assert self.config.mlp_config is not None
@@ -337,7 +336,7 @@ class Trainer:
 
         return model, optimizer
 
-    def _load_model(self) -> Model:
+    def _load_model(self) -> MLP:
         model, _ = self._load_model_and_optimizer()
         return model
 
@@ -470,7 +469,7 @@ class Trainer:
     def _mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return F.mse_loss(pred, target)
 
-    def _loss(self, model: Model, iterator: NoisyProvider) -> float:
+    def _loss(self, model: MLP, iterator: NoisyProvider) -> float:
         total_loss = 0.0
         total_samples = 0
 
@@ -486,7 +485,7 @@ class Trainer:
 
         return total_loss / total_samples
 
-    def _train_loss(self, model: Model) -> float:
+    def _train_loss(self, model: MLP) -> float:
         train_loader = self.get_iterator("train")
         total_loss = 0.0
         total_samples = 0
@@ -503,7 +502,7 @@ class Trainer:
 
         return total_loss / total_samples
 
-    def _l1_penalty(self, model: Model) -> torch.Tensor:
+    def _l1_penalty(self, model: MLP) -> torch.Tensor:
         if not isinstance(model, MLP):
             return torch.tensor(0.0, device=self.device)
 
@@ -524,7 +523,7 @@ class Trainer:
 
         return penalty
 
-    def _train_losses(self, model: Model) -> tuple[float, float]:
+    def _train_losses(self, model: MLP) -> tuple[float, float]:
         base_loss = self._train_loss(model)
         if self.config.weight_decay_l1 != 0.0 and isinstance(model, MLP):
             with torch.no_grad():
@@ -532,7 +531,7 @@ class Trainer:
             return base_loss, base_loss + self.config.weight_decay_l1 * l1
         return base_loss, base_loss
 
-    def test_loss(self, model: Model | None = None) -> float:
+    def test_loss(self, model: MLP | None = None) -> float:
         if model is None:
             model = self._load_model()
         test_loader = self.get_iterator("test")

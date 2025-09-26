@@ -7,14 +7,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
-from typing import Tuple
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
 
-from src.models.architectures.model import Model
+from src.models.architectures.mlp import MLP
 from src.data.providers.noisy_provider import NoisyProvider
+from src.training.trainer_factory import trainer_from_dir
 
 LINEAR_LAYERS = (nn.Linear, MuLinear, MuReadout)
-from src.training.trainer_factory import trainer_from_dir
 
 
 class NeuronComparator:
@@ -90,7 +89,7 @@ class NeuronComparator:
         return self._supports_full_plots
 
     # ------------------------------------------------------------------
-    def _normalise_network(self, mlp: Model) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _normalise_network(self, mlp: MLP) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return unit first-layer weights, rescaled outgoing weights and biases."""
         hidden_w, out_w, hidden_b = self._extract_weights(mlp)
         norms = np.linalg.norm(hidden_w, axis=1, keepdims=True)
@@ -100,7 +99,7 @@ class NeuronComparator:
         bias_scaled = hidden_b / norms.squeeze()
         return hidden_unit, out_scaled, bias_scaled
 
-    def _extract_weights(self, mlp: Model) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _extract_weights(self, mlp: MLP) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract first-layer weights, next-layer weights and first-layer biases.
 
         Networks without bias parameters are treated as having zero bias."""
@@ -134,7 +133,7 @@ class NeuronComparator:
 
         return hidden, out, hidden_bias_arr
 
-    def _compute_mse_for(self, student: Model) -> float:
+    def _compute_mse_for(self, student: MLP) -> float:
         """Compute mean squared error between ``student`` and the teacher."""
         self.teacher.eval()
         student.eval()
