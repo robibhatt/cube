@@ -2,46 +2,31 @@ import pytest
 import torch
 
 from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
-from src.data.joint_distributions.configs.joint_distribution_config_registry import (
-    JOINT_DISTRIBUTION_CONFIG_REGISTRY,
-    build_joint_distribution_config,
-    build_joint_distribution_config_from_dict,
-)
 
 
-def test_cube_config_registered():
-    assert "CubeDistribution" in JOINT_DISTRIBUTION_CONFIG_REGISTRY
-    assert (
-        JOINT_DISTRIBUTION_CONFIG_REGISTRY["CubeDistribution"]
-        is CubeDistributionConfig
-    )
-
-
-def test_build_cube_config():
-    cfg = build_joint_distribution_config(
-        "CubeDistribution",
+def test_cube_config_validates_and_sets_defaults():
+    cfg = CubeDistributionConfig(
         input_dim=2,
-        indices_list=[[0]],
-        weights=[0.0],
+        indices_list=[[0], [1]],
+        weights=[1.0, 2.0],
         normalize=False,
         noise_mean=1.0,
         noise_std=0.5,
     )
-    assert isinstance(cfg, CubeDistributionConfig)
     assert cfg.distribution_type == "CubeDistribution"
     assert cfg.input_shape == torch.Size([2])
     assert cfg.output_shape == torch.Size([1])
     assert cfg.noise_mean == pytest.approx(1.0)
     assert cfg.noise_std == pytest.approx(0.5)
-    assert cfg.target_function_config.indices_list == [[0]]
+    assert cfg.target_function_config.indices_list == [[0], [1]]
 
 
 def test_cube_config_json_roundtrip():
     cfg = CubeDistributionConfig(
-        input_dim=2,
-        indices_list=[[0], [1]],
-        weights=[1.0, 1.0],
-        normalize=False,
+        input_dim=3,
+        indices_list=[[0], [1, 2]],
+        weights=[0.5, 1.5],
+        normalize=True,
         noise_mean=0.0,
         noise_std=1.0,
     )
@@ -50,19 +35,38 @@ def test_cube_config_json_roundtrip():
     assert restored == cfg
 
 
-def test_cube_config_from_dict_via_registry():
-    data = {
-        "distribution_type": "CubeDistribution",
-        "input_dim": 2,
-        "indices_list": [[0], [1]],
-        "weights": [1.0, 1.0],
-        "normalize": False,
-        "noise_mean": 0.25,
-        "noise_std": 0.75,
-    }
-    cfg = build_joint_distribution_config_from_dict(data)
-    assert isinstance(cfg, CubeDistributionConfig)
-    assert cfg.input_shape == torch.Size([2])
-    assert cfg.output_shape == torch.Size([1])
-    assert cfg.noise_mean == pytest.approx(0.25)
-    assert cfg.noise_std == pytest.approx(0.75)
+def test_cube_config_validation_errors():
+    with pytest.raises(ValueError, match="positive integer"):
+        CubeDistributionConfig(
+            input_dim=0,
+            indices_list=[[0]],
+            weights=[1.0],
+        )
+
+    with pytest.raises(ValueError, match="non-empty list"):
+        CubeDistributionConfig(
+            input_dim=2,
+            indices_list=[],
+            weights=[],
+        )
+
+    with pytest.raises(ValueError, match="same length"):
+        CubeDistributionConfig(
+            input_dim=2,
+            indices_list=[[0]],
+            weights=[1.0, 2.0],
+        )
+
+    with pytest.raises(ValueError, match="non-empty"):
+        CubeDistributionConfig(
+            input_dim=2,
+            indices_list=[[]],
+            weights=[1.0],
+        )
+
+    with pytest.raises(ValueError, match=">= input_dim"):
+        CubeDistributionConfig(
+            input_dim=2,
+            indices_list=[[2]],
+            weights=[1.0],
+        )

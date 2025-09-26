@@ -28,19 +28,15 @@ src/
 
 #### Joint Distributions
 
-- **`JointDistribution`** – base class providing `(X, y)` sampling.
-  - `sample(n, seed)` – draw pairs using the given seed. A generator is
-        constructed internally.
-    - `preferred_provider()` – returns a string identifying the desired
-          data provider (e.g., ``"TensorDataProvider"``). This string is used to
-          look up the class in :data:`DATA_PROVIDER_REGISTRY`.
-  - Use ``create_joint_distribution(cfg, device)`` to build an instance. The
-        factory resolves ``cfg.distribution_type`` via
-        :data:`JOINT_DISTRIBUTION_REGISTRY`.
-  - Use ``create_data_provider_from_distribution(dist, dataset_dir, batch_size, dataset_size, seed)``
-        to build the provider.  Device placement is inherited from ``dist`` and
-        the factory resolves the provider class via :data:`DATA_PROVIDER_REGISTRY`.
-- **`CubeDistribution`** – mirrors a `MappedJointDistribution` built from a base distribution and target function, then adds Gaussian noise with configurable mean and standard deviation to its targets.
+- **`CubeDistribution`** – generates binary inputs from a hypercube and passes
+  them through :class:`~src.models.targets.sum_prod.SumProdTarget` before adding
+  configurable Gaussian noise to the targets. The accompanying
+  :class:`~src.data.joint_distributions.configs.cube_distribution.CubeDistributionConfig`
+  dataclass stores the parameters required to instantiate the distribution.
+- Use ``create_data_provider_from_distribution(dist, dataset_dir, batch_size, dataset_size, seed)``
+  to build the provider associated with the distribution. Device placement is
+  inherited from ``dist`` and the factory resolves the provider class via
+  :data:`DATA_PROVIDER_REGISTRY`.
 
 #### Target Functions
 
@@ -54,7 +50,7 @@ src/
    instances.
   - **`TensorDataProvider`** – streams samples using ``DeterministicDataset``.
   - `make_loader()` – instantiate a ``DeterministicDataset`` of that size and return a `DataLoader`.
- - **`DeterministicDataset`** – dataset that draws samples deterministically from a `JointDistribution`.
+ - **`DeterministicDataset`** – dataset that draws samples deterministically from a `CubeDistribution`.
 
 ### `src/models`
 

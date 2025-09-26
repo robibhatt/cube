@@ -3,14 +3,14 @@ from __future__ import annotations
 import torch
 from torch.utils.data import Dataset
 
-from src.data.joint_distributions.joint_distribution import JointDistribution
+from src.data.joint_distributions.cube_distribution import CubeDistribution
 
 class DeterministicDataset(Dataset):
     """Dataset that deterministically samples from a distribution per index."""
 
     def __init__(
         self,
-        distribution: JointDistribution,
+        distribution: CubeDistribution,
         size: int,
         seed: int = 0,
     ) -> None:

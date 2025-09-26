@@ -1,8 +1,5 @@
-"""Bootstrap registrations for joint distributions and their configs."""
+"""Bootstrap module retained for backwards compatibility."""
 
-# Import the Cube distribution so that its registration decorator executes at
-# import time.
-from . import cube_distribution  # noqa: F401
-
-# Import the corresponding config module for the same reason.
-from .configs import cube_distribution as cube_distribution_config  # noqa: F401
+# With CubeDistribution as the sole distribution, importing this module has no
+# side effects. The file remains so that legacy imports
+# ``import src.data.joint_distributions.bootstrap`` continue to succeed.

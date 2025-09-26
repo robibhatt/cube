@@ -19,10 +19,11 @@ def test_data_provider_registry_bootstrap():
     assert "NoisyProvider" in providers.DATA_PROVIDER_REGISTRY
 
 
-def test_joint_distribution_registry_bootstrap():
+def test_joint_distribution_bootstrap():
     import src.data.joint_distributions as dists
     importlib.reload(dists)
-    assert "CubeDistribution" not in dists.JOINT_DISTRIBUTION_REGISTRY
+    assert hasattr(dists, "CubeDistribution")
+    assert hasattr(dists, "CubeDistributionConfig")
 
 
 def test_model_registry_bootstrap():

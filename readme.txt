@@ -32,9 +32,9 @@ Specifying devices
 Pass a ``device`` argument when creating a :class:`Trainer`.  Provide a
 :class:`torch.device` instance such as ``torch.device("cpu")`` or
 ``torch.device("cuda:0")`` to select where tensors are allocated.
-Functions such as ``JointDistribution.sample`` require a ``torch.Generator``.
-Distributions themselves are instantiated via the ``create_joint_distribution``
-factory function, which looks up classes in registry dictionaries.
+Functions such as ``CubeDistribution.sample`` require a ``torch.Generator``.
+Instantiate distributions directly by constructing
+``CubeDistributionConfig`` and passing it to ``CubeDistribution``.
 
 ```python
 from pathlib import Path
