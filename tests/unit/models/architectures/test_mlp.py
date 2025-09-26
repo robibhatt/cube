@@ -6,7 +6,7 @@ import torch.nn as nn
 from mup import Linear as MuLinear, MuReadout
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.model_factory import create_model
+from src.models.architectures.mlp import MLP
 from src.models.architectures.configs.mlp import MLPConfig
 from src.models.architectures.mlp_utils import export_neuron_input_gradients
 from src.data.providers.noisy_provider import NoisyProvider
@@ -30,12 +30,12 @@ def basic_config():
 @pytest.fixture
 def model(basic_config):
     """Basic MLP model with 2 hidden layers."""
-    return create_model(basic_config)
+    return MLP(basic_config)
 
 
 def test_initialization(basic_config):
     """Model should process input and produce output with configured dimensions."""
-    model = create_model(basic_config)
+    model = MLP(basic_config)
 
     x = torch.randn(5, basic_config.input_dim)
     y = model(x)
@@ -67,7 +67,7 @@ def test_different_activations():
             start_activation=False,
             end_activation=False,
         )
-        model = create_model(config)
+        model = MLP(config)
 
         # Test forward pass
         x = torch.randn(4, 2)
@@ -90,7 +90,7 @@ def test_invalid_activation():
     )
 
     with pytest.raises(ValueError, match="Unsupported activation"):
-        create_model(config)
+        MLP(config)
 
 
 
@@ -106,7 +106,7 @@ def test_start_and_end_activation_flags():
         start_activation=True,
         end_activation=False,
     )
-    m_start = create_model(cfg_start)
+    m_start = MLP(cfg_start)
 
     # Forward pass should respect configured dimensions
     assert m_start(torch.randn(2, cfg_start.input_dim)).shape == (
@@ -123,7 +123,7 @@ def test_start_and_end_activation_flags():
         start_activation=False,
         end_activation=True,
     )
-    m_end = create_model(cfg_end)
+    m_end = MLP(cfg_end)
 
     assert m_end(torch.randn(2, cfg_end.input_dim)).shape == (
         2,
@@ -139,7 +139,7 @@ def test_start_and_end_activation_flags():
         start_activation=True,
         end_activation=True,
     )
-    m_both = create_model(cfg_both)
+    m_both = MLP(cfg_both)
 
     assert m_both(torch.randn(2, cfg_both.input_dim)).shape == (
         2,
@@ -150,7 +150,7 @@ def test_start_and_end_activation_flags():
 def test_mup_initialization_uses_mup_layers(basic_config):
     """MLP with ``mup=True`` in its config should use MuP layers."""
     cfg = replace(basic_config, mup=True)
-    model = create_model(cfg)
+    model = MLP(cfg)
 
     # first hidden layer should be MuLinear and last layer MuReadout
     assert isinstance(model.layers[0 if not basic_config.start_activation else 1], MuLinear)
@@ -160,7 +160,7 @@ def test_mup_initialization_uses_mup_layers(basic_config):
 def test_mup_get_base_model(basic_config):
     """``get_base_model`` should return a base-width ``MLP`` when ``mup=True``."""
     cfg = replace(basic_config, mup=True)
-    model = create_model(cfg)
+    model = MLP(cfg)
     base = model.get_base_model()
     assert base is not None and base.config.model_type == "MLP"
     assert base.mup is True
@@ -169,7 +169,7 @@ def test_mup_get_base_model(basic_config):
 
 def test_get_base_model_none_without_mup(basic_config):
     """Without MuP, ``get_base_model`` should return ``None``."""
-    model = create_model(basic_config)
+    model = MLP(basic_config)
     assert model.get_base_model() is None
 
 
@@ -185,7 +185,7 @@ def test_mup_disallows_end_activation(basic_config):
         mup=True,
     )
     with pytest.raises(ValueError):
-        create_model(cfg)
+        MLP(cfg)
 
 
 def test_bias_flag_controls_bias_params():
@@ -199,7 +199,7 @@ def test_bias_flag_controls_bias_params():
         end_activation=False,
         bias=False,
     )
-    model_no_bias = create_model(cfg_no_bias)
+    model_no_bias = MLP(cfg_no_bias)
     linear_layers_no_bias = [
         l for l in model_no_bias.layers if isinstance(l, (nn.Linear, MuLinear, MuReadout))
     ]
@@ -208,7 +208,7 @@ def test_bias_flag_controls_bias_params():
 
     # default ``bias=True`` should retain bias parameters
     cfg_bias = replace(cfg_no_bias, bias=True)
-    model_bias = create_model(cfg_bias)
+    model_bias = MLP(cfg_bias)
     linear_layers_bias = [
         l for l in model_bias.layers if isinstance(l, (nn.Linear, MuLinear, MuReadout))
     ]
@@ -225,7 +225,7 @@ def test_export_neuron_input_gradients_layer_numbering(tmp_path):
         start_activation=False,
         end_activation=False,
     )
-    model = create_model(cfg)
+    model = MLP(cfg)
 
     dist_cfg = CubeDistributionConfig(
         input_dim=2,

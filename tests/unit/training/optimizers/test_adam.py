@@ -1,11 +1,9 @@
 import pytest
 import torch
-import pytest
-import torch
 import torch.nn.functional as F
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.model_factory import create_model
+from src.models.architectures.mlp import MLP
 from src.training.optimizers.optimizer_factory import create_optimizer
 from src.training.optimizers.configs.adam import AdamConfig
 
@@ -18,7 +16,7 @@ from src.training.optimizers.configs.adam import AdamConfig
 
 @pytest.fixture
 def model(mlp_config):
-    return create_model(mlp_config)
+    return MLP(mlp_config)
 
 
 @pytest.fixture
@@ -32,7 +30,7 @@ def optimizer(model, adam_config):
 
 def test_initialization(mlp_config):
     """Verify the MLP layer shapes are as expected."""
-    model = create_model(mlp_config)
+    model = MLP(mlp_config)
 
     # Net layout: Linear‑ReLU‑Linear‑ReLU‑Linear
     assert len(model.net) == 5
@@ -42,7 +40,7 @@ def test_initialization(mlp_config):
 
 
 def test_initialization_2(mlp_config, adam_config):
-    model = create_model(mlp_config)
+    model = MLP(mlp_config)
     optimizer = create_optimizer(adam_config, model)
     assert optimizer.config.lr == pytest.approx(2.5)
 
@@ -54,7 +52,7 @@ def test_initialization_2(mlp_config, adam_config):
 def test_step_updates_parameters(mlp_config, adam_config):
     """After a backward/step cycle at least one parameter tensor should change."""
     torch.manual_seed(0)
-    model = create_model(mlp_config)
+    model = MLP(mlp_config)
     optimizer = create_optimizer(adam_config, model)
 
     x = torch.randn(8, mlp_config.input_dim)
@@ -74,7 +72,7 @@ def test_step_updates_parameters(mlp_config, adam_config):
 def test_lr_is_passed_through(mlp_config):
     """Ensure the LR specified in the config reaches the underlying torch optimiser."""
     cfg = AdamConfig(lr=0.123)
-    opt = create_optimizer(cfg, create_model(mlp_config))
+    opt = create_optimizer(cfg, MLP(mlp_config))
     assert isinstance(opt.stepper, torch.optim.Adam)
     assert opt.stepper.param_groups[0]["lr"] == pytest.approx(0.123)
 
@@ -82,7 +80,7 @@ def test_lr_is_passed_through(mlp_config):
 def test_weight_decay_is_passed_through(mlp_config):
     """Ensure weight decay reaches the torch optimiser."""
     cfg = AdamConfig(lr=0.01, weight_decay=0.2)
-    opt = create_optimizer(cfg, create_model(mlp_config))
+    opt = create_optimizer(cfg, MLP(mlp_config))
     assert isinstance(opt.stepper, torch.optim.Adam)
     assert opt.stepper.param_groups[0]["weight_decay"] == pytest.approx(0.2)
 

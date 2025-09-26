@@ -1,7 +1,7 @@
 from mup import MuSGD, set_base_shapes
 from torch.optim import SGD as TorchSGD
 
-from src.models.architectures.model import Model
+from src.models.architectures.mlp import MLP
 from src.training.optimizers.configs.sgd import SgdConfig
 from src.training.optimizers.optimizer import Optimizer, NullStepper
 from src.training.optimizers.optimizer_registry import register_optimizer
@@ -9,7 +9,7 @@ from src.training.optimizers.optimizer_registry import register_optimizer
 
 @register_optimizer("sgd")
 class Sgd(Optimizer):
-    def __init__(self, config: SgdConfig, model: Model) -> None:
+    def __init__(self, config: SgdConfig, model: MLP) -> None:
         super().__init__(config, model)
 
         assert isinstance(self.config, SgdConfig)

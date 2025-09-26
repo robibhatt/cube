@@ -56,14 +56,11 @@ src/
 
 #### Architectures
 
-- **`Model`** (abstract, subclass of `nn.Module`) – base class holding a `ModelConfig`.
 - **`MLP`** – configurable feed-forward network with optional activations before and after layers.  Set ``mup=True`` in its config to build the network using μP layers (``mup.MuLinear``/``MuReadout``) instead of standard ``nn.Linear`` modules.
-- **`create_model(config)`** – factory that looks up architectures via `MODEL_REGISTRY`.
 
 #### Configs
 
-- `ModelConfig` – dataclass base with optional `input_shape`, `output_shape`.
-- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag to enable μP layers.
+- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag to enable μP layers.  The config now also stores ``input_shape`` and ``output_shape`` derived from the dimensions, so no shared base class is required.
 
 ### `src/training`
 
@@ -110,7 +107,7 @@ src/
 
 ## Configuration Objects
 
-Configuration throughout the codebase is captured via small dataclasses rather than external YAML or JSON.  Key configuration classes include `ModelConfig` and its subclasses, `OptimizerConfig` subclasses, and `TrainerConfig` in `src/training/trainer_config` and optimizer configs in `src/training/optimizers/configs`.  Experiments also define dataclass configs (e.g., `RepeatedSamplingExperimentConfig`).  These objects are created frequently in tests and scripts, so correct field values are critical for proper directory creation and checkpoint handling.
+Configuration throughout the codebase is captured via small dataclasses rather than external YAML or JSON.  Key configuration classes include `MLPConfig`, the `OptimizerConfig` subclasses, and `TrainerConfig` in `src/training/trainer_config`.  Experiments also define dataclass configs (e.g., `RepeatedSamplingExperimentConfig`).  These objects are created frequently in tests and scripts, so correct field values are critical for proper directory creation and checkpoint handling.
 
 ## Interactions and Dependencies
 
@@ -120,15 +117,13 @@ Configuration throughout the codebase is captured via small dataclasses rather t
 
 ## Automatic Plugin Imports
 
-The project relies on small registries for models, optimizers, and other
-plugins. Each package's ``__init__`` module calls
-``import_submodules(__name__)`` from :mod:`src.utils.plugin_loader`, which walks
-the package and imports every submodule. Importing a module executes decorators
-like ``@register_optimizer`` that populate the relevant registry. Data
-providers no longer participate in this plugin system – the only implementation
-required for current experiments is :class:`NoisyProvider`, which is constructed
-explicitly where needed. Target functions are similarly instantiated directly
-from their configs.
+The project relies on a small registry for optimizers and various experiment
+helpers. Importing a module executes decorators like ``@register_optimizer``
+that populate the relevant registry. Models are now instantiated directly
+without a registry. Data providers no longer participate in this plugin system –
+the only implementation required for current experiments is
+:class:`NoisyProvider`, which is constructed explicitly where needed. Target
+functions are similarly instantiated directly from their configs.
 
 The training loop itself is provided by the concrete :class:`Trainer` in
 ``src/training/trainer.py`` and configured via :class:`TrainerConfig` from

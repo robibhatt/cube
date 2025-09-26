@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
-from typing import List
-from dataclasses_json import dataclass_json
+from typing import List, Optional
+from dataclasses_json import dataclass_json, config
 
-from .base import ModelConfig
-from .model_config_registry import register_model_config
 import torch
 
-@register_model_config("MLP")
+from src.utils.serialization_utils import encode_shape, decode_shape
+
+
 @dataclass_json
 @dataclass(kw_only=True)
-class MLPConfig(ModelConfig):
+class MLPConfig:
     input_dim: int
     output_dim: int
     hidden_dims: List[int]
@@ -19,6 +19,17 @@ class MLPConfig(ModelConfig):
     bias: bool = True
     mup: bool = False
     frozen_layers: List[int] = field(default_factory=list)
+    model_type: str = field(init=False, default="MLP")
+    input_shape: Optional[torch.Size] = field(
+        init=False,
+        default=None,
+        metadata=config(encoder=encode_shape, decoder=decode_shape),
+    )
+    output_shape: Optional[torch.Size] = field(
+        init=False,
+        default=None,
+        metadata=config(encoder=encode_shape, decoder=decode_shape),
+    )
 
     def __post_init__(self):
         self.model_type = "MLP"

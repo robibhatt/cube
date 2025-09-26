@@ -1,14 +1,14 @@
 from mup import MuAdam, set_base_shapes
 from torch.optim import Adam as TorchAdam
 
-from src.models.architectures.model import Model
+from src.models.architectures.mlp import MLP
 from src.training.optimizers.configs.adam import AdamConfig
 from src.training.optimizers.optimizer import Optimizer, NullStepper
 from src.training.optimizers.optimizer_registry import register_optimizer
 
 @register_optimizer("Adam")
 class Adam(Optimizer):
-    def __init__(self, config: AdamConfig, model: Model) -> None:
+    def __init__(self, config: AdamConfig, model: MLP) -> None:
         super().__init__(config, model)
 
         # make sure we got the right config

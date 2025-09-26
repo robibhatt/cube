@@ -1,9 +1,6 @@
 from pathlib import Path
 import pytest
 
-import src.data.joint_distributions.bootstrap  # noqa: F401
-
-
 @pytest.fixture(scope="session")
 def benchmark_logger():
     """Return a logger for writing benchmark results.

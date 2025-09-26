@@ -1,14 +1,10 @@
-import torch
-import torch.nn as nn
-import pytest
-
 import pytest
 import torch
 import torch.nn as nn
 from mup import MuSGD
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.model_factory import create_model
+from src.models.architectures.mlp import MLP
 from src.models.architectures.configs.mlp import MLPConfig
 
 
@@ -43,7 +39,7 @@ def test_frozen_layer_indices_validation():
 
 
 def test_layer_indexing_order():
-    model = create_model(_basic_cfg())
+    model = MLP(_basic_cfg())
     assert len(model.linear_layers) == 3
     l1, l2, l3 = model.linear_layers
     assert isinstance(l1, nn.Linear) and l1.out_features == 4
@@ -53,11 +49,11 @@ def test_layer_indexing_order():
 
 def test_freezing_copies_and_freezes_non_mup():
     torch.manual_seed(0)
-    donor = create_model(_basic_cfg())
+    donor = MLP(_basic_cfg())
     donor_w = donor.linear_layers[1].weight.clone()
 
     torch.manual_seed(1)
-    model = create_model(_basic_cfg(frozen_layers=[2]))
+    model = MLP(_basic_cfg(frozen_layers=[2]))
     model.copy_weights_from_donor(donor, [2])
 
     assert torch.equal(model.linear_layers[1].weight, donor_w)
@@ -78,11 +74,11 @@ def test_freezing_copies_and_freezes_non_mup():
 
 def test_freezing_with_mup():
     torch.manual_seed(0)
-    donor = create_model(_basic_cfg(mup=True))
+    donor = MLP(_basic_cfg(mup=True))
     donor_w = donor.linear_layers[2].weight.clone()
 
     torch.manual_seed(1)
-    model = create_model(_basic_cfg(mup=True, frozen_layers=[3]))
+    model = MLP(_basic_cfg(mup=True, frozen_layers=[3]))
     model.copy_weights_from_donor(donor, [3])
 
     assert torch.equal(model.linear_layers[2].weight, donor_w)
