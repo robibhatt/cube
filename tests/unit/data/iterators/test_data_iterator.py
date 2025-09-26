@@ -3,12 +3,11 @@ import torch
 from src.data.providers.tensor_data_provider import TensorDataProvider
 
 
-def test_make_loader_returns_expected_batches(tmp_path, constant_cube_distribution):
+def test_make_loader_returns_expected_batches(constant_cube_distribution):
     dist = constant_cube_distribution
     seed = 0
     iterator = TensorDataProvider(
         dist,
-        tmp_path,
         seed,
         dataset_size=4,
         batch_size=2,
@@ -28,14 +27,14 @@ def test_make_loader_returns_expected_batches(tmp_path, constant_cube_distributi
     assert torch.allclose(y_all, torch.full((4, 1), 5.0))
 
 
-def test_tensor_iterator_deterministic_across_calls(tmp_path, constant_cube_distribution):
+def test_tensor_iterator_deterministic_across_calls(constant_cube_distribution):
     dist = constant_cube_distribution
 
     seed = 0
-    iterator1 = TensorDataProvider(dist, tmp_path, seed, batch_size=2, dataset_size=4)
+    iterator1 = TensorDataProvider(dist, seed, batch_size=2, dataset_size=4)
     first = list(iterator1.data_loader)
 
-    iterator2 = TensorDataProvider(dist, tmp_path, seed, batch_size=2, dataset_size=4)
+    iterator2 = TensorDataProvider(dist, seed, batch_size=2, dataset_size=4)
     second = list(iterator2.data_loader)
 
     assert all(torch.equal(a[0], b[0]) and torch.equal(a[1], b[1]) for a, b in zip(first, second))

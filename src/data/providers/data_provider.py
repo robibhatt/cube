@@ -1,6 +1,5 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator, Tuple
 
@@ -14,7 +13,6 @@ class DataProvider(ABC):
     """Abstract interface for dataset generation and ``DataLoader`` creation."""
 
     joint_distribution: CubeDistribution
-    dataset_dir: Path
     seed: int
     dataset_size: int
     batch_size: int

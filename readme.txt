@@ -81,7 +81,6 @@ gen = torch.Generator(device=trainer.device)
 dist = CubeDistribution(cube_cfg, trainer.device)
 provider = create_data_provider_from_distribution(
     dist,
-    Path("/tmp"),
     batch_size=32,
     dataset_size=100,
     seed=0,

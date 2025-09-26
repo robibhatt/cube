@@ -5,7 +5,6 @@ from .provider_registry import DATA_PROVIDER_REGISTRY
 
 def create_data_provider_from_distribution(
     dist,
-    dataset_dir,
     batch_size,
     dataset_size,
     seed,
@@ -17,7 +16,6 @@ def create_data_provider_from_distribution(
     provider_cls = DATA_PROVIDER_REGISTRY[provider_type]
     return provider_cls(
         dist,
-        dataset_dir,
         seed,
         batch_size=batch_size,
         dataset_size=dataset_size,

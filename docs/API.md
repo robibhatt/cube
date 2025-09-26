@@ -33,7 +33,7 @@ src/
   configurable Gaussian noise to the targets. The accompanying
   :class:`~src.data.joint_distributions.configs.cube_distribution.CubeDistributionConfig`
   dataclass stores the parameters required to instantiate the distribution.
-- Use ``create_data_provider_from_distribution(dist, dataset_dir, batch_size, dataset_size, seed)``
+- Use ``create_data_provider_from_distribution(dist, batch_size, dataset_size, seed)``
   to build the provider associated with the distribution. Device placement is
   inherited from ``dist`` and the factory resolves the provider class via
   :data:`DATA_PROVIDER_REGISTRY`.
@@ -45,9 +45,8 @@ src/
 #### Data Providers
 
  - **`DataIterator`** – dataclass interface for creating datasets and loaders.
-   Stores ``joint_distribution``, ``dataset_dir``, ``seed``, ``dataset_size``
-   and ``batch_size`` for use by subclasses when constructing ``DataLoader``
-   instances.
+   Stores ``joint_distribution``, ``seed``, ``dataset_size`` and ``batch_size``
+   for use by subclasses when constructing ``DataLoader`` instances.
   - **`TensorDataProvider`** – streams samples using ``DeterministicDataset``.
   - `make_loader()` – instantiate a ``DeterministicDataset`` of that size and return a `DataLoader`.
  - **`DeterministicDataset`** – dataset that draws samples deterministically from a `CubeDistribution`.
