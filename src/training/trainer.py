@@ -32,6 +32,10 @@ from src.data.providers.data_provider import DataProvider
 from src.models.architectures.model import Model
 from src.models.architectures.model_factory import create_model
 from src.models.architectures.mlp import MLP
+from src.models.architectures.mlp_utils import (
+    export_neuron_input_gradients,
+    visualize,
+)
 from src.training.optimizers.optimizer import Optimizer
 from src.training.optimizers.optimizer_factory import create_optimizer
 from src.checkpoints.checkpoint import Checkpoint
@@ -455,8 +459,8 @@ class Trainer:
             # ------------------------------------------------------------------
             data_provider = self.get_fresh_iterator()
             grads_path = self.config.home_dir / "neuron_input_gradients.csv"
-            model.export_neuron_input_gradients(data_provider, grads_path)
-            model.visualize(self.config.home_dir)
+            export_neuron_input_gradients(model, data_provider, grads_path)
+            visualize(model, self.config.home_dir)
 
     def train(self) -> None:
         if not self.started_training or not self.finished_training:
