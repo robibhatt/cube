@@ -10,7 +10,7 @@ def test_default_optimizer(tmp_path):
     home_dir = tmp_path / "trainer_home"
     home_dir.mkdir()
     cfg = TrainerConfig(
-        model_config=MLPConfig(
+        mlp_config=MLPConfig(
             input_dim=3,
             output_dim=1,
             hidden_dims=[4, 2],

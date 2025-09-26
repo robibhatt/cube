@@ -166,7 +166,7 @@ cube_cfg = CubeDistributionConfig(
     noise_std=0.1,
 )
 cfg = TrainerConfig(
-    model_config=MLPConfig(
+    mlp_config=MLPConfig(
         input_dim=cube_cfg.input_dim,
         output_dim=1,
         hidden_dims=[4],
