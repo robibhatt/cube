@@ -9,7 +9,9 @@ import src.models.bootstrap  # noqa: F401
 from src.models.architectures.model_factory import create_model
 from src.models.architectures.configs.mlp import MLPConfig
 from src.models.architectures.mlp_utils import export_neuron_input_gradients
-from src.data.providers.data_provider import DataProvider
+from src.data.providers.noisy_provider import NoisyProvider
+from src.data.joint_distributions.cube_distribution import CubeDistribution
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 
 
 @pytest.fixture
@@ -225,21 +227,21 @@ def test_export_neuron_input_gradients_layer_numbering(tmp_path):
     )
     model = create_model(cfg)
 
-    class DummyProvider(DataProvider):
-        def __init__(self, X, y):
-            self.joint_distribution = None  # type: ignore[assignment]
-            self.seed = 0
-            self.dataset_size = X.size(0)
-            self.batch_size = X.size(0)
-            self._X = X
-            self._y = y
-
-        def __iter__(self):  # type: ignore[override]
-            yield self._X, self._y
-
-    X = torch.randn(4, cfg.input_dim)
-    y = torch.zeros(4, cfg.output_dim)
-    provider = DummyProvider(X, y)
+    dist_cfg = CubeDistributionConfig(
+        input_dim=2,
+        indices_list=[[0]],
+        weights=[0.0],
+        normalize=False,
+        noise_mean=0.0,
+        noise_std=0.0,
+    )
+    distribution = CubeDistribution(dist_cfg, torch.device("cpu"))
+    provider = NoisyProvider(
+        distribution,
+        seed=0,
+        dataset_size=4,
+        batch_size=4,
+    )
     out_path = tmp_path / "grads.csv"
     export_neuron_input_gradients(model, provider, out_path)
 

@@ -11,6 +11,7 @@ from typing import Tuple
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
 
 from src.models.architectures.model import Model
+from src.data.providers.noisy_provider import NoisyProvider
 
 LINEAR_LAYERS = (nn.Linear, MuLinear, MuReadout)
 from src.training.trainer_factory import trainer_from_dir
@@ -53,18 +54,14 @@ class NeuronComparator:
         self.teacher = teacher
         self.student = student
 
-        from src.data.providers.data_provider_factory import (
-            create_data_provider_from_distribution,
-        )
-
         seed = random.randint(0, 2**32 - 1)
         batch_size = student_trainer.config.batch_size or 1024
         dataset_size = student_trainer.config.test_size
-        self.test_loader = create_data_provider_from_distribution(
+        self.test_loader = NoisyProvider(
             student_trainer.joint_distribution,
-            batch_size,
-            dataset_size,
-            seed,
+            seed=seed,
+            dataset_size=dataset_size,
+            batch_size=batch_size,
         )
 
         # Track whether we can generate the full suite of plots (single hidden layer)

@@ -8,10 +8,7 @@ import random
 
 from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.providers.seeded_noisy_dataset import SeededNoisyDataset
-from src.data.providers.provider_registry import register_data_provider
 
-
-@register_data_provider("NoisyProvider")
 @dataclass
 class NoisyProvider:
     joint_distribution: CubeDistribution

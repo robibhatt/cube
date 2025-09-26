@@ -79,11 +79,11 @@ target = SumProdTarget(cube_cfg.target_function_config)
 # ``cfg.mlp_config.mup = True`` before creating the model.
 gen = torch.Generator(device=trainer.device)
 dist = CubeDistribution(cube_cfg, trainer.device)
-provider = create_data_provider_from_distribution(
+provider = NoisyProvider(
     dist,
-    batch_size=32,
-    dataset_size=100,
     seed=0,
+    dataset_size=100,
+    batch_size=32,
 )
 X, y = dist.sample(16, seed=0)
 ```

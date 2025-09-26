@@ -33,10 +33,10 @@ src/
   configurable Gaussian noise to the targets. The accompanying
   :class:`~src.data.joint_distributions.configs.cube_distribution.CubeDistributionConfig`
   dataclass stores the parameters required to instantiate the distribution.
-- Use ``create_data_provider_from_distribution(dist, batch_size, dataset_size, seed)``
-  to build the provider associated with the distribution. Device placement is
-  inherited from ``dist`` and the factory resolves the provider class via
-  :data:`DATA_PROVIDER_REGISTRY`.
+- Instantiate :class:`~src.data.providers.noisy_provider.NoisyProvider`
+  directly to stream data from the distribution. Device placement is inherited
+  from ``dist`` and batches are generated lazily via PyTorch ``DataLoader``
+  objects.
 
 #### Target Functions
 
@@ -44,12 +44,13 @@ src/
 
 #### Data Providers
 
- - **`DataIterator`** – dataclass interface for creating datasets and loaders.
-   Stores ``joint_distribution``, ``seed``, ``dataset_size`` and ``batch_size``
-   for use by subclasses when constructing ``DataLoader`` instances.
-  - **`TensorDataProvider`** – streams samples using ``DeterministicDataset``.
-  - `make_loader()` – instantiate a ``DeterministicDataset`` of that size and return a `DataLoader`.
- - **`DeterministicDataset`** – dataset that draws samples deterministically from a `CubeDistribution`.
+ - **`NoisyProvider`** – dataclass that wraps a
+   :class:`CubeDistribution` and exposes deterministic iteration over noisy
+   samples. Stores ``joint_distribution``, ``seed``, ``dataset_size`` and
+   ``batch_size`` and internally constructs a ``SeededNoisyDataset`` backed by
+   a PyTorch ``DataLoader``.
+ - **`SeededNoisyDataset`** – dataset that draws reproducible noisy samples
+   from a `CubeDistribution` by seeding the base distribution per index.
 
 ### `src/models`
 
@@ -71,11 +72,10 @@ src/
 - **`Trainer`** – manages end-to-end training of a model.
   - `ready_for_trainer()` – sanity-check configuration; invoked by ``Trainer`` during initialization.
   - `_create_directories()` – prepares dataset and checkpoint folders.
-  - `_make_loader(split)` – create a data provider for the requested split and return its ``data_loader``.
-  - `get_loader(split)` – public wrapper returning the same `DataLoader` used internally.
-  - The provider is always created internally via ``create_data_provider_from_distribution()``,
-        which constructs an instance after resolving the class from
-        ``DATA_PROVIDER_REGISTRY``.
+  - `_make_loader(split)` – create a :class:`NoisyProvider` for the requested
+    split and return its ``data_loader``.
+  - `get_loader(split)` – public wrapper returning the same `DataLoader` used
+    internally.
   - `_initialize_model_and_optimizer()` / `_load_model_and_optimizer()` – helper methods used when (re)starting training.
   - `_train_loss(model)` and `test_loss()` – compute losses over datasets.
   - `train()` – entry point that chooses between stepwise or solver-based training.
@@ -124,9 +124,11 @@ The project relies on small registries for models, optimizers, and other
 plugins. Each package's ``__init__`` module calls
 ``import_submodules(__name__)`` from :mod:`src.utils.plugin_loader`, which walks
 the package and imports every submodule. Importing a module executes decorators
-like ``@register_optimizer`` that populate the relevant registry. Target
-functions are simpler: the only implementation, :class:`SumProdTarget`, is
-imported directly and constructed from its config.
+like ``@register_optimizer`` that populate the relevant registry. Data
+providers no longer participate in this plugin system – the only implementation
+required for current experiments is :class:`NoisyProvider`, which is constructed
+explicitly where needed. Target functions are similarly instantiated directly
+from their configs.
 
 The training loop itself is provided by the concrete :class:`Trainer` in
 ``src/training/trainer.py`` and configured via :class:`TrainerConfig` from
