@@ -3,7 +3,6 @@ import src.models.bootstrap  # noqa: F401
 
 from src.training.trainer_config import TrainerConfig
 from src.models.architectures.configs.mlp import MLPConfig
-from src.training.loss.configs.loss import LossConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
 from src.utils.seed_manager import SeedManager
@@ -28,12 +27,9 @@ def _make_trainer_config() -> TrainerConfig:
         noise_mean=0.0,
         noise_std=0.0,
     )
-    loss_cfg = LossConfig(name='MSELoss', eval_type='regression')
-
     return TrainerConfig(
         model_config=model_cfg,
         cube_distribution_config=dist_cfg,
-        loss_config=loss_cfg,
         train_size=1,
         test_size=1,
         batch_size=1,

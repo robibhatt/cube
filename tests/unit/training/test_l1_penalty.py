@@ -3,7 +3,6 @@ import pytest
 
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.models.architectures.mlp import MLP
@@ -36,7 +35,6 @@ def _make_trainer(tmp_path, hidden_dims):
         batch_size=2,
         epochs=0,
         home_dir=tmp_path,
-        loss_config=LossConfig(name="MSELoss"),
     )
     trainer = Trainer(cfg)
     model = MLP(cfg.model_config)

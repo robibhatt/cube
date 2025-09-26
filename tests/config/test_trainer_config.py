@@ -1,5 +1,4 @@
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.data.joint_distributions.configs.cube_distribution import (
@@ -8,6 +7,8 @@ from src.data.joint_distributions.configs.cube_distribution import (
 
 
 def test_default_optimizer(tmp_path):
+    home_dir = tmp_path / "trainer_home"
+    home_dir.mkdir()
     cfg = TrainerConfig(
         model_config=MLPConfig(
             input_dim=3,
@@ -26,8 +27,7 @@ def test_default_optimizer(tmp_path):
         test_size=5,
         batch_size=2,
         epochs=1,
-        home_dir=tmp_path / "trainer_home",
-        loss_config=LossConfig(name="MSELoss"),
+        home_dir=home_dir,
     )
     assert isinstance(cfg.optimizer_config, AdamConfig)
     assert cfg.optimizer_config.lr == 0.001

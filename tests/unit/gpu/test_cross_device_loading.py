@@ -6,7 +6,6 @@ import src.models.bootstrap  # noqa: F401
 from tests.unit.gpu.test_gpu_compatibility import available_gpu, _cube_config
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 
 
 def _assert_on_cpu(model, optimizer):
@@ -37,7 +36,6 @@ def test_cross_device_loading(tmp_path, mlp_config, adam_config):
         batch_size=2,
         epochs=1,
         home_dir=home,
-        loss_config=LossConfig(name="MSELoss"),
         seed=0,
     )
 

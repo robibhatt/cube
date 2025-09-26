@@ -10,7 +10,6 @@ from src.data.joint_distributions.configs.cube_distribution import (
 from src.data.providers import create_data_provider_from_distribution
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.training.loss.configs.loss import LossConfig
 
 
 def available_gpu():
@@ -82,7 +81,6 @@ def test_trainer_runs_on_gpu(tmp_path, mlp_config, adam_config):
         batch_size=2,
         epochs=1,
         home_dir=home,
-        loss_config=LossConfig(name="MSELoss"),
         seed=0,
     )
 

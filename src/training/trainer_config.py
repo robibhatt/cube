@@ -5,14 +5,12 @@ from dataclasses_json import dataclass_json, config
 from pathlib import Path
 from typing import Optional
 import copy
-import torch
 
 from src.models.architectures.configs.base import ModelConfig
 from src.models.architectures.configs.model_config_registry import build_model_config_from_dict
 from src.data.joint_distributions.configs.cube_distribution import (
     CubeDistributionConfig,
 )
-from src.training.loss.configs.loss import LossConfig
 from src.utils.serialization_utils import encode_path, decode_path
 from src.training.optimizers.configs.optimizer import OptimizerConfig
 from src.training.optimizers.configs.optimizer_config_registry import (
@@ -36,13 +34,6 @@ class TrainerConfig:
         metadata=config(
             encoder=lambda jd: None if jd is None else jd.to_dict(),
             decoder=lambda d: None if d is None else CubeDistributionConfig.from_dict(d),
-        ),
-    )
-    loss_config: Optional[LossConfig] = field(
-        default=None,
-        metadata=config(
-            encoder=lambda l: None if l is None else l.to_dict(),
-            decoder=lambda d: None if d is None else LossConfig.from_dict(d),
         ),
     )
     optimizer_config: Optional[OptimizerConfig] = field(
@@ -77,10 +68,6 @@ class TrainerConfig:
         assert (
             self.cube_distribution_config is not None
         ), "cube_distribution_config must be specified"
-        assert self.loss_config is not None, "loss_config must be specified"
-        assert hasattr(torch.nn, self.loss_config.name), (
-            f"Loss '{self.loss_config.name}' must exist in torch.nn"
-        )
         assert self.train_size is not None, "train_size must be specified"
         assert self.test_size is not None, "test_size must be specified"
         assert self.home_dir is not None, "home_dir must be specified"

@@ -19,6 +19,7 @@ import re
 import subprocess
 import time
 import torch
+import torch.nn.functional as F
 
 from copy import deepcopy
 from src.utils.seed_manager import SeedManager
@@ -170,10 +171,6 @@ class Trainer:
         self.test_seed = self.seed_mgr.spawn_seed()
         self.model_seed = self.seed_mgr.spawn_seed()
         self.optimizer_seed = self.seed_mgr.spawn_seed()
-
-        # ``loss_fn`` is used for training; ``evaluator`` for reporting metrics
-        self.loss_fn = self.config.loss_config.build()
-        self.evaluator = self.config.loss_config.get_evaluator()
 
         # Instantiate the joint distribution on the given device
         self.joint_distribution = CubeDistribution(
@@ -398,7 +395,7 @@ class Trainer:
                 if not self.config.use_full_batch:
                     optimizer.stepper.zero_grad()
 
-                loss = self.loss_fn(model(Xb), yb)
+                loss = self._mse_loss(model(Xb), yb)
                 if self.config.weight_decay_l1 != 0.0 and isinstance(model, MLP):
                     loss = loss + self.config.weight_decay_l1 * self._l1_penalty(model)
                 loss.backward()
@@ -469,6 +466,10 @@ class Trainer:
     # Evaluation helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _mse_loss(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return F.mse_loss(pred, target)
+
     def _loss(self, model: Model, iterator: DataProvider) -> float:
         total_loss = 0.0
         total_samples = 0
@@ -479,7 +480,7 @@ class Trainer:
                 X, y = X.to(self.device), y.to(self.device)
                 batch_size = X.size(0)
                 y_pred = model(X)
-                batch_mean_loss = self.evaluator(y_pred, y).item()
+                batch_mean_loss = self._mse_loss(y_pred, y).item()
                 total_loss += batch_mean_loss * batch_size
                 total_samples += batch_size
 
@@ -496,7 +497,7 @@ class Trainer:
                 X, y = X.to(self.device), y.to(self.device)
                 batch_size = X.size(0)
                 y_pred = model(X)
-                batch_mean_loss = self.loss_fn(y_pred, y).item()
+                batch_mean_loss = self._mse_loss(y_pred, y).item()
                 total_loss += batch_mean_loss * batch_size
                 total_samples += batch_size
 
@@ -576,7 +577,7 @@ class Trainer:
                 y = y.to(self.device)
                 batch_size = y.size(0)
                 y_pred = mean_y.expand_as(y)
-                batch_mean_loss = self.evaluator(y_pred, y).item()
+                batch_mean_loss = self._mse_loss(y_pred, y).item()
                 total_loss += batch_mean_loss * batch_size
                 total_samples += batch_size
 

@@ -50,9 +50,6 @@ trainer_config:
         normalize: true
         noise_mean: 0.0
         noise_std: 0.1
-    loss_config:
-        name: MSELoss
-        eval_type: regression
     train_size: 1024
     test_size: 1024
     batch_size: 128
