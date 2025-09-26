@@ -8,6 +8,7 @@ from mup import Linear as MuLinear, MuReadout
 import src.models.bootstrap  # noqa: F401
 from src.models.architectures.model_factory import create_model
 from src.models.architectures.configs.mlp import MLPConfig
+from src.models.architectures.mlp_utils import export_neuron_input_gradients
 from src.data.providers.data_provider import DataProvider
 
 
@@ -241,7 +242,7 @@ def test_export_neuron_input_gradients_layer_numbering(tmp_path):
     y = torch.zeros(4, cfg.output_dim)
     provider = DummyProvider(X, y)
     out_path = tmp_path / "grads.csv"
-    model.export_neuron_input_gradients(provider, out_path)
+    export_neuron_input_gradients(model, provider, out_path)
 
     import csv
 
