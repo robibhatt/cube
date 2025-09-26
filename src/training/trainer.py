@@ -264,7 +264,6 @@ class Trainer:
         batch_size = self.config.batch_size or 1024
         iterator = create_data_provider_from_distribution(
             self.joint_distribution,
-            self.datasets_dir / split,
             batch_size,
             size,
             seed=seed,
@@ -285,7 +284,6 @@ class Trainer:
         batch_size = self.config.batch_size or 1024
         iterator = create_data_provider_from_distribution(
             self.joint_distribution,
-            self.datasets_dir / f"fresh_{seed}",
             batch_size,
             size,
             seed=seed,

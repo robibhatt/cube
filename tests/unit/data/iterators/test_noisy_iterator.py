@@ -19,9 +19,9 @@ def _make_distribution():
     return CubeDistribution(cfg, torch.device("cpu"))
 
 
-def test_noisy_iterator_batches_apply_noise(tmp_path):
+def test_noisy_iterator_batches_apply_noise():
     dist = _make_distribution()
-    iterator = NoisyProvider(dist, tmp_path, seed=0, dataset_size=4, batch_size=2)
+    iterator = NoisyProvider(dist, seed=0, dataset_size=4, batch_size=2)
 
     batches = list(iterator)
 
@@ -32,29 +32,28 @@ def test_noisy_iterator_batches_apply_noise(tmp_path):
         assert torch.allclose(y, torch.full((2, 1), 1.0))
 
 
-def test_noisy_iterator_deterministic(tmp_path):
+def test_noisy_iterator_deterministic():
     dist = _make_distribution()
 
-    iterator1 = NoisyProvider(dist, tmp_path, seed=42, batch_size=2, dataset_size=4)
+    iterator1 = NoisyProvider(dist, seed=42, batch_size=2, dataset_size=4)
     first = list(iterator1)
-    iterator2 = NoisyProvider(dist, tmp_path, seed=42, batch_size=2, dataset_size=4)
+    iterator2 = NoisyProvider(dist, seed=42, batch_size=2, dataset_size=4)
     second = list(iterator2)
 
     assert all(torch.equal(a[0], b[0]) and torch.equal(a[1], b[1]) for a, b in zip(first, second))
 
 
-def test_noisy_iterator_requires_cube_distribution(tmp_path):
+def test_noisy_iterator_requires_cube_distribution():
     dist = _make_distribution()
     dist.config.distribution_type = "NotCubeDistribution"
     with pytest.raises(AssertionError):
-        NoisyProvider(dist, tmp_path, seed=0, batch_size=1, dataset_size=1)
+        NoisyProvider(dist, seed=0, batch_size=1, dataset_size=1)
 
 
-def test_preferred_provider(tmp_path):
+def test_preferred_provider():
     dist = _make_distribution()
     provider = create_data_provider_from_distribution(
         dist,
-        tmp_path,
         batch_size=2,
         dataset_size=4,
         seed=0,

@@ -228,7 +228,6 @@ def test_export_neuron_input_gradients_layer_numbering(tmp_path):
     class DummyProvider(DataProvider):
         def __init__(self, X, y):
             self.joint_distribution = None  # type: ignore[assignment]
-            self.dataset_dir = tmp_path
             self.seed = 0
             self.dataset_size = X.size(0)
             self.batch_size = X.size(0)

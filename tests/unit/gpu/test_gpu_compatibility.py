@@ -45,7 +45,7 @@ def test_cube_sample_device():
 
 
 @pytest.mark.gpu
-def test_noisy_provider_yields_on_device(tmp_path):
+def test_noisy_provider_yields_on_device():
     device = available_gpu()
     if device is None:
         pytest.skip("GPU not available")
@@ -53,7 +53,6 @@ def test_noisy_provider_yields_on_device(tmp_path):
     dist = CubeDistribution(_cube_config(3), device)
     provider = create_data_provider_from_distribution(
         dist,
-        tmp_path,
         batch_size=2,
         dataset_size=4,
         seed=0,

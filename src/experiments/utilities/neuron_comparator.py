@@ -60,10 +60,8 @@ class NeuronComparator:
         seed = random.randint(0, 2**32 - 1)
         batch_size = student_trainer.config.batch_size or 1024
         dataset_size = student_trainer.config.test_size
-        data_dir = student_trainer.datasets_dir / "comparator"
         self.test_loader = create_data_provider_from_distribution(
             student_trainer.joint_distribution,
-            data_dir,
             batch_size,
             dataset_size,
             seed,
