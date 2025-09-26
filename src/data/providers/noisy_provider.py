@@ -7,7 +7,6 @@ from typing import Iterator, Tuple
 import random
 
 from src.data.providers.data_provider import DataProvider
-from src.data.providers.deterministic_dataset import DeterministicDataset
 from src.data.providers.seeded_noisy_dataset import SeededNoisyDataset
 from src.data.providers.provider_registry import register_data_provider
 
@@ -46,8 +45,8 @@ class NoisyProvider(DataProvider):
 
     def __iter__(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor]]:
         for batch in self.data_loader:
-            X_base = batch[0]
-            y_base = batch[1]
-            y_noise = batch[2]
-            X_final = self.joint_distribution.forward_X(X_base)
-            yield X_final, y_base + y_noise
+            X_base, y_noise = batch
+            X_base = X_base.to(self.joint_distribution.device)
+            y_noise = y_noise.to(self.joint_distribution.device)
+            y_clean = self.joint_distribution.target(X_base)
+            yield X_base, y_clean + y_noise
