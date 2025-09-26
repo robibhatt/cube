@@ -1,16 +1,8 @@
-# Import all concrete joint distributions and their configs so that
-# registration decorators execute at import time.
+"""Bootstrap registrations for joint distributions and their configs."""
 
-# Concrete distributions
-from . import gaussian  # noqa: F401
-from . import hypercube  # noqa: F401
-from . import mapped_joint_distribution  # noqa: F401
+# Import the Cube distribution so that its registration decorator executes at
+# import time.
 from . import cube_distribution  # noqa: F401
-from . import staircase  # noqa: F401
 
-# Corresponding config modules
-from .configs import gaussian as gaussian_config  # noqa: F401
-from .configs import hypercube as hypercube_config  # noqa: F401
-from .configs import mapped_joint_distribution as mapped_joint_distribution_config  # noqa: F401
+# Import the corresponding config module for the same reason.
 from .configs import cube_distribution as cube_distribution_config  # noqa: F401
-from .configs import staircase as staircase_config  # noqa: F401

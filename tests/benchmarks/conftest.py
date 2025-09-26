@@ -35,14 +35,6 @@ def benchmark_logger():
         )
 
     def describe_distribution(dist):
-        if dist.config.distribution_type == "Gaussian":
-            in_dim = dist.config.input_shape.numel()
-            out_dim = dist.config.output_shape.numel()
-            return f"Gaussian(in={in_dim}, out={out_dim})"
-        if dist.config.distribution_type == "MappedJointDistribution":
-            base = describe_distribution(dist.distribution)
-            target = describe_target_function(dist.target_function)
-            return f"MappedJointDistribution(base={base}, target={target})"
         if dist.config.distribution_type == "CubeDistribution":
             base = getattr(
                 dist,

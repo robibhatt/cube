@@ -28,10 +28,6 @@ src/
 
 #### Joint Distributions
 
-- **`JointDistribution`** – base class providing `(X, y)` sampling. Simple
-  distributions like `Gaussian` are implemented as joint distributions with
-  `y=None`.
-
 - **`JointDistribution`** – base class providing `(X, y)` sampling.
   - `sample(n, seed)` – draw pairs using the given seed. A generator is
         constructed internally.
@@ -44,7 +40,6 @@ src/
   - Use ``create_data_provider_from_distribution(dist, dataset_dir, batch_size, dataset_size, seed)``
         to build the provider.  Device placement is inherited from ``dist`` and
         the factory resolves the provider class via :data:`DATA_PROVIDER_REGISTRY`.
-  - **`MappedJointDistribution`** – pairs a `Distribution` with a `TargetFunction`; `sample(seed)` draws `X` then computes `y = f(X)`.
 - **`CubeDistribution`** – mirrors a `MappedJointDistribution` built from a base distribution and target function, then adds Gaussian noise with configurable mean and standard deviation to its targets.
 
 #### Target Functions
