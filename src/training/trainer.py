@@ -27,8 +27,8 @@ from torch.optim import Optimizer as TorchOptimizer
 
 from src.training.trainer_config import TrainerConfig
 from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.providers import create_data_provider_from_distribution
 from src.data.providers.data_provider import DataProvider
+from src.data.providers.noisy_provider import NoisyProvider
 from src.models.architectures.model import Model
 from src.models.architectures.mlp import MLP
 from src.models.architectures.mlp_utils import (
@@ -262,13 +262,12 @@ class Trainer:
         size = self.config.train_size if split == "train" else self.config.test_size
         seed = self.train_seed if split == "train" else self.test_seed
         batch_size = self.config.batch_size or 1024
-        iterator = create_data_provider_from_distribution(
+        return NoisyProvider(
             self.joint_distribution,
-            batch_size,
-            size,
             seed=seed,
+            dataset_size=size,
+            batch_size=batch_size,
         )
-        return iterator
 
     def get_fresh_iterator(self, size: int | None = None) -> DataProvider:
         """Return a data provider with a new, unique seed.
@@ -282,13 +281,12 @@ class Trainer:
         seed = self.seed_mgr.spawn_seed()
         size = size or self.config.test_size
         batch_size = self.config.batch_size or 1024
-        iterator = create_data_provider_from_distribution(
+        return NoisyProvider(
             self.joint_distribution,
-            batch_size,
-            size,
             seed=seed,
+            dataset_size=size,
+            batch_size=batch_size,
         )
-        return iterator
 
     def _initialize_model_and_optimizer(self) -> tuple[Model, Optimizer]:
         assert not self.started_training, "Training already started"
