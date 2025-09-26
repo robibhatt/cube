@@ -9,8 +9,8 @@ import torch
 from torch import nn
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
 
-from src.models.architectures.mlp import MLP
-from src.data.providers.noisy_provider import NoisyProvider
+from src.models.mlp import MLP
+from src.data.noisy_data_provider import NoisyProvider
 from src.training.trainer_factory import trainer_from_dir
 
 LINEAR_LAYERS = (nn.Linear, MuLinear, MuReadout)

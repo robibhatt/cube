@@ -1,4 +1,4 @@
-"""Utility functions for working with :mod:`src.models.architectures.mlp`."""
+"""Utility functions for working with :mod:`src.models.mlp`."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from mup import Linear as MuLinear, MuReadout
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .mlp import MLP
-    from src.data.providers.noisy_provider import NoisyProvider
+    from src.data.noisy_data_provider import NoisyProvider
 
 
 def export_neuron_input_gradients(

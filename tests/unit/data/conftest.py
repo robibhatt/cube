@@ -2,10 +2,10 @@ import pytest
 import torch
 
 import src.models.bootstrap  # noqa: F401
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
-from src.models.architectures.configs.mlp import MLPConfig
-from src.models.architectures.mlp import MLP
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
+from src.models.mlp_config import MLPConfig
+from src.models.mlp import MLP
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 

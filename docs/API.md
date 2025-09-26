@@ -31,9 +31,9 @@ src/
 - **`CubeDistribution`** – generates binary inputs from a hypercube and passes
   them through :class:`~src.models.targets.sum_prod.SumProdTarget` before adding
   configurable Gaussian noise to the targets. The accompanying
-  :class:`~src.data.joint_distributions.configs.cube_distribution.CubeDistributionConfig`
+  :class:`~src.data.cube_distribution_config.CubeDistributionConfig`
   dataclass stores the parameters required to instantiate the distribution.
-- Instantiate :class:`~src.data.providers.noisy_provider.NoisyProvider`
+- Instantiate :class:`~src.data.noisy_data_provider.NoisyProvider`
   directly to stream data from the distribution. Device placement is inherited
   from ``dist`` and batches are generated lazily via PyTorch ``DataLoader``
   objects.
@@ -142,10 +142,10 @@ Data providers inherit placement from the ``JointDistribution``.
 ```python
 from pathlib import Path
 import torch
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp_config import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 from src.training.trainer_config import TrainerConfig
 from src.training.trainer import Trainer

@@ -10,7 +10,7 @@ from mup import Linear as MuLinear, MuReadout, set_base_shapes
 from .activations import ACTIVATION_MAP
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from .configs.mlp import MLPConfig
+    from .mlp_config import MLPConfig
 
 
 class MLP(nn.Module):

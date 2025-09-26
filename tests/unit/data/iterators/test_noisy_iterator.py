@@ -1,9 +1,9 @@
 import pytest
 import torch
 
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
-from src.data.providers.noisy_provider import NoisyProvider
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
+from src.data.noisy_data_provider import NoisyProvider
 
 
 def _make_distribution():

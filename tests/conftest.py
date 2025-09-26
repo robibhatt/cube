@@ -1,6 +1,6 @@
 import pytest
 from src.training.optimizers.configs.sgd import SgdConfig
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp_config import MLPConfig
 from src.training.optimizers.configs.adam import AdamConfig
 
 

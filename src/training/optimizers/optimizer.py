@@ -11,7 +11,7 @@ when no parameters are found.
 """
 
 from src.training.optimizers.configs.optimizer import OptimizerConfig
-from src.models.architectures.mlp import MLP
+from src.models.mlp import MLP
 from abc import ABC
 from typing import List
 

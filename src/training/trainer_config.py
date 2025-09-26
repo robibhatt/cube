@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Optional
 import copy
 
-from src.models.architectures.configs.mlp import MLPConfig
-from src.data.joint_distributions.configs.cube_distribution import (
+from src.models.mlp_config import MLPConfig
+from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
 from src.utils.serialization_utils import encode_path, decode_path

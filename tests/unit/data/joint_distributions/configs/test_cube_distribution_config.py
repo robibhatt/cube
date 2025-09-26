@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
+from src.data.cube_distribution_config import CubeDistributionConfig
 
 
 def test_cube_config_validates_and_sets_defaults():

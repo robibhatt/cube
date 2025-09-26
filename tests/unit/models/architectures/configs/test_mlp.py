@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp_config import MLPConfig
 
 
 @pytest.fixture

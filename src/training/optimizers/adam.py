@@ -1,7 +1,7 @@
 from mup import MuAdam, set_base_shapes
 from torch.optim import Adam as TorchAdam
 
-from src.models.architectures.mlp import MLP
+from src.models.mlp import MLP
 from src.training.optimizers.configs.adam import AdamConfig
 from src.training.optimizers.optimizer import Optimizer, NullStepper
 from src.training.optimizers.optimizer_registry import register_optimizer

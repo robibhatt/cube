@@ -4,8 +4,8 @@ import torch.nn as nn
 from mup import MuSGD
 
 import src.models.bootstrap  # noqa: F401
-from src.models.architectures.mlp import MLP
-from src.models.architectures.configs.mlp import MLPConfig
+from src.models.mlp import MLP
+from src.models.mlp_config import MLPConfig
 
 
 def _basic_cfg(mup: bool = False, frozen_layers=None):

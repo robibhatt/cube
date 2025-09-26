@@ -2,8 +2,8 @@ import pytest
 import torch
 import torch.nn as nn
 
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
 
 
 def test_cube_distribution_construct_and_sample():
@@ -31,7 +31,7 @@ def test_cube_distribution_requires_scalar_target(monkeypatch):
             return torch.zeros(batch, 2, device=x.device, dtype=x.dtype)
 
     monkeypatch.setattr(
-        "src.data.joint_distributions.cube_distribution.SumProdTarget",
+        "src.data.cube_distribution.SumProdTarget",
         MultiTarget,
     )
 

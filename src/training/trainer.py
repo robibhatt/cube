@@ -26,10 +26,10 @@ from src.utils.seed_manager import SeedManager
 from torch.optim import Optimizer as TorchOptimizer
 
 from src.training.trainer_config import TrainerConfig
-from src.data.joint_distributions.cube_distribution import CubeDistribution
-from src.data.providers.noisy_provider import NoisyProvider
-from src.models.architectures.mlp import MLP
-from src.models.architectures.mlp_utils import (
+from src.data.cube_distribution import CubeDistribution
+from src.data.noisy_data_provider import NoisyProvider
+from src.models.mlp import MLP
+from src.models.mlp_utils import (
     export_neuron_input_gradients,
     visualize,
 )

@@ -17,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import src.models.bootstrap  # noqa: F401
 import src.models.targets  # noqa: F401
 import src.models.targets.configs  # noqa: F401
-import src.data.providers  # noqa: F401
+import src.data  # noqa: F401
 import src.experiments.configs  # noqa: F401
 
 # Import module to trigger registration of experiment and config classes
