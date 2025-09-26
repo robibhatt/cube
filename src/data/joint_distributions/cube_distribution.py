@@ -73,9 +73,8 @@ class CubeDistribution:
         x = x.to(self.device)
         noise = noise.to(self.device)
 
-        y_clean = self.target_function(x)
         y_noise = noise
-        return x, y_clean + y_noise
+        return x, self.target(x) + y_noise
 
     def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
         base_seed, noise_seed = self.get_seeds(seed)
@@ -90,13 +89,10 @@ class CubeDistribution:
         x = x.to(self.device)
         noise = noise.to(self.device)
 
-        y_clean = self.target_function(x)
+        return x, noise
 
-        # Keep batch dimension (dim 0) and flatten the rest
-        x_flat = x.reshape(n_samples, -1)
-        noise_flat = noise.reshape(n_samples, -1)
-        x_with_noise = torch.cat([x_flat, noise_flat], dim=1)
-        return x_with_noise, y_clean
+    def target(self, x: torch.Tensor) -> torch.Tensor:
+        return self.target_function(x)
     
     def preferred_provider(self) -> str:
         return "NoisyProvider"
