@@ -6,14 +6,18 @@ from dataclasses import dataclass
 from typing import Iterator, Tuple
 import random
 
-from src.data.providers.data_provider import DataProvider
+from src.data.joint_distributions.cube_distribution import CubeDistribution
 from src.data.providers.seeded_noisy_dataset import SeededNoisyDataset
 from src.data.providers.provider_registry import register_data_provider
 
 
 @register_data_provider("NoisyProvider")
 @dataclass
-class NoisyProvider(DataProvider):
+class NoisyProvider:
+    joint_distribution: CubeDistribution
+    seed: int
+    dataset_size: int
+    batch_size: int
 
     def __post_init__(self) -> None:
         assert (
@@ -42,6 +46,9 @@ class NoisyProvider(DataProvider):
             shuffle=True,
             generator=g,
         )
+
+    def __len__(self) -> int:
+        return self.dataset_size
 
     def __iter__(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor]]:
         for batch in self.data_loader:
