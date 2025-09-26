@@ -2,16 +2,18 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
 from dataclasses import dataclass
-import torch
-from src.data.joint_distributions.joint_distribution import JointDistribution
 from typing import Iterator, Tuple
+
+import torch
+
+from src.data.joint_distributions.cube_distribution import CubeDistribution
 
 
 @dataclass
 class DataProvider(ABC):
     """Abstract interface for dataset generation and ``DataLoader`` creation."""
 
-    joint_distribution: JointDistribution
+    joint_distribution: CubeDistribution
     dataset_dir: Path
     seed: int
     dataset_size: int

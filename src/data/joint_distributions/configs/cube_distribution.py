@@ -4,21 +4,21 @@ from typing import List
 import torch
 from dataclasses_json import dataclass_json, config
 
-from .base import JointDistributionConfig
-from .joint_distribution_config_registry import register_joint_distribution_config
 from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 
-@register_joint_distribution_config("CubeDistribution")
 @dataclass_json
 @dataclass(kw_only=True)
-class CubeDistributionConfig(JointDistributionConfig):
+class CubeDistributionConfig:
+    """Configuration for :class:`CubeDistribution`."""
+
     input_dim: int
     indices_list: List[List[int]] = field(default_factory=list)
     weights: List[float] = field(default_factory=list)
     normalize: bool = False
     noise_mean: float = 0.0
     noise_std: float = 1.0
+    distribution_type: str = field(init=False, default="CubeDistribution")
     target_function_config: SumProdTargetConfig = field(
         init=False,
         metadata=config(
@@ -57,5 +57,10 @@ class CubeDistributionConfig(JointDistributionConfig):
             normalize=self.normalize,
         )
 
-        self.distribution_type = "CubeDistribution"
+    @property
+    def input_shape(self) -> torch.Size:
+        return torch.Size([self.input_dim])
 
+    @property
+    def output_shape(self) -> torch.Size:
+        return torch.Size([1])

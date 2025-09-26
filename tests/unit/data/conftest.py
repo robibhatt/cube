@@ -1,164 +1,39 @@
 import pytest
 import torch
-from dataclasses import dataclass, field
-from typing import Tuple
 
 import src.models.bootstrap  # noqa: F401
-import src.data.providers.noisy_provider  # Register NoisyIterator
-from src.data.joint_distributions.joint_distribution import JointDistribution
-from src.data.joint_distributions.joint_distribution_registry import register_joint_distribution
-from src.data.joint_distributions.configs.base import JointDistributionConfig
-from src.data.joint_distributions.configs.joint_distribution_config_registry import register_joint_distribution_config
+import src.data.providers.noisy_provider  # Register NoisyProvider
+from src.data.joint_distributions.cube_distribution import CubeDistribution
+from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 from src.models.architectures.configs.mlp import MLPConfig
 from src.models.architectures.model_factory import create_model
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.data.joint_distributions.configs.cube_distribution import CubeDistributionConfig
 
 
-@register_joint_distribution("DummyJointDistribution")
-class DummyJointDistribution(JointDistribution):
-    """Always returns x = arange and y = constant 5.0."""
-
-    @dataclass
-    @register_joint_distribution_config("DummyJointDistribution")
-    class _Config(JointDistributionConfig):
-        input_dim: int = field(default=2)
-
-        def __post_init__(self) -> None:  # type: ignore[override]
-            if self.input_dim <= 0:
-                raise ValueError("input_dim must be positive")
-            self.distribution_type = "DummyJointDistribution"
-
-    def __init__(self, config: _Config, device: torch.device):
-        super().__init__(config, device)
-
-    def sample(self, n_samples: int, seed: int):
-        """Return deterministic samples on the distribution's device.
-
-        The original test helper returned CPU tensors irrespective of the
-        ``device`` argument, causing downstream operations to fail when the
-        trainer runs on a GPU.  Creating the tensors directly on
-        ``self.device`` keeps all tensors on the same device across platforms.
-        """
-
-        x = (
-            torch.arange(n_samples * self.input_dim, dtype=torch.float32, device=self.device)
-            .reshape(n_samples, self.input_dim)
-        )
-        y = torch.full(
-            (n_samples, self.output_dim), 5.0, dtype=torch.float32, device=self.device
-        )
-        return x, y
-
-    def __str__(self):
-        return "DummyJointDistribution"
-
-    def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.sample(n_samples, seed)
-
-    def forward(
-        self, X: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        # ``DummyJointDistribution`` is used in many unit tests where the
-        # trainer may operate on GPU devices. Ensure that the returned tensors
-        # live on the same device as the distribution to avoid
-        # device-mismatch errors.
-        X = X.to(self.device)
-        y = torch.full(
-            (X.size(0), self.output_dim), 5.0, dtype=torch.float32, device=self.device
-        )
-        return X, y
-
-    def forward_X(
-        self, X: torch.Tensor
-    ) -> torch.Tensor:
-        return X
-
-    def preferred_provider(self) -> str:
-        return "TensorDataProvider"
-
-
-class BadTypeDistribution(JointDistribution):
-    """sample() returns non-tensors."""
-
-    @dataclass
-    class _Config(JointDistributionConfig):
-        input_dim: int = field(default=1)
-
-        def __post_init__(self) -> None:  # type: ignore[override]
-            if self.input_dim <= 0:
-                raise ValueError("input_dim must be positive")
-            self.distribution_type = "BadTypeDistribution"
-
-    def __init__(self, config: _Config, device: torch.device):
-        super().__init__(config, device)
-
-    def sample(self, n_samples: int, seed: int):
-        return [1, 2, 3], "not a tensor"
-
-    def __str__(self):
-        return "BadTypeDistribution"
-
-    def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.sample(n_samples, seed)
-
-    def forward(self, X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        return X, torch.zeros(X.size(0), 1)
-
-    def forward_X(self, X: torch.Tensor) -> torch.Tensor:
-        return X
-
-    def preferred_provider(self) -> str:
-        return "TensorDataProvider"
-
-
-class BadShapeDistribution(JointDistribution):
-    """sample() returns tensors of wrong shape."""
-
-    @dataclass
-    class _Config(JointDistributionConfig):
-        input_dim: int = field(default=2)
-
-        def __post_init__(self) -> None:  # type: ignore[override]
-            if self.input_dim <= 0:
-                raise ValueError("input_dim must be positive")
-            self.distribution_type = "BadShapeDistribution"
-
-    def __init__(self, config: _Config, device: torch.device):
-        super().__init__(config, device)
-
-    def sample(self, n_samples: int, seed: int):
-        x = torch.zeros(n_samples, self.input_dim + 1)  # wrong feature dim
-        y = torch.zeros(n_samples, self.output_dim + 1)  # wrong target dim
-        return x, y
-
-    def __str__(self):
-        return "BadShapeDistribution"
-
-    def base_sample(self, n_samples: int, seed: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.sample(n_samples, seed)
-
-    def forward(self, X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        return X, torch.zeros(X.size(0), 1)
-
-    def forward_X(self, X: torch.Tensor) -> torch.Tensor:
-        return X
-
-    def preferred_provider(self) -> str:
-        return "TensorDataProvider"
+def _constant_cube_distribution(input_dim: int = 2, value: float = 5.0) -> CubeDistribution:
+    config = CubeDistributionConfig(
+        input_dim=input_dim,
+        indices_list=[[0]],
+        weights=[0.0],
+        normalize=False,
+        noise_mean=value,
+        noise_std=0.0,
+    )
+    return CubeDistribution(config, torch.device("cpu"))
 
 
 @pytest.fixture
-def dummy_distribution():
-    """Return a simple joint distribution for testing."""
-    cfg = DummyJointDistribution._Config()
-    return DummyJointDistribution(cfg, torch.device("cpu"))
+def constant_cube_distribution() -> CubeDistribution:
+    """Return a CubeDistribution that always produces a constant target."""
+
+    return _constant_cube_distribution()
 
 
 @pytest.fixture
 def create_mlp_config(tmp_path) -> MLPConfig:
     """Return an ``MLPConfig`` with weights saved to ``tmp_path``."""
+
     config = MLPConfig(
         input_dim=8,
         hidden_dims=[3, 4, 5],
@@ -174,10 +49,10 @@ def create_mlp_config(tmp_path) -> MLPConfig:
     return config
 
 
-
 @pytest.fixture
 def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
     """Return a Trainer trained for one epoch."""
+
     home = tmp_path / "trainer_home"
     home.mkdir()
     cfg = TrainerConfig(
@@ -205,6 +80,7 @@ def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
 @pytest.fixture
 def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     """Return a Trainer using a CubeDistribution trained for one epoch."""
+
     home = tmp_path / "noisy_trainer_home"
     home.mkdir()
     model_cfg = MLPConfig(
@@ -248,3 +124,4 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     checkpoint = Checkpoint.from_dir(trainer.checkpoint_dir)
     checkpoint.save(model=model, optimizer=None)
     return trainer
+
