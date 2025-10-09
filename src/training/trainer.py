@@ -113,6 +113,25 @@ class Trainer:
     # ------------------------------------------------------------------
 
     @classmethod
+    def from_config(cls, config: TrainerConfig) -> "Trainer":
+        """Instantiate a trainer from ``config``."""
+
+        return cls(config)
+
+    @classmethod
+    def from_dir(cls, home_dir: Path) -> "Trainer":
+        """Reconstruct a trainer whose configuration lives in ``home_dir``."""
+
+        cfg_json = Path(home_dir) / "trainer_config.json"
+        if not cfg_json.exists():
+            raise FileNotFoundError(f"No trainer_config.json at {cfg_json}")
+
+        cfg_dict = json.loads(cfg_json.read_text())
+        cfg = TrainerConfig.from_dict(cfg_dict)
+        cfg.home_dir = Path(home_dir)
+        return cls.from_config(cfg)
+
+    @classmethod
     def server_train(cls, trainer_dir: Path) -> str:
         """Create an sbatch script in ``trainer_dir`` and submit it."""
 

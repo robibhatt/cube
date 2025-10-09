@@ -9,7 +9,6 @@ import torch
 import os
 import re
 
-from src.training.trainer_factory import create_trainer, trainer_from_dir
 from src.training.trainer_config import TrainerConfig
 
 from src.experiments.configs import ExperimentConfig
@@ -150,14 +149,14 @@ class Experiment(ABC):
                     raise RuntimeError("TrainerConfig.home_dir must be set")
                 if cfg.home_dir.exists():
                     try:
-                        trainer = trainer_from_dir(cfg.home_dir)
+                        trainer = Trainer.from_dir(cfg.home_dir)
                     except Exception as e:
                         raise RuntimeError(
                             f"Failed to load trainer from {cfg.home_dir}: {e}"
                         ) from e
                 else:
                     cfg.home_dir.mkdir(parents=True, exist_ok=True)
-                    trainer = create_trainer(cfg)
+                    trainer = Trainer.from_config(cfg)
 
 
                 trainer.train()
@@ -209,7 +208,7 @@ class Experiment(ABC):
                         item.unlink()
 
                 time.sleep(15)
-                create_trainer(cfg)
+                Trainer.from_config(cfg)
                 new_id = Trainer.server_train(cfg.home_dir)
                 remaining.append((cfg, new_id))
             else:
@@ -241,12 +240,12 @@ class Experiment(ABC):
 
                 if not cfg.home_dir.exists():
                     cfg.home_dir.mkdir(parents=True, exist_ok=True)
-                    create_trainer(cfg)
+                    Trainer.from_config(cfg)
                 else:
                     try:
-                        trainer_from_dir(cfg.home_dir)
+                        Trainer.from_dir(cfg.home_dir)
                     except Exception:
-                        create_trainer(cfg)
+                        Trainer.from_config(cfg)
 
                 results_file = cfg.home_dir / "results.json"
                 if not results_file.exists():
