@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from src.experiments.configs import ExperimentConfig
-from .experiment_registry import EXPERIMENT_REGISTRY
+from src.experiments.experiments.experiment_registry import EXPERIMENT_REGISTRY
 
 if TYPE_CHECKING:  # pragma: no cover - for type hints only
-    from .experiment import Experiment
+    from src.experiments.experiments.experiment import Experiment
 
 
 def create_experiment(config: ExperimentConfig) -> "Experiment":

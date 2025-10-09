@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import matplotlib
 
@@ -16,13 +15,12 @@ import torch.nn as nn
 
 from mup import Linear as MuLinear, MuReadout
 
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    from .mlp import MLP
-    from src.data.noisy_data_provider import NoisyProvider
+from src.data.noisy_data_provider import NoisyProvider
+from src.models.mlp import MLP
 
 
 def export_neuron_input_gradients(
-    mlp: "MLP", data_provider: "NoisyProvider", path: Path
+    mlp: MLP, data_provider: NoisyProvider, path: Path
 ) -> None:
     """Compute average absolute input gradients for each neuron and save CSV."""
 
@@ -87,7 +85,7 @@ def export_neuron_input_gradients(
     mlp.to(orig_device)
 
 
-def visualize(mlp: "MLP", path: Path, threshold: float = 0.001) -> None:
+def visualize(mlp: MLP, path: Path, threshold: float = 0.001) -> None:
     """Visualize the network architecture and save as a PNG image."""
 
     path.mkdir(parents=True, exist_ok=True)

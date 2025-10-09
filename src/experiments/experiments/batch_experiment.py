@@ -41,7 +41,7 @@ class BatchExperiment(Experiment, ABC):
         the results across sub-experiments.
         """
 
-        from .experiment_factory import create_experiment
+        from src.experiments.experiments.experiment_factory import create_experiment
 
         configs = self.get_experiment_configs()
 
@@ -63,7 +63,7 @@ class BatchExperiment(Experiment, ABC):
     ) -> None:
         """Check running jobs and resubmit failed ones."""
 
-        from .experiment_factory import create_experiment
+        from src.experiments.experiments.experiment_factory import create_experiment
 
         remaining: List[Tuple[ExperimentConfig, str]] = []
 
@@ -92,7 +92,7 @@ class BatchExperiment(Experiment, ABC):
     def run_parallel(self, configs: List[ExperimentConfig]) -> None:
         """Run sub-experiments in parallel using the cluster scheduler."""
 
-        from .experiment_factory import create_experiment
+        from src.experiments.experiments.experiment_factory import create_experiment
 
         if not configs:
             self.consolidate_results()
@@ -144,7 +144,7 @@ class BatchExperiment(Experiment, ABC):
         if not configs:
             return []
 
-        from .experiment_factory import create_experiment
+        from src.experiments.experiments.experiment_factory import create_experiment
 
         combined: list[list[TrainerConfig]] = []
         for cfg in configs:

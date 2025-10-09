@@ -1,7 +1,7 @@
 from __future__ import annotations
 
   # pragma: no cover - only for type hints
-from .experiment import ExperimentConfig
+from src.experiments.configs.experiment import ExperimentConfig
 
 EXPERIMENT_CONFIG_REGISTRY: dict[str, ExperimentConfig] = {}
 

@@ -2,8 +2,10 @@ from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
 
-from .experiment import ExperimentConfig
-from .experiment_config_registry import register_experiment_config
+from src.experiments.configs.experiment import ExperimentConfig
+from src.experiments.configs.experiment_config_registry import (
+    register_experiment_config,
+)
 
 
 @register_experiment_config("BatchExperiment")

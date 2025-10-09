@@ -3,14 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 from dataclasses import replace
-from typing import TYPE_CHECKING
 
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
 
-from .activations import ACTIVATION_MAP
-
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    from .mlp_config import MLPConfig
+from src.models.activations import ACTIVATION_MAP
+from src.models.mlp_config import MLPConfig
 
 
 class MLP(nn.Module):
@@ -25,7 +22,7 @@ class MLP(nn.Module):
     # ------------------------------------------------------------------
     # construction
     # ------------------------------------------------------------------
-    def __init__(self, config: "MLPConfig") -> None:
+    def __init__(self, config: MLPConfig) -> None:
         super().__init__()
         self.config = config
         self.mup = config.mup
