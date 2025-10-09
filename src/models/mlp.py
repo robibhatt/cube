@@ -180,9 +180,9 @@ class MLP(nn.Module):
             for mod in self.modules():
                 if isinstance(mod, MuLinear) and not isinstance(mod, MuReadout):
                     w = mod.weight.detach().float()
-                    if w.ndim == 2 and w.numel() > 0:
+                    if w.ndim == 2 and w.numel() > 1:
                         fan_in = w.shape[1]
-                        s = w.std().item() * math.sqrt(max(1, fan_in))
+                        s = w.std(unbiased=False).item() * math.sqrt(max(1, fan_in))
                         scales.append(s)
                         labels.append(mod.__class__.__name__)
             if scales:

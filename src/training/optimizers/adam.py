@@ -28,3 +28,10 @@ class Adam(Optimizer):
         self.stepper = MuAdam(
             param_groups, lr=self.config.lr, weight_decay=self.config.weight_decay
         )
+        # ``MuAdam`` rescales per-group hyperparameters based on width multipliers.
+        # Our configs expect the raw values they specified to reach the underlying
+        # torch optimiser, so we restore them after construction.
+        for group in self.stepper.param_groups:
+            group["lr"] = self.config.lr
+            if group.get("weight_decay", 0.0) != 0.0:
+                group["weight_decay"] = self.config.weight_decay
