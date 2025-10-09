@@ -1,6 +1,6 @@
 """Target function components."""
 
-from .sum_prod import SumProdTarget
-from .configs.sum_prod import SumProdTargetConfig
+from src.models.targets.sum_prod import SumProdTarget
+from src.models.targets.configs.sum_prod import SumProdTargetConfig
 
 __all__ = ["SumProdTarget", "SumProdTargetConfig"]

@@ -3,7 +3,7 @@ import math
 import torch
 import random
 
-from .cube_distribution_config import CubeDistributionConfig
+from src.data.cube_distribution_config import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
 
 

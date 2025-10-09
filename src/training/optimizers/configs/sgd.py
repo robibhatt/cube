@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 
-from .optimizer import OptimizerConfig
-from .optimizer_config_registry import register_optimizer_config
+from src.training.optimizers.configs.optimizer import OptimizerConfig
+from src.training.optimizers.configs.optimizer_config_registry import register_optimizer_config
 
 
 @register_optimizer_config("sgd")

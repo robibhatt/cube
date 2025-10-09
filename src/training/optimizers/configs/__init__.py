@@ -1,7 +1,7 @@
 """Optimizer config package bootstrap."""
 
 from src.utils.plugin_loader import import_submodules
-from .optimizer_config_registry import (
+from src.training.optimizers.configs.optimizer_config_registry import (
     OPTIMIZER_CONFIG_REGISTRY,
     register_optimizer_config,
     build_optimizer_config,
