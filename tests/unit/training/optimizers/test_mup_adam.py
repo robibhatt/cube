@@ -1,9 +1,6 @@
 import pytest
 import torch
 import torch.nn.functional as F
-import pytest
-import torch
-import torch.nn.functional as F
 
 import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
@@ -17,7 +14,7 @@ def model(mlp_config):
 
 
 def test_step_updates_parameters(model):
-    optimizer = create_optimizer(AdamConfig(lr=0.01, mup=True), model)
+    optimizer = create_optimizer(AdamConfig(lr=0.01), model)
     x = torch.randn(8, model.config.input_dim)
     y = torch.randn(8, 1)
 
@@ -30,9 +27,9 @@ def test_step_updates_parameters(model):
     after = list(model.parameters())
     changed = [not torch.allclose(a, b) for a, b in zip(before, after)]
     assert any(changed), "MuAdam step did not modify model parameters!"
-def test_accepts_non_mup_model(mlp_config):
-    non_mup_model = MLP(mlp_config)
-    cfg = AdamConfig(lr=0.01, mup=True)
-    # Should not raise an AssertionError or any exception
-    optimizer = create_optimizer(cfg, non_mup_model)
-    assert optimizer is not None
+
+
+def test_adam_config_requires_mup(model):
+    cfg = AdamConfig(lr=0.01, mup=False)
+    with pytest.raises(AssertionError):
+        create_optimizer(cfg, model)

@@ -1,7 +1,6 @@
 import math
 import torch
 import torch.nn as nn
-import torch.nn.init as init
 from dataclasses import replace
 
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
@@ -13,10 +12,9 @@ from src.models.mlp_config import MLPConfig
 class MLP(nn.Module):
     """A configurable multi-layer perceptron.
 
-    When ``config.mup`` is ``False`` (default) the network uses standard
-    variance-preserving :class:`torch.nn.Linear` layers.  When ``config.mup`` is
-    ``True`` the network mirrors the behaviour of :class:`~mup.MuLinear` based
-    architectures used for μP scaling.
+    The network is implemented purely in terms of μP-aware linear layers.  The
+    provided ``config`` must have ``mup=True`` – attempting to construct the
+    model with ``mup=False`` will raise an ``AssertionError``.
     """
 
     # ------------------------------------------------------------------
@@ -26,6 +24,9 @@ class MLP(nn.Module):
         super().__init__()
         self.config = config
         self.mup = config.mup
+        assert (
+            self.mup
+        ), "MLP now requires config.mup=True; non-μP mode is no longer supported."
 
         # Honour the ``bias`` flag in the config (defaulting to ``True``)
         bias_flag = getattr(self.config, "bias", True)
@@ -35,7 +36,7 @@ class MLP(nn.Module):
         self.net = nn.Sequential(*self.layers)
 
         # MuP base-shape setup before any freezing
-        if self.mup and not getattr(self.config, "_is_base", False):
+        if not getattr(self.config, "_is_base", False):
             base = self.get_base_model()
             set_base_shapes(self, base)
 
@@ -70,7 +71,7 @@ class MLP(nn.Module):
                 if layer.bias is not None:
                     layer.bias.requires_grad_(False)
 
-        if self.mup and not getattr(self.config, "_is_base", False):
+        if not getattr(self.config, "_is_base", False):
             self._mup_post_init_sanity_check()
 
     # ------------------------------------------------------------------
@@ -88,7 +89,7 @@ class MLP(nn.Module):
 
         in_dim = self.config.input_dim
 
-        if self.mup and self.config.end_activation:
+        if self.config.end_activation:
             raise ValueError("end_activation is not supported when mup=True")
 
         for h in self.config.hidden_dims:
@@ -102,9 +103,6 @@ class MLP(nn.Module):
         )
         layers.append(out_lin)
         linear_layers.append(out_lin)
-
-        if self.config.end_activation and not self.mup:
-            layers.append(act_cls())
 
         return layers, linear_layers
 
@@ -131,7 +129,7 @@ class MLP(nn.Module):
         4) Within-model scale plausibility for hidden weights (exclude MuReadout)
         5) Biases are (approximately) the configured μP bias constant (default 0.01)
         """
-        if not self.mup or getattr(self.config, "_is_base", False):
+        if getattr(self.config, "_is_base", False):
             return
 
         import math
@@ -157,7 +155,7 @@ class MLP(nn.Module):
         # ---- (5) Verify μP bias constant ~ expected_bias (and don't cosine-check biases) ----
         with torch.no_grad():
             for m in self.modules():
-                if isinstance(m, (nn.Linear, MuLinear, MuReadout)) and (m.bias is not None):
+                if isinstance(m, (MuLinear, MuReadout)) and (m.bias is not None):
                     b = m.bias.detach().float()
                     if not torch.allclose(b, torch.full_like(b, expected_bias), atol=bias_tol, rtol=0.0):
                         problems.append(
@@ -180,8 +178,7 @@ class MLP(nn.Module):
             scales = []
             labels = []
             for mod in self.modules():
-                is_linear = isinstance(mod, (nn.Linear, MuLinear))
-                if is_linear and not isinstance(mod, MuReadout):
+                if isinstance(mod, MuLinear) and not isinstance(mod, MuReadout):
                     w = mod.weight.detach().float()
                     if w.ndim == 2 and w.numel() > 0:
                         fan_in = w.shape[1]
@@ -209,52 +206,13 @@ class MLP(nn.Module):
                 "  • Cosine checks skip biases and tiny tensors; they only run where meaningful.\n"
             )
 
-    def _init_nonlin_name_for_init(self) -> str:
-        """Map activation names to what torch.init expects."""
-        nonlin = self.config.activation.lower()
-        alias = {"gelu": "relu", "silu": "relu"}  # Kaiming is okay for these
-        return alias.get(nonlin, nonlin)
-
-    def _init_quadratic(self, weight: torch.Tensor) -> None:
-        """Variance-preserving init for quadratic activations.
-
-        Uses a weight standard deviation of ``sqrt(0.5 / fan_in)`` which keeps the
-        variance of ``x^2`` activations approximately constant across layers.
-        """
-        fan_in, _ = init._calculate_fan_in_and_fan_out(weight)
-        std = math.sqrt(0.5 / fan_in)
-        bound = math.sqrt(3.0) * std
-        init.uniform_(weight, -bound, bound)
-
     def _create_linear_layer(
         self, in_features: int, out_features: int, bias: bool, is_output: bool = False
     ) -> nn.Module:
-        """Return the appropriate linear layer for the current μP setting."""
-        if self.mup:
-            if is_output:
-                return MuReadout(in_features, out_features, bias=bias)
-            return MuLinear(in_features, out_features, bias=bias)
-        return self._make_linear(in_features, out_features, bias=bias)
-
-    def _make_linear(
-        self, in_features: int, out_features: int, bias: bool = True
-    ) -> nn.Linear:
-        """Create a standard Linear layer initialised to preserve activation variance."""
-        layer = nn.Linear(in_features, out_features, bias=bias)
-
-        nonlin = self._init_nonlin_name_for_init()
-        if nonlin == "quadratic":
-            self._init_quadratic(layer.weight)
-        elif nonlin in {"linear", "tanh", "sigmoid"}:
-            # Xavier for saturated/linear activations
-            init.xavier_uniform_(layer.weight)
-        else:
-            # ReLU family → Kaiming/He
-            init.kaiming_uniform_(layer.weight, a=0.0, mode="fan_in", nonlinearity=nonlin)
-
-        if layer.bias is not None:
-            init.zeros_(layer.bias)
-        return layer
+        """Return the μP linear layer for the current configuration."""
+        if is_output:
+            return MuReadout(in_features, out_features, bias=bias)
+        return MuLinear(in_features, out_features, bias=bias)
 
     def copy_weights_from_donor(self, donor: "MLP", layers: list[int]) -> None:
         """Copy weights and biases from ``donor`` for the given ``layers``.
@@ -303,9 +261,6 @@ class MLP(nn.Module):
         - Uses a stable small width for all hidden layers (default 64), or a user-
         specified `base_width` attribute on the config if present.
         """
-        if not self.mup:
-            return None
-
         # Allow an optional config.base_width override; default to 64.
         base_w = getattr(self.config, "base_width", 64)
         base_hidden = [base_w] * len(self.config.hidden_dims)

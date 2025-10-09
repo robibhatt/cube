@@ -2,7 +2,6 @@ from dataclasses import replace
 
 import pytest
 import torch
-import torch.nn as nn
 from mup import Linear as MuLinear, MuReadout
 
 import src.models.bootstrap  # noqa: F401
@@ -114,7 +113,7 @@ def test_start_and_end_activation_flags():
         cfg_start.output_dim,
     )
 
-    # --- start_activation=False, end_activation=True -------------------------
+    # ``end_activation=True`` is no longer supported under μP-only mode.
     cfg_end = MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
@@ -123,14 +122,9 @@ def test_start_and_end_activation_flags():
         start_activation=False,
         end_activation=True,
     )
-    m_end = MLP(cfg_end)
+    with pytest.raises(ValueError):
+        MLP(cfg_end)
 
-    assert m_end(torch.randn(2, cfg_end.input_dim)).shape == (
-        2,
-        cfg_end.output_dim,
-    )
-
-    # --- start_activation=True, end_activation=True --------------------------
     cfg_both = MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
@@ -139,18 +133,13 @@ def test_start_and_end_activation_flags():
         start_activation=True,
         end_activation=True,
     )
-    m_both = MLP(cfg_both)
-
-    assert m_both(torch.randn(2, cfg_both.input_dim)).shape == (
-        2,
-        cfg_both.output_dim,
-    )
+    with pytest.raises(ValueError):
+        MLP(cfg_both)
 
 
 def test_mup_initialization_uses_mup_layers(basic_config):
     """MLP with ``mup=True`` in its config should use MuP layers."""
-    cfg = replace(basic_config, mup=True)
-    model = MLP(cfg)
+    model = MLP(basic_config)
 
     # first hidden layer should be MuLinear and last layer MuReadout
     assert isinstance(model.layers[0 if not basic_config.start_activation else 1], MuLinear)
@@ -159,18 +148,11 @@ def test_mup_initialization_uses_mup_layers(basic_config):
 
 def test_mup_get_base_model(basic_config):
     """``get_base_model`` should return a base-width ``MLP`` when ``mup=True``."""
-    cfg = replace(basic_config, mup=True)
-    model = MLP(cfg)
+    model = MLP(basic_config)
     base = model.get_base_model()
     assert base is not None and base.config.model_type == "MLP"
     assert base.mup is True
     assert base.config.hidden_dims == [64] * len(basic_config.hidden_dims)
-
-
-def test_get_base_model_none_without_mup(basic_config):
-    """Without MuP, ``get_base_model`` should return ``None``."""
-    model = MLP(basic_config)
-    assert model.get_base_model() is None
 
 
 def test_mup_disallows_end_activation(basic_config):
@@ -188,6 +170,12 @@ def test_mup_disallows_end_activation(basic_config):
         MLP(cfg)
 
 
+def test_mlp_requires_mup_true(basic_config):
+    cfg = replace(basic_config, mup=False)
+    with pytest.raises(AssertionError):
+        MLP(cfg)
+
+
 def test_bias_flag_controls_bias_params():
     """``bias=False`` removes bias terms while the default keeps them."""
     cfg_no_bias = MLPConfig(
@@ -201,7 +189,7 @@ def test_bias_flag_controls_bias_params():
     )
     model_no_bias = MLP(cfg_no_bias)
     linear_layers_no_bias = [
-        l for l in model_no_bias.layers if isinstance(l, (nn.Linear, MuLinear, MuReadout))
+        l for l in model_no_bias.layers if isinstance(l, (MuLinear, MuReadout))
     ]
     assert linear_layers_no_bias, "No linear layers found"
     assert all(layer.bias is None for layer in linear_layers_no_bias)
@@ -210,7 +198,7 @@ def test_bias_flag_controls_bias_params():
     cfg_bias = replace(cfg_no_bias, bias=True)
     model_bias = MLP(cfg_bias)
     linear_layers_bias = [
-        l for l in model_bias.layers if isinstance(l, (nn.Linear, MuLinear, MuReadout))
+        l for l in model_bias.layers if isinstance(l, (MuLinear, MuReadout))
     ]
     assert all(layer.bias is not None for layer in linear_layers_bias)
 

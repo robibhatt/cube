@@ -22,7 +22,7 @@ def _build_mlp(
     hidden_dims: list[int],
     output_dim: int,
     activation: str = "relu",
-    mup: bool = False,
+    mup: bool = True,
 ) -> MLP:
     config = MLPConfig(
         input_dim=input_dim,

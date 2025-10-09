@@ -75,8 +75,8 @@ cfg = TrainerConfig(
 
 trainer = Trainer(cfg)
 target = SumProdTarget(cube_cfg.target_function_config)
-# To construct a μP-scaled network instead of the standard variant, set
-# ``cfg.mlp_config.mup = True`` before creating the model.
+# The MLP implementation now always uses μP scaling, so ``cfg.mlp_config.mup``
+# must remain ``True`` when instantiating the model.
 gen = torch.Generator(device=trainer.device)
 dist = CubeDistribution(cube_cfg, trainer.device)
 provider = NoisyProvider(

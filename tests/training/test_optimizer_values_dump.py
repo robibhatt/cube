@@ -44,7 +44,7 @@ def test_optimizer_values_written(tmp_path):
 
     data = json.loads(out_file.read_text())
     assert data["optimizer"] == "Adam"
-    assert data["mup_used"] is False
+    assert data["mup_used"] is True
     assert len(data["groups"]) == 1
     assert data["groups"][0]["n_params"] == 1
     assert len(data["params"]) == 1
