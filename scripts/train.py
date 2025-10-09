@@ -2,7 +2,6 @@
 """Train a model from an existing trainer directory."""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -19,7 +18,6 @@ import src.models.targets.configs  # noqa: F401
 import src.data  # noqa: F401
 
 from src.training.trainer import Trainer
-from src.training.trainer_config import TrainerConfig
 
 
 def main() -> None:
@@ -31,10 +29,7 @@ def main() -> None:
     cfg_path = trainer_dir / "trainer_config.json"
     if not cfg_path.exists():
         raise FileNotFoundError(f"No trainer_config.json at {cfg_path}")
-    cfg_dict = json.loads(cfg_path.read_text())
-    cfg = TrainerConfig.from_dict(cfg_dict)
-    cfg.home_dir = trainer_dir
-    trainer = Trainer(cfg)
+    trainer = Trainer.from_dir(trainer_dir)
     trainer.train()
     trainer.save_results()
 

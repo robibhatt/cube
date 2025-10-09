@@ -113,6 +113,24 @@ class Trainer:
     # ------------------------------------------------------------------
 
     @classmethod
+    def from_dir(cls, home_dir: Path) -> "Trainer":
+        """Reconstruct a trainer from ``home_dir``.
+
+        The directory is expected to contain a ``trainer_config.json`` file
+        created by :meth:`Trainer._save_cfg` during initialisation.
+        """
+
+        home_dir = Path(home_dir)
+        cfg_json = home_dir / "trainer_config.json"
+        if not cfg_json.exists():
+            raise FileNotFoundError(f"No trainer_config.json at {cfg_json}")
+
+        cfg_dict = json.loads(cfg_json.read_text())
+        cfg = TrainerConfig.from_dict(cfg_dict)
+        cfg.home_dir = home_dir
+        return cls(cfg)
+
+    @classmethod
     def server_train(cls, trainer_dir: Path) -> str:
         """Create an sbatch script in ``trainer_dir`` and submit it."""
 
