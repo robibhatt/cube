@@ -17,7 +17,7 @@ class MLPConfig:
     start_activation: bool
     end_activation: bool
     bias: bool = True
-    mup: bool = False
+    mup: bool = True
     frozen_layers: List[int] = field(default_factory=list)
     model_type: str = field(init=False, default="MLP")
     input_shape: Optional[torch.Size] = field(

@@ -14,7 +14,7 @@ def model(mlp_config):
 
 
 def test_step_updates_parameters(model):
-    optimizer = create_optimizer(SgdConfig(lr=0.01, mup=True), model)
+    optimizer = create_optimizer(SgdConfig(lr=0.01), model)
     x = torch.randn(8, model.config.input_dim)
     y = torch.randn(8, 1)
 
@@ -27,3 +27,9 @@ def test_step_updates_parameters(model):
     after = list(model.parameters())
     changed = [not torch.allclose(a, b) for a, b in zip(before, after)]
     assert any(changed), "MuSGD step did not modify model parameters!"
+
+
+def test_sgd_config_requires_mup(model):
+    cfg = SgdConfig(lr=0.01, mup=False)
+    with pytest.raises(AssertionError):
+        create_optimizer(cfg, model)

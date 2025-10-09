@@ -1,14 +1,14 @@
 import pytest
 import torch
 import torch.nn as nn
-from mup import MuSGD
+from mup import Linear as MuLinear, MuReadout, MuSGD
 
 import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
 
 
-def _basic_cfg(mup: bool = False, frozen_layers=None):
+def _basic_cfg(mup: bool = True, frozen_layers=None):
     if frozen_layers is None:
         frozen_layers = []
     return MLPConfig(
@@ -42,12 +42,12 @@ def test_layer_indexing_order():
     model = MLP(_basic_cfg())
     assert len(model.linear_layers) == 3
     l1, l2, l3 = model.linear_layers
-    assert isinstance(l1, nn.Linear) and l1.out_features == 4
-    assert isinstance(l2, nn.Linear) and l2.out_features == 2
-    assert isinstance(l3, nn.Linear) and l3.out_features == 1
+    assert isinstance(l1, MuLinear) and l1.out_features == 4
+    assert isinstance(l2, MuLinear) and l2.out_features == 2
+    assert isinstance(l3, MuReadout) and l3.out_features == 1
 
 
-def test_freezing_copies_and_freezes_non_mup():
+def test_freezing_copies_and_freezes():
     torch.manual_seed(0)
     donor = MLP(_basic_cfg())
     donor_w = donor.linear_layers[1].weight.clone()
@@ -61,31 +61,6 @@ def test_freezing_copies_and_freezes_non_mup():
 
     other_before = model.linear_layers[0].weight.clone()
 
-    opt = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.1)
-    x = torch.randn(4, 3)
-    y = torch.randn(4, 1)
-    loss = nn.MSELoss()(model(x), y)
-    loss.backward()
-    opt.step()
-
-    assert torch.equal(model.linear_layers[1].weight, donor_w)
-    assert not torch.equal(model.linear_layers[0].weight, other_before)
-
-
-def test_freezing_with_mup():
-    torch.manual_seed(0)
-    donor = MLP(_basic_cfg(mup=True))
-    donor_w = donor.linear_layers[2].weight.clone()
-
-    torch.manual_seed(1)
-    model = MLP(_basic_cfg(mup=True, frozen_layers=[3]))
-    model.copy_weights_from_donor(donor, [3])
-
-    assert torch.equal(model.linear_layers[2].weight, donor_w)
-    assert model.linear_layers[2].weight.requires_grad is False
-
-    other_before = model.linear_layers[0].weight.clone()
-
     opt = MuSGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.1)
     x = torch.randn(4, 3)
     y = torch.randn(4, 1)
@@ -93,5 +68,5 @@ def test_freezing_with_mup():
     loss.backward()
     opt.step()
 
-    assert torch.equal(model.linear_layers[2].weight, donor_w)
+    assert torch.equal(model.linear_layers[1].weight, donor_w)
     assert not torch.equal(model.linear_layers[0].weight, other_before)

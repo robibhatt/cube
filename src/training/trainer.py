@@ -373,7 +373,7 @@ class Trainer:
         model.to(self.device)
         self._move_optimizer_state_to_device(optimizer.stepper)
 
-        mup_flag = detect_mup(optimizer.stepper)
+        mup_flag = getattr(model, "mup", False) or detect_mup(optimizer.stepper)
         dump_optimizer_values(
             optimizer.stepper,
             model,

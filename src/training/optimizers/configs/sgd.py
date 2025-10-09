@@ -10,7 +10,7 @@ from src.training.optimizers.configs.optimizer_config_registry import register_o
 @dataclass(kw_only=True)
 class SgdConfig(OptimizerConfig):
     lr: float
-    mup: bool = False
+    mup: bool = True
     weight_decay: float = 0.0
 
     def __post_init__(self):

@@ -56,11 +56,11 @@ src/
 
 #### Architectures
 
-- **`MLP`** – configurable feed-forward network with optional activations before and after layers.  Set ``mup=True`` in its config to build the network using μP layers (``mup.MuLinear``/``MuReadout``) instead of standard ``nn.Linear`` modules.
+- **`MLP`** – configurable feed-forward network with optional activations before and after layers.  The implementation now always uses μP layers (``mup.MuLinear``/``MuReadout``); constructing it with ``mup=False`` raises an error.
 
 #### Configs
 
-- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag to enable μP layers.  The config now also stores ``input_shape`` and ``output_shape`` derived from the dimensions, so no shared base class is required.
+- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag that must be ``True``.  The config also stores ``input_shape`` and ``output_shape`` derived from the dimensions, so no shared base class is required.
 
 ### `src/training`
 
@@ -82,7 +82,7 @@ src/
 #### Optimizers
 
 - **`Optimizer`** (abstract) – wrapper over optimization algorithms.
-- **`Adam`** – simple example using `torch.optim.Adam`.
+- **`Adam`** – wraps `mup.MuAdam` and expects μP-compatible models/configs.
 - `create_optimizer(config, model)` – factory using `OPTIMIZER_REGISTRY`.
 
 #### Configs
