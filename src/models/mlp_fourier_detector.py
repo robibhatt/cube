@@ -80,7 +80,21 @@ def _collect_neuron_activations(model: MLP, inputs: torch.Tensor) -> List[torch.
     for module in model.net:  # ``MLP`` always exposes ``net`` as ``nn.Sequential``
         x = module(x)
         if isinstance(module, LinearLike):
-            pending_value = x.detach()
+            if isinstance(module, MuReadout):
+                # ``MuReadout`` rescales its input internally to preserve μP
+                # behaviour.  For the purposes of the Fourier analysis we need
+                # activations that correspond to a standard linear readout so we
+                # undo the scaling before recording the activation.
+                scale = float(module.width_mult())
+                output_mult = float(getattr(module, "output_mult", 1.0) or 1.0)
+                factor = scale / output_mult
+                if module.bias is not None:
+                    bias = module.bias.detach()
+                    pending_value = ((x - bias) * factor + bias).detach()
+                else:
+                    pending_value = (x * factor).detach()
+            else:
+                pending_value = x.detach()
         else:
             if pending_value is not None:
                 activations.append(x.detach())
