@@ -43,7 +43,7 @@ from src.data.cube_distribution import CubeDistribution
 from src.data.cube_distribution_config import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.adam import AdamConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 from src.training.trainer_config import TrainerConfig
 from src.training.trainer import Trainer
 
@@ -63,7 +63,7 @@ cfg = TrainerConfig(
         start_activation=False,
         end_activation=False,
     ),
-    optimizer_config=AdamConfig(lr=1e-3),
+    optimizer_config=SgdConfig(lr=1e-3),
     cube_distribution_config=cube_cfg,
     training_size=32,
     test_size=16,

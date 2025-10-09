@@ -5,7 +5,7 @@ import pytest
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.adam import AdamConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
@@ -22,7 +22,7 @@ def test_trainer_reports_mse_loss(tmp_path):
             end_activation=False,
             bias=False,
         ),
-        optimizer_config=AdamConfig(lr=0.01),
+        optimizer_config=SgdConfig(lr=0.01),
         cube_distribution_config=CubeDistributionConfig(
             input_dim=1,
             indices_list=[[0]],

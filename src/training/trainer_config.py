@@ -15,7 +15,7 @@ from src.training.optimizers.configs.optimizer import OptimizerConfig
 from src.training.optimizers.configs.optimizer_config_registry import (
     build_optimizer_config_from_dict,
 )
-from src.training.optimizers.configs.adam import AdamConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 
 
 @dataclass_json
@@ -57,7 +57,7 @@ class TrainerConfig:
 
     def __post_init__(self) -> None:
         if self.optimizer_config is None:
-            self.optimizer_config = AdamConfig(lr=0.001)
+            self.optimizer_config = SgdConfig(lr=0.001)
 
     def deep_copy(self) -> "TrainerConfig":
         return copy.deepcopy(self)

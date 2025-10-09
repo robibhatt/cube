@@ -42,9 +42,9 @@ def detect_mup(optimizer: TorchOptimizer) -> bool:
     """Return ``True`` if *optimizer* comes from the ``mup`` package."""
 
     try:
-        from mup.optim import MuSGD, MuAdam  # type: ignore
+        from mup.optim import MuSGD  # type: ignore
 
-        return isinstance(optimizer, (MuSGD, MuAdam))
+        return isinstance(optimizer, MuSGD)
     except Exception:
         cls = optimizer.__class__.__name__
         mod = optimizer.__class__.__module__

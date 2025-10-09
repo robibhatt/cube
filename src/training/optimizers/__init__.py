@@ -13,7 +13,7 @@ from src.training.optimizers.optimizer_registry import (
     register_optimizer,
 )
 
-# Import all submodules (e.g. ``adam`` and ``sgd``) so their registration
+# Import all submodules (e.g. ``sgd``) so their registration
 # decorators run and populate :data:`OPTIMIZER_REGISTRY`.
 import_submodules(__name__)
 

@@ -1,7 +1,6 @@
 import pytest
 from src.training.optimizers.configs.sgd import SgdConfig
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.adam import AdamConfig
 
 
 @pytest.fixture
@@ -15,10 +14,6 @@ def mlp_config():
         end_activation=False,
     )
 
-
-@pytest.fixture
-def adam_config():
-    return AdamConfig(lr=2.5)
 
 @pytest.fixture
 def sgd_config():

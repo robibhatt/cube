@@ -4,7 +4,7 @@ import src.models.bootstrap  # noqa: F401
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.adam import AdamConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
@@ -21,7 +21,7 @@ def test_optimizer_values_written(tmp_path):
             end_activation=False,
             bias=False,
         ),
-        optimizer_config=AdamConfig(lr=0.01),
+        optimizer_config=SgdConfig(lr=0.01),
         cube_distribution_config=CubeDistributionConfig(
             input_dim=1,
             indices_list=[[0]],
@@ -43,7 +43,7 @@ def test_optimizer_values_written(tmp_path):
     assert out_file.exists()
 
     data = json.loads(out_file.read_text())
-    assert data["optimizer"] == "Adam"
+    assert data["optimizer"] == "SGD"
     assert data["mup_used"] is True
     assert len(data["groups"]) == 1
     assert data["groups"][0]["n_params"] == 1

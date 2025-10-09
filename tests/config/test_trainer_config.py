@@ -1,6 +1,6 @@
 from src.training.trainer_config import TrainerConfig
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.adam import AdamConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
@@ -29,5 +29,5 @@ def test_default_optimizer(tmp_path):
         epochs=1,
         home_dir=home_dir,
     )
-    assert isinstance(cfg.optimizer_config, AdamConfig)
+    assert isinstance(cfg.optimizer_config, SgdConfig)
     assert cfg.optimizer_config.lr == 0.001

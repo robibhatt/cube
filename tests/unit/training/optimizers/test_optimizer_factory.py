@@ -12,10 +12,10 @@ def model(mlp_config):
 
 
 @pytest.fixture
-def optimizer(adam_config, mlp_config):
+def optimizer(sgd_config, mlp_config):
     """Optimizer instance bound to a freshly constructed MLP."""
     model = MLP(mlp_config)
-    return create_optimizer(adam_config, model)
+    return create_optimizer(sgd_config, model)
 
 
 def test_initialization(mlp_config):
@@ -31,9 +31,9 @@ def test_initialization(mlp_config):
     assert model.net[4].out_features == 1
 
 
-def test_initialization_2(mlp_config, adam_config):
+def test_initialization_2(mlp_config, sgd_config):
     """Test that the optimizer picks up the learning rate from the config."""
     model = MLP(mlp_config)
-    optimizer = create_optimizer(adam_config, model)
+    optimizer = create_optimizer(sgd_config, model)
 
     assert optimizer.config.lr == pytest.approx(2.5)
