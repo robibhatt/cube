@@ -11,7 +11,7 @@ from mup import Linear as MuLinear, MuReadout, set_base_shapes
 
 from src.models.mlp import MLP
 from src.data.noisy_data_provider import NoisyProvider
-from src.training.trainer_factory import trainer_from_dir
+from src.training.trainer import Trainer
 
 LINEAR_LAYERS = (nn.Linear, MuLinear, MuReadout)
 
@@ -35,8 +35,8 @@ class NeuronComparator:
     """
 
     def __init__(self, teacher_dir: Path, student_dir: Path) -> None:
-        teacher_trainer = trainer_from_dir(teacher_dir)
-        student_trainer = trainer_from_dir(student_dir)
+        teacher_trainer = Trainer.from_dir(teacher_dir)
+        student_trainer = Trainer.from_dir(student_dir)
 
         teacher = teacher_trainer._load_model()
         student = student_trainer._load_model()
