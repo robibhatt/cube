@@ -82,13 +82,13 @@ src/
 #### Optimizers
 
 - **`Optimizer`** (abstract) – wrapper over optimization algorithms.
-- **`Adam`** – wraps `mup.MuAdam` and expects μP-compatible models/configs.
+- **`Sgd`** – wraps `mup.MuSGD` and expects μP-compatible models/configs.
 - `create_optimizer(config, model)` – factory using `OPTIMIZER_REGISTRY`.
 
 #### Configs
 
 - `OptimizerConfig` – base dataclass with `optimizer_type` field.
-- `AdamConfig` – defines learning rate for the `Adam` optimizer.
+- `SgdConfig` – defines learning rate for the `SGD` optimizer.
 - `TrainerConfig` – bundles model/optimizer configs and dataset sizes.
 
 ### `src/experiments`
@@ -146,7 +146,7 @@ from src.data.cube_distribution import CubeDistribution
 from src.data.cube_distribution_config import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.adam import AdamConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 from src.training.trainer_config import TrainerConfig
 from src.training.trainer import Trainer
 
@@ -166,7 +166,7 @@ cfg = TrainerConfig(
         start_activation=False,
         end_activation=False,
     ),
-    optimizer_config=AdamConfig(lr=1e-3),
+    optimizer_config=SgdConfig(lr=1e-3),
     cube_distribution_config=cube_cfg,
     training_size=32,
     test_size=16,

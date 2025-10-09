@@ -63,7 +63,7 @@ def test_noisy_provider_yields_on_device():
 
 
 @pytest.mark.gpu
-def test_trainer_runs_on_gpu(tmp_path, mlp_config, adam_config):
+def test_trainer_runs_on_gpu(tmp_path, mlp_config, sgd_config):
     device = available_gpu()
     if device is None:
         pytest.skip("GPU not available")
@@ -73,7 +73,7 @@ def test_trainer_runs_on_gpu(tmp_path, mlp_config, adam_config):
 
     cfg = TrainerConfig(
         mlp_config=mlp_config,
-        optimizer_config=adam_config,
+        optimizer_config=sgd_config,
         cube_distribution_config=_cube_config(mlp_config.input_dim),
         train_size=4,
         test_size=2,

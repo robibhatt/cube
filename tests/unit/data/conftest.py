@@ -8,6 +8,7 @@ from src.models.mlp_config import MLPConfig
 from src.models.mlp import MLP
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
+from src.training.optimizers.configs.sgd import SgdConfig
 
 
 def _constant_cube_distribution(input_dim: int = 2, value: float = 5.0) -> CubeDistribution:
@@ -49,14 +50,14 @@ def create_mlp_config(tmp_path) -> MLPConfig:
 
 
 @pytest.fixture
-def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
+def trained_trainer(tmp_path, mlp_config, sgd_config) -> Trainer:
     """Return a Trainer trained for one epoch."""
 
     home = tmp_path / "trainer_home"
     home.mkdir()
     cfg = TrainerConfig(
         mlp_config=mlp_config,
-        optimizer_config=adam_config,
+        optimizer_config=sgd_config,
         cube_distribution_config=CubeDistributionConfig(
             input_dim=mlp_config.input_dim,
             indices_list=[[i] for i in range(mlp_config.input_dim)],
@@ -77,7 +78,7 @@ def trained_trainer(tmp_path, mlp_config, adam_config) -> Trainer:
 
 
 @pytest.fixture
-def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
+def trained_noisy_trainer(tmp_path, sgd_config) -> Trainer:
     """Return a Trainer using a CubeDistribution trained for one epoch."""
 
     home = tmp_path / "noisy_trainer_home"
@@ -92,7 +93,7 @@ def trained_noisy_trainer(tmp_path, adam_config) -> Trainer:
     )
     cfg = TrainerConfig(
         mlp_config=model_cfg,
-        optimizer_config=adam_config,
+        optimizer_config=sgd_config,
         cube_distribution_config=CubeDistributionConfig(
             input_dim=2,
             indices_list=[[0]],

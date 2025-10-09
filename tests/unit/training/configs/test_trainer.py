@@ -39,7 +39,7 @@ def test_trainer_config_json_roundtrip(tmp_path):
     assert restored == cfg
 
 
-def test_trainer_config_requires_output_shape(tmp_path, mlp_config, adam_config):
+def test_trainer_config_requires_output_shape(tmp_path, mlp_config):
     home_dir = tmp_path / "h"
     home_dir.mkdir()
     cfg = TrainerConfig(
