@@ -14,7 +14,6 @@ trainer_config:
         mup: true
         bias: true
     optimizer_config:
-        optimizer_type: sgd
         lr: 0.005
         mup: true
         weight_decay: 0.0

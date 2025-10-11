@@ -1,32 +1,21 @@
-"""Base classes for project optimizers.
+"""μP-aware stochastic gradient descent implementation."""
 
-This module previously assumed that every optimiser would have at least one
-parameter to update.  In some experiment settings, however, we may construct an
-optimiser for a "teacher" network that is not meant to be trained and therefore
-provides no parameters.  PyTorch raises a ``ValueError`` when an optimiser is
-instantiated with an empty parameter list.  To keep the rest of the training
-code unchanged we provide a tiny no-op stepper that mimics the required API but
-performs no updates.  Optimiser implementations can fall back to this stepper
-when no parameters are found.
-"""
+from __future__ import annotations
 
-from src.training.optimizers.configs.optimizer import OptimizerConfig
-from src.models.mlp import MLP
-from abc import ABC
 from typing import List
+
+from mup import MuSGD, set_base_shapes
+
+from src.models.mlp import MLP
+from src.training.sgd_config import SgdConfig
 
 
 class NullStepper:
-    """Minimal stand-in for a Torch optimiser with no parameters.
+    """Minimal stand-in for an optimiser with no parameters."""
 
-    The object exposes the methods and attributes that the training loop expects
-    (`step`, `zero_grad`, `state_dict`, `load_state_dict`, and `state`).  Each of
-    these is implemented as a no-op so that training continues smoothly when
-    there is nothing to optimise.
-    """
-
-    def __init__(self) -> None:  # pragma: no cover - trivial initialisation
-        self.state = {}
+    def __init__(self) -> None:
+        self.state: dict = {}
+        self.param_groups: list[dict] = []
 
     def step(self, closure=None) -> None:  # pragma: no cover - no behaviour
         pass
@@ -40,13 +29,36 @@ class NullStepper:
     def load_state_dict(self, state_dict: dict) -> None:  # pragma: no cover - no behaviour
         pass
 
-class Optimizer(ABC):
-    def __init__(self, config: OptimizerConfig, model: MLP):
+
+class Sgd:
+    """Project specific wrapper around :class:`mup.MuSGD`."""
+
+    def __init__(self, config: SgdConfig, model: MLP) -> None:
         self.config = config
         self.model = model
 
-    def step(self):
+        param_groups = self._parameter_groups()
+        if not param_groups:
+            self.stepper = NullStepper()
+            return
+
+        assert (
+            self.config.mup
+        ), "SGD optimizer now assumes μP training; set mup=True in the config."
+
+        base_model = self.model.get_base_model()
+        rescale = not getattr(self.model, "mup", False)
+        set_base_shapes(self.model, base_model, rescale_params=rescale)
+        self.stepper = MuSGD(
+            param_groups,
+            lr=self.config.lr,
+            momentum=0.0,
+            weight_decay=self.config.weight_decay,
+        )
+
+    def step(self) -> None:
         """Advance the underlying optimiser by one step."""
+
         self.stepper.step()
 
     # ------------------------------------------------------------------
@@ -54,6 +66,7 @@ class Optimizer(ABC):
     # ------------------------------------------------------------------
     def _parameter_groups(self) -> List[dict]:
         """Return parameter groups excluding biases from weight decay."""
+
         wd_params, no_wd_params = [], []
         for name, param in self.model.named_parameters():
             if not param.requires_grad:
@@ -66,5 +79,3 @@ class Optimizer(ABC):
         if no_wd_params:
             groups.append({"params": no_wd_params, "weight_decay": 0.0})
         return groups
-
-

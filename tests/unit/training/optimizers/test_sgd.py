@@ -3,14 +3,12 @@ import pytest
 
 import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
-from src.training.optimizers.optimizer_factory import create_optimizer
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd import Sgd
+from src.training.sgd_config import SgdConfig
 
 
 def test_sgd_instantiation(mlp_config):
-    opt = create_optimizer(
-        SgdConfig(lr=0.1, weight_decay=0.01), MLP(mlp_config)
-    )
+    opt = Sgd(SgdConfig(lr=0.1, weight_decay=0.01), MLP(mlp_config))
     assert isinstance(opt.stepper, torch.optim.SGD)
     assert opt.stepper.defaults["momentum"] == 0
     assert opt.stepper.defaults["weight_decay"] == pytest.approx(0.01)

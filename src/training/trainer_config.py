@@ -11,11 +11,7 @@ from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
 from src.utils.serialization_utils import encode_path, decode_path
-from src.training.optimizers.configs.optimizer import OptimizerConfig
-from src.training.optimizers.configs.optimizer_config_registry import (
-    build_optimizer_config_from_dict,
-)
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd_config import SgdConfig
 
 
 @dataclass_json
@@ -35,11 +31,11 @@ class TrainerConfig:
             decoder=lambda d: None if d is None else CubeDistributionConfig.from_dict(d),
         ),
     )
-    optimizer_config: Optional[OptimizerConfig] = field(
+    optimizer_config: Optional[SgdConfig] = field(
         default=None,
         metadata=config(
             encoder=lambda o: None if o is None else o.to_dict(),
-            decoder=lambda d: None if d is None else build_optimizer_config_from_dict(d),
+            decoder=lambda d: None if d is None else SgdConfig.from_dict(d),
         ),
     )
     early_stopping: Optional[float] = None

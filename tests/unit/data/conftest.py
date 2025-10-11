@@ -8,7 +8,7 @@ from src.models.mlp_config import MLPConfig
 from src.models.mlp import MLP
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd_config import SgdConfig
 
 
 def _constant_cube_distribution(input_dim: int = 2, value: float = 5.0) -> CubeDistribution:

@@ -1,5 +1,5 @@
 import pytest
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd_config import SgdConfig
 from src.models.mlp_config import MLPConfig
 
 

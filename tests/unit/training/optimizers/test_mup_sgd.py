@@ -4,8 +4,8 @@ import torch.nn.functional as F
 
 import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
-from src.training.optimizers.optimizer_factory import create_optimizer
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd import Sgd
+from src.training.sgd_config import SgdConfig
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def model(mlp_config):
 
 
 def test_step_updates_parameters(model):
-    optimizer = create_optimizer(SgdConfig(lr=0.01), model)
+    optimizer = Sgd(SgdConfig(lr=0.01), model)
     x = torch.randn(8, model.config.input_dim)
     y = torch.randn(8, 1)
 
@@ -32,4 +32,4 @@ def test_step_updates_parameters(model):
 def test_sgd_config_requires_mup(model):
     cfg = SgdConfig(lr=0.01, mup=False)
     with pytest.raises(AssertionError):
-        create_optimizer(cfg, model)
+        Sgd(cfg, model)
