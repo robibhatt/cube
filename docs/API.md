@@ -81,14 +81,14 @@ src/
 
 #### Optimizers
 
-- **`Optimizer`** (abstract) – wrapper over optimization algorithms.
-- **`Sgd`** – wraps `mup.MuSGD` and expects μP-compatible models/configs.
-- `create_optimizer(config, model)` – factory using `OPTIMIZER_REGISTRY`.
+- **`Sgd`** – wraps `mup.MuSGD` and expects μP-compatible models/configs. A
+  fallback ``NullStepper`` is used when the target model exposes no trainable
+  parameters so that training loops can continue without special casing.
 
 #### Configs
 
-- `OptimizerConfig` – base dataclass with `optimizer_type` field.
-- `SgdConfig` – defines learning rate for the `SGD` optimizer.
+- `SgdConfig` – defines learning rate, μP toggle, and weight decay for the SGD
+  optimiser.
 - `TrainerConfig` – bundles model/optimizer configs and dataset sizes.
 
 ### `src/experiments`
@@ -107,32 +107,25 @@ src/
 
 ## Configuration Objects
 
-Configuration throughout the codebase is captured via small dataclasses rather than external YAML or JSON.  Key configuration classes include `MLPConfig`, the `OptimizerConfig` subclasses, and `TrainerConfig` in `src/training/trainer_config`.  Experiments also define dataclass configs (e.g., `RepeatedSamplingExperimentConfig`).  These objects are created frequently in tests and scripts, so correct field values are critical for proper directory creation and checkpoint handling.
+Configuration throughout the codebase is captured via small dataclasses rather than external YAML or JSON.  Key configuration classes include `MLPConfig`, `SgdConfig`, and `TrainerConfig` in `src/training/trainer_config`.  Experiments also define dataclass configs (e.g., `RepeatedSamplingExperimentConfig`).  These objects are created frequently in tests and scripts, so correct field values are critical for proper directory creation and checkpoint handling.
 
 ## Interactions and Dependencies
 
 - `Trainer` relies on `Checkpoint` for saving/loading model parameters and optimizer state.
 - `Experiments` compose multiple `Trainer` instances and use various `JointDistribution` implementations to generate data.
- - `Optimizer` instances are created per model via `create_optimizer` and are stored in checkpoints.
+- `Sgd` instances are created per model and are stored in checkpoints.
 
 ## Automatic Plugin Imports
 
-The project relies on a small registry for optimizers and various experiment
-helpers. Importing a module executes decorators like ``@register_optimizer``
-that populate the relevant registry. Models are now instantiated directly
-without a registry. Data providers no longer participate in this plugin system –
-the only implementation required for current experiments is
-:class:`NoisyProvider`, which is constructed explicitly where needed. Target
-functions are similarly instantiated directly from their configs.
+Optimisers are instantiated directly; the only implementation currently
+supported is μP-aware stochastic gradient descent. Configuration is expressed
+through :class:`SgdConfig` and passed straight to :class:`Sgd`, so no plugin
+system or registry is required. Data providers and targets are likewise created
+explicitly from their configs.
 
 The training loop itself is provided by the concrete :class:`Trainer` in
 ``src/training/trainer.py`` and configured via :class:`TrainerConfig` from
-``src/training/trainer_config.py``; no registry is involved.
-
-Adding a new experiment or optimizer therefore only requires placing the module
-inside the appropriate package and decorating the class. No manual import
-statements are needed to enable discovery. Target functions do not participate
-in this plugin mechanism anymore because they are instantiated explicitly.
+``src/training/trainer_config.py``.
 
 ## Device Placement
 
@@ -146,7 +139,7 @@ from src.data.cube_distribution import CubeDistribution
 from src.data.cube_distribution_config import CubeDistributionConfig
 from src.models.targets.sum_prod import SumProdTarget
 from src.models.mlp_config import MLPConfig
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd_config import SgdConfig
 from src.training.trainer_config import TrainerConfig
 from src.training.trainer import Trainer
 
@@ -194,5 +187,5 @@ Several operations interact with the filesystem:
 
 ## Summary
 
-The project provides a collection of small, composable building blocks for studying neural network generalization.  Models and optimizers are configured via dataclasses and linked together by factory functions, while the training loop uses the :class:`Trainer` class configured by :class:`TrainerConfig`.  Experiments orchestrate multiple trainers to evaluate training recipes on different data distributions.
+The project provides a collection of small, composable building blocks for studying neural network generalization.  Models and optimizers are configured via dataclasses and instantiated directly, while the training loop uses the :class:`Trainer` class configured by :class:`TrainerConfig`.  Experiments orchestrate multiple trainers to evaluate training recipes on different data distributions.
 

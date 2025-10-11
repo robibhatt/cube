@@ -1,8 +1,10 @@
 import pytest
 
 import src.models.bootstrap  # noqa: F401
+import pytest
+
 from src.models.mlp import MLP
-from src.training.optimizers.optimizer_factory import create_optimizer
+from src.training.sgd import Sgd
 
 
 @pytest.fixture
@@ -15,7 +17,7 @@ def model(mlp_config):
 def optimizer(sgd_config, mlp_config):
     """Optimizer instance bound to a freshly constructed MLP."""
     model = MLP(mlp_config)
-    return create_optimizer(sgd_config, model)
+    return Sgd(sgd_config, model)
 
 
 def test_initialization(mlp_config):
@@ -34,6 +36,6 @@ def test_initialization(mlp_config):
 def test_initialization_2(mlp_config, sgd_config):
     """Test that the optimizer picks up the learning rate from the config."""
     model = MLP(mlp_config)
-    optimizer = create_optimizer(sgd_config, model)
+    optimizer = Sgd(sgd_config, model)
 
     assert optimizer.config.lr == pytest.approx(2.5)

@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from src.training.optimizers.optimizer_factory import create_optimizer
-from src.training.optimizers.configs.sgd import SgdConfig
+from src.training.sgd import Sgd
+from src.training.sgd_config import SgdConfig
 
 
 class NoParamModel(nn.Module):
@@ -11,7 +11,7 @@ class NoParamModel(nn.Module):
 
 def test_optimizer_with_no_parameters_is_noop():
     model = NoParamModel()
-    optimizer = create_optimizer(SgdConfig(lr=0.1), model)
+    optimizer = Sgd(SgdConfig(lr=0.1), model)
 
     # Should be able to call zero_grad and step without errors
     optimizer.stepper.zero_grad()

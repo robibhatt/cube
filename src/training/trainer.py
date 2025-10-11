@@ -33,8 +33,7 @@ from src.models.mlp_utils import (
     export_neuron_input_gradients,
     visualize,
 )
-from src.training.optimizers.optimizer import Optimizer
-from src.training.optimizers.optimizer_factory import create_optimizer
+from src.training.sgd import Sgd
 from src.checkpoints.checkpoint import Checkpoint
 
 
@@ -254,7 +253,7 @@ class Trainer:
     def _save_checkpoint(
         self,
         model: MLP,
-        optimizer: Optimizer,
+        optimizer: Sgd,
         training_loss: float,
         training_loss_with_l1: float,
         epoch: int,
@@ -304,7 +303,7 @@ class Trainer:
             batch_size=batch_size,
         )
 
-    def _initialize_model_and_optimizer(self) -> tuple[MLP, Optimizer]:
+    def _initialize_model_and_optimizer(self) -> tuple[MLP, Sgd]:
         assert not self.started_training, "Training already started"
         torch.manual_seed(self.model_seed)
         assert self.config.mlp_config is not None
@@ -329,7 +328,7 @@ class Trainer:
                 )
 
         torch.manual_seed(self.optimizer_seed)
-        optimizer = create_optimizer(self.optimizer_config, model)
+        optimizer = Sgd(self.optimizer_config, model)
         base_loss, l1_loss = self._train_losses(model)
         self._save_checkpoint(
             model=model,
@@ -340,13 +339,13 @@ class Trainer:
         )
         return model, optimizer
 
-    def _load_model_and_optimizer(self) -> tuple[MLP, Optimizer]:
+    def _load_model_and_optimizer(self) -> tuple[MLP, Sgd]:
         checkpoint = Checkpoint.from_dir(self.checkpoint_dir)
         torch.manual_seed(self.model_seed)
         assert self.config.mlp_config is not None
         model = MLP(self.config.mlp_config)
         torch.manual_seed(self.optimizer_seed)
-        optimizer = create_optimizer(self.optimizer_config, model)
+        optimizer = Sgd(self.optimizer_config, model)
         checkpoint.load(model=model, optimizer=optimizer.stepper)
 
         model.to(self.device)
