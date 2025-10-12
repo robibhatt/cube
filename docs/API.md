@@ -56,11 +56,11 @@ src/
 
 #### Architectures
 
-- **`MLP`** – configurable feed-forward network with optional activations before and after layers.  The implementation now always uses μP layers (``mup.MuLinear``/``MuReadout``); constructing it with ``mup=False`` raises an error.
+- **`MLP`** – configurable feed-forward network with optional activations before and after layers.  The implementation always uses μP layers (``mup.MuLinear``/``MuReadout``) without requiring any special configuration flags.
 
 #### Configs
 
-- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag that must be ``True``.  Input and output shapes are derived from the dimensions when needed, so the config no longer stores them explicitly.
+- `MLPConfig` – defines layer dimensions, activation type, and activation placement flags.  Input and output shapes are derived from the dimensions when needed, so the config no longer stores them explicitly.
 
 ### `src/training`
 
@@ -87,8 +87,7 @@ src/
 
 #### Configs
 
-- `SgdConfig` – defines learning rate, μP toggle, and weight decay for the SGD
-  optimiser.
+- `SgdConfig` – defines learning rate and weight decay for the SGD optimiser.
 - `TrainerConfig` – bundles model/optimizer configs and dataset sizes.
 
 ### `src/experiments`

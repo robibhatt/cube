@@ -22,7 +22,6 @@ def _build_mlp(
     hidden_dims: list[int],
     output_dim: int,
     activation: str = "relu",
-    mup: bool = True,
 ) -> MLP:
     config = MLPConfig(
         input_dim=input_dim,
@@ -32,7 +31,6 @@ def _build_mlp(
         start_activation=False,
         end_activation=False,
         bias=True,
-        mup=mup,
     )
     return MLP(config)
 
@@ -135,7 +133,7 @@ def test_fourier_mlp_handles_mup_linear_layers() -> None:
         pytest.skip("mup not installed")
 
     input_dim = 2
-    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3], output_dim=1, mup=True)
+    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3], output_dim=1)
 
     model = FourierMlpModule(
         input_dim=input_dim,

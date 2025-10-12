@@ -27,9 +27,3 @@ def test_step_updates_parameters(model):
     after = list(model.parameters())
     changed = [not torch.allclose(a, b) for a, b in zip(before, after)]
     assert any(changed), "MuSGD step did not modify model parameters!"
-
-
-def test_sgd_config_requires_mup(model):
-    cfg = SgdConfig(lr=0.01, mup=False)
-    with pytest.raises(AssertionError):
-        Sgd(cfg, model)
