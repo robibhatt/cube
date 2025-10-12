@@ -34,5 +34,5 @@ trainer_config:
     epochs: 3
     use_full_batch: false
     weight_decay_l1: 0.0004
-home_directory: experiment_runs/test/39
+home_directory: experiment_runs/test/40
 seed: 12321245
