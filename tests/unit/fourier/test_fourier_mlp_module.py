@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.fourier import FourierMlp
+from src.fourier import FourierMlpModule
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
 
@@ -43,7 +43,7 @@ def test_fourier_mlp_computes_expected_values() -> None:
     mlp = _build_mlp(input_dim=input_dim, hidden_dims=[4], output_dim=2)
 
     fourier_indices = [[0], [1, 2], []]
-    model = FourierMlp(
+    model = FourierMlpModule(
         input_dim=input_dim,
         fourier_indices=fourier_indices,
         mlp=mlp,
@@ -87,7 +87,7 @@ def test_fourier_mlp_computes_expected_values() -> None:
 def test_fourier_mlp_returns_none_for_empty_ranges() -> None:
     input_dim = 2
     mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3], output_dim=1)
-    model = FourierMlp(
+    model = FourierMlpModule(
         input_dim=input_dim,
         fourier_indices=[[0]],
         mlp=mlp,
@@ -106,7 +106,7 @@ def test_fourier_mlp_validates_fourier_indices() -> None:
     mlp = _build_mlp(input_dim=input_dim, hidden_dims=[], output_dim=2)
 
     with pytest.raises(ValueError):
-        FourierMlp(
+        FourierMlpModule(
             input_dim=input_dim,
             fourier_indices=[[0, 3]],
             mlp=mlp,
@@ -119,7 +119,7 @@ def test_fourier_mlp_validates_input_dim_match() -> None:
     mlp = _build_mlp(input_dim=3, hidden_dims=[4], output_dim=2)
 
     with pytest.raises(ValueError):
-        FourierMlp(
+        FourierMlpModule(
             input_dim=4,
             fourier_indices=[[0]],
             mlp=mlp,
@@ -137,7 +137,7 @@ def test_fourier_mlp_handles_mup_linear_layers() -> None:
     input_dim = 2
     mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3], output_dim=1, mup=True)
 
-    model = FourierMlp(
+    model = FourierMlpModule(
         input_dim=input_dim,
         fourier_indices=[[0], [1]],
         mlp=mlp,

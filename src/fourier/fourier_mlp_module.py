@@ -9,7 +9,7 @@ import torch
 from src.models.mlp import MLP
 
 
-class FourierMlp(torch.nn.Module):
+class FourierMlpModule(torch.nn.Module):
     """Estimate correlations between neuron activations and Fourier features.
 
     The module wraps an :class:`~src.models.mlp.MLP` instance and exposes a
