@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List
-from dataclasses_json import dataclass_json
+
+from dataclasses_json import config, dataclass_json
+from marshmallow import fields
 
 
 @dataclass_json
@@ -12,10 +14,35 @@ class MLPConfig:
     activation: str
     start_activation: bool
     end_activation: bool
-    bias: bool = True
-    mup: bool = True
-    frozen_layers: List[int] = field(default_factory=list)
-    model_type: str = field(init=False, default="MLP")
+    bias: bool = field(
+        default=True,
+        metadata=config(
+            mm_field=fields.Boolean(load_default=True, dump_default=True)
+        ),
+    )
+    mup: bool = field(
+        default=True,
+        metadata=config(
+            mm_field=fields.Boolean(load_default=True, dump_default=True)
+        ),
+    )
+    frozen_layers: List[int] = field(
+        default_factory=list,
+        metadata=config(
+            mm_field=fields.List(
+                fields.Integer(),
+                load_default=list,
+                dump_default=list,
+            )
+        ),
+    )
+    model_type: str = field(
+        init=False,
+        default="MLP",
+        metadata=config(
+            mm_field=fields.String(load_default="MLP", dump_default="MLP")
+        ),
+    )
 
     def __post_init__(self):
         self.model_type = "MLP"
