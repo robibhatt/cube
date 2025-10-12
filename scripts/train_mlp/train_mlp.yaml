@@ -21,25 +21,7 @@ trainer_config:
         - [0]
         - [0, 1]
         - [0, 1, 2]
-        - [0, 1, 2, 3]
-        - [0, 1, 2, 3, 4]
-        - [0, 1, 2, 3, 4, 5]
-        - [0, 1, 2, 3, 4, 5, 6]
-        - [0, 1, 2, 3, 4, 5, 6, 7]
-        - [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        - [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        - [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        - [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         weights:
-        - 1.0
-        - 1.0
-        - 1.0
-        - 1.0
-        - 1.0
-        - 1.0
-        - 1.0
-        - 1.0
-        - 1.0
         - 1.0
         - 1.0
         - 1.0
@@ -52,6 +34,6 @@ trainer_config:
     epochs: 3
     use_full_batch: false
     weight_decay_l1: 0.0004
-home_directory: experiment_runs/test/37
+home_directory: experiment_runs/test/38
 seed: 12321245
 run_parallel: false
