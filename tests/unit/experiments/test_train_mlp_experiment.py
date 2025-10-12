@@ -1,14 +1,13 @@
 import csv
 import src.models.bootstrap  # noqa: F401
 
-from src.training.trainer_config import TrainerConfig
-from src.models.mlp_config import MLPConfig
+from src.data.cube_distribution_config import CubeDistributionConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
+from src.fourier.fourier_mlp import FourierMlp
+from src.models.mlp_config import MLPConfig
+from src.training.trainer_config import TrainerConfig
 from src.utils.seed_manager import SeedManager
-from src.data.cube_distribution_config import (
-    CubeDistributionConfig,
-)
 
 
 def _make_trainer_config() -> TrainerConfig:
@@ -67,3 +66,14 @@ def test_train_and_consolidate(tmp_path):
         reader = csv.DictReader(f)
         data_row = next(reader)
     assert float(data_row['final_train_loss']) == rows[0]['final_train_loss']
+
+    fourier_root = tmp_path / 'fourier_analysis'
+    assert fourier_root.exists()
+
+    fourier_dir = fourier_root / FourierMlp.FOURIER_SUBDIR_NAME
+    coeff_dir = fourier_dir / FourierMlp.COEFFICIENT_SUBDIR
+    assert coeff_dir.exists()
+
+    expected_files = {'indices_empty.pt', 'indices_0.pt'}
+    generated_files = {path.name for path in coeff_dir.iterdir()}
+    assert expected_files.issubset(generated_files)
