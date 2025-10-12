@@ -27,13 +27,13 @@ class TrainMLPExperiment(Experiment):
 
         # Store trainer configs so repeated calls use the same seed derived
         # from the experiment seed.
-        self._trainer_configs: List[List[TrainerConfig]] = [[trainer_cfg]]
+        self._trainer_configs: List[TrainerConfig] = [trainer_cfg]
 
-    def get_trainer_configs(self) -> List[List[TrainerConfig]]:
+    def get_trainer_configs(self) -> List[TrainerConfig]:
         return self._trainer_configs
 
     def consolidate_results(self) -> List[Dict[str, Any]]:
-        trainer_cfg = self.get_trainer_configs()[0][0]
+        trainer_cfg = self.get_trainer_configs()[0]
 
         results_path = trainer_cfg.home_dir / "results.json"
         if not results_path.exists():

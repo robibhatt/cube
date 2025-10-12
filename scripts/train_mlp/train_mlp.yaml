@@ -36,4 +36,3 @@ trainer_config:
     weight_decay_l1: 0.0004
 home_directory: experiment_runs/test/39
 seed: 12321245
-run_parallel: false

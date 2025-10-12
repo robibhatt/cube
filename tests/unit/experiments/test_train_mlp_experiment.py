@@ -43,11 +43,11 @@ def test_trainer_seed_from_experiment_seed(tmp_path):
         trainer_config=trainer_cfg, home_directory=tmp_path, seed=exp_seed
     )
     experiment = TrainMLPExperiment(exp_cfg)
-    trainer_seed = experiment.get_trainer_configs()[0][0].seed
+    trainer_seed = experiment.get_trainer_configs()[0].seed
     seed_mgr = SeedManager(exp_seed)
     expected_seed = seed_mgr.spawn_seed()
     assert trainer_seed == expected_seed
-    trainer_seed_2 = experiment.get_trainer_configs()[0][0].seed
+    trainer_seed_2 = experiment.get_trainer_configs()[0].seed
     assert trainer_seed_2 == trainer_seed
 
 
