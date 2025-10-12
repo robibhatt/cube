@@ -12,7 +12,7 @@ import torch.nn as nn
 
 from mup import Linear as MuLinear, MuReadout
 
-from .mlp import MLP
+from src.models.mlp import MLP
 
 
 LinearLike = (nn.Linear, MuLinear, MuReadout)
@@ -206,23 +206,18 @@ def detect_mlp_fourier_components(
                     }
                 )
 
-    output_path = Path(output_directory) / "fourier.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", encoding="utf-8") as fh:
-        json.dump(
-            {
-                "max_degree": max_degree,
-                "epsilon": epsilon,
-                "num_samples": num_samples,
-                "random_seed": int(random_seed),
-                "results": results,
-            },
-            fh,
-            indent=2,
-        )
-
+    output_directory = Path(output_directory)
+    output_directory.mkdir(parents=True, exist_ok=True)
+    output_path = output_directory / "fourier.json"
+    payload: Dict[str, object] = {
+        "max_degree": max_degree,
+        "epsilon": epsilon,
+        "num_samples": num_samples,
+        "random_seed": random_seed,
+        "results": results,
+    }
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return output_path
 
 
 __all__ = ["detect_mlp_fourier_components"]
-
