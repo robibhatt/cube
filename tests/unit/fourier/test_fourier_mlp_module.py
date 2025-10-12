@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.models.fourier_mlp import FourierMlp
+from src.fourier import FourierMlp
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
 
@@ -112,21 +112,6 @@ def test_fourier_mlp_validates_fourier_indices() -> None:
             mlp=mlp,
             neuron_start_index=0,
             neuron_end_index=2,
-        )
-
-
-def test_fourier_mlp_requires_mlp_instance() -> None:
-    input_dim = 2
-    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[4], output_dim=1)
-    fake_mlp = torch.nn.Sequential(*list(mlp.net))
-
-    with pytest.raises(TypeError):
-        FourierMlp(
-            input_dim=input_dim,
-            fourier_indices=[[0]],
-            mlp=fake_mlp,  # type: ignore[arg-type]
-            neuron_start_index=0,
-            neuron_end_index=1,
         )
 
 

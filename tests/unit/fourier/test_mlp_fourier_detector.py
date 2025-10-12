@@ -5,8 +5,8 @@ import pytest
 import torch
 import torch.nn.functional as F
 
+from src.fourier import detect_mlp_fourier_components
 from src.models import MLP, MLPConfig
-from src.models.mlp_fourier_detector import detect_mlp_fourier_components
 
 
 def _build_test_mlp() -> MLP:
