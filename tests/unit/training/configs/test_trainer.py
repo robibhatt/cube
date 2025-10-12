@@ -39,13 +39,40 @@ def test_trainer_config_json_roundtrip(tmp_path):
     assert restored == cfg
 
 
-def test_trainer_config_requires_output_shape(tmp_path, mlp_config):
+def test_trainer_config_validates_input_dim(tmp_path, mlp_config):
     home_dir = tmp_path / "h"
     home_dir.mkdir()
     cfg = TrainerConfig(
         mlp_config=mlp_config,
         cube_distribution_config=CubeDistributionConfig(
             input_dim=mlp_config.input_dim + 1,
+            indices_list=[[0]],
+            weights=[1.0],
+        ),
+        train_size=1,
+        test_size=1,
+        batch_size=1,
+        epochs=1,
+        home_dir=home_dir,
+    )
+    with pytest.raises(AssertionError):
+        cfg.ready_for_trainer()
+
+
+def test_trainer_config_validates_output_dim(tmp_path):
+    home_dir = tmp_path / "h2"
+    home_dir.mkdir()
+    cfg = TrainerConfig(
+        mlp_config=MLPConfig(
+            input_dim=2,
+            output_dim=2,
+            hidden_dims=[],
+            activation="relu",
+            start_activation=False,
+            end_activation=False,
+        ),
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=2,
             indices_list=[[0]],
             weights=[1.0],
         ),
