@@ -60,7 +60,7 @@ src/
 
 #### Configs
 
-- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag that must be ``True``.  The config also stores ``input_shape`` and ``output_shape`` derived from the dimensions, so no shared base class is required.
+- `MLPConfig` – defines layer dimensions, activation type, and a ``mup`` flag that must be ``True``.  Input and output shapes are derived from the dimensions when needed, so the config no longer stores them explicitly.
 
 ### `src/training`
 

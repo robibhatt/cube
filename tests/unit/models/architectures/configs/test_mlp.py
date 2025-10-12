@@ -1,5 +1,4 @@
 import pytest
-import torch
 
 import src.models.bootstrap  # noqa: F401
 from src.models.mlp_config import MLPConfig
@@ -21,10 +20,6 @@ def test_direct_instantiation(example_args):
     cfg = MLPConfig(**example_args)
     assert cfg.input_dim == example_args["input_dim"]
     assert cfg.output_dim == example_args["output_dim"]
-    assert isinstance(cfg.input_shape, torch.Size)
-    assert tuple(cfg.input_shape) == (example_args["input_dim"],)
-    assert isinstance(cfg.output_shape, torch.Size)
-    assert tuple(cfg.output_shape) == (example_args["output_dim"],)
     assert cfg.model_type == "MLP"
 
 

@@ -68,21 +68,20 @@ class TrainerConfig:
         assert self.home_dir is not None, "home_dir must be specified"
         assert self.weight_decay_l1 >= 0.0, "weight_decay_l1 must be non-negative"
 
-        assert self.mlp_config.input_shape == self.cube_distribution_config.input_shape, (
-            f"Model input shape must match distribution input shape. "
-            f"Model: {self.mlp_config.input_shape}, "
-            f"Distribution: {self.cube_distribution_config.input_shape}"
+        assert (
+            self.mlp_config.input_dim == self.cube_distribution_config.input_dim
+        ), (
+            "Model input_dim must match distribution input_dim. "
+            f"Model: {self.mlp_config.input_dim}, "
+            f"Distribution: {self.cube_distribution_config.input_dim}"
         )
-        assert (
-            self.mlp_config.output_shape is not None
-        ), "Model output shape must not be None"
-        assert (
-            self.cube_distribution_config.output_shape is not None
-        ), "Cube distribution output shape must not be None"
-        assert self.mlp_config.output_shape == self.cube_distribution_config.output_shape, (
-            f"Model output shape must match distribution output shape. "
-            f"Model: {self.mlp_config.output_shape}, "
-            f"Distribution: {self.cube_distribution_config.output_shape}"
+        expected_output_dim = int(
+            self.cube_distribution_config.output_shape.numel()
+        )
+        assert self.mlp_config.output_dim == expected_output_dim, (
+            "Model output_dim must match distribution output dimension. "
+            f"Model: {self.mlp_config.output_dim}, "
+            f"Distribution: {expected_output_dim}"
         )
         assert self.home_dir.exists(), f"Home directory {self.home_dir} does not exist"
         if self.batch_size is not None and self.epochs is not None:
