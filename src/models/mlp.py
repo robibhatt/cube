@@ -12,9 +12,8 @@ from src.models.mlp_config import MLPConfig
 class MLP(nn.Module):
     """A configurable multi-layer perceptron.
 
-    The network is implemented purely in terms of μP-aware linear layers.  The
-    provided ``config`` must have ``mup=True`` – attempting to construct the
-    model with ``mup=False`` will raise an ``AssertionError``.
+    The network is implemented purely in terms of μP-aware linear layers and
+    always operates in μP mode.
     """
 
     # ------------------------------------------------------------------
@@ -23,10 +22,7 @@ class MLP(nn.Module):
     def __init__(self, config: MLPConfig) -> None:
         super().__init__()
         self.config = config
-        self.mup = config.mup
-        assert (
-            self.mup
-        ), "MLP now requires config.mup=True; non-μP mode is no longer supported."
+        self.mup = True
 
         # Honour the ``bias`` flag in the config (defaulting to ``True``)
         bias_flag = getattr(self.config, "bias", True)
@@ -35,7 +31,7 @@ class MLP(nn.Module):
         self.layers, self.linear_layers = self._build_layers(act_cls, bias_flag)
         self.net = nn.Sequential(*self.layers)
 
-        # MuP base-shape setup before any freezing
+        # μP base-shape setup for compatible parameter shapes
         if not getattr(self.config, "_is_base", False):
             base = self.get_base_model()
             set_base_shapes(self, base)
@@ -62,14 +58,6 @@ class MLP(nn.Module):
                         m.reset_parameters()
                         if getattr(m, "bias", None) is not None and m.bias is not None:
                             nn.init.constant_(m.bias, 0.01)
-
-        # Freeze any specified layers
-        if self.config.frozen_layers:
-            for idx in self.config.frozen_layers:
-                layer = self.linear_layers[idx - 1]
-                layer.weight.requires_grad_(False)
-                if layer.bias is not None:
-                    layer.bias.requires_grad_(False)
 
         if not getattr(self.config, "_is_base", False):
             self._mup_post_init_sanity_check()
@@ -254,8 +242,6 @@ class MLP(nn.Module):
     def get_base_model(self):  # type: ignore[override]
         """Return a clean base-width model for μP shape registration.
 
-        - Strips any freezing (frozen_layers → []) so set_base_shapes() sees a fully
-        trainable parameter tree.
         - Forces end_activation=False (μP doesn't support it).
         - Mirrors input/output dims, activation, bias, and start_activation.
         - Uses a stable small width for all hidden layers (default 64), or a user-
@@ -269,8 +255,6 @@ class MLP(nn.Module):
         base_cfg = replace(
             self.config,
             hidden_dims=base_hidden,
-            mup=True,
-            frozen_layers=[],           # never freeze the base
             end_activation=False,       # μP doesn't support an end activation
         )
 

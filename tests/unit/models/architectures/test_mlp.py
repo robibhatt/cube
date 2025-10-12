@@ -138,7 +138,7 @@ def test_start_and_end_activation_flags():
 
 
 def test_mup_initialization_uses_mup_layers(basic_config):
-    """MLP with ``mup=True`` in its config should use MuP layers."""
+    """MLP should use μP-aware layers by default."""
     model = MLP(basic_config)
 
     # first hidden layer should be MuLinear and last layer MuReadout
@@ -147,10 +147,10 @@ def test_mup_initialization_uses_mup_layers(basic_config):
 
 
 def test_mup_get_base_model(basic_config):
-    """``get_base_model`` should return a base-width ``MLP`` when ``mup=True``."""
+    """``get_base_model`` should return a base-width ``MLP`` configured for μP."""
     model = MLP(basic_config)
     base = model.get_base_model()
-    assert base is not None and base.config.model_type == "MLP"
+    assert isinstance(base, MLP)
     assert base.mup is True
     assert base.config.hidden_dims == [64] * len(basic_config.hidden_dims)
 
@@ -164,15 +164,8 @@ def test_mup_disallows_end_activation(basic_config):
         output_dim=basic_config.output_dim,
         start_activation=basic_config.start_activation,
         end_activation=True,
-        mup=True,
     )
     with pytest.raises(ValueError):
-        MLP(cfg)
-
-
-def test_mlp_requires_mup_true(basic_config):
-    cfg = replace(basic_config, mup=False)
-    with pytest.raises(AssertionError):
         MLP(cfg)
 
 

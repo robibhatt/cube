@@ -42,13 +42,8 @@ class Sgd:
             self.stepper = NullStepper()
             return
 
-        assert (
-            self.config.mup
-        ), "SGD optimizer now assumes μP training; set mup=True in the config."
-
         base_model = self.model.get_base_model()
-        rescale = not getattr(self.model, "mup", False)
-        set_base_shapes(self.model, base_model, rescale_params=rescale)
+        set_base_shapes(self.model, base_model, rescale_params=False)
         self.stepper = MuSGD(
             param_groups,
             lr=self.config.lr,

@@ -18,7 +18,6 @@ def _build_simple_mlp() -> MLP:
         start_activation=False,
         end_activation=False,
         bias=False,
-        mup=True,
     )
     mlp = MLP(config)
     with torch.no_grad():

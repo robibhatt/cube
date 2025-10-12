@@ -28,7 +28,7 @@ def benchmark_logger():
 
     def describe_model(cfg):
         return (
-            f"{cfg.model_type}(hidden={cfg.hidden_dims}, activation={cfg.activation})"
+            f"{cfg.__class__.__name__}(hidden={cfg.hidden_dims}, activation={cfg.activation})"
         )
 
     def describe_distribution(dist):
