@@ -30,9 +30,13 @@ class TrainMLPExperiment(Experiment):
         self._trainer_configs: List[TrainerConfig] = [trainer_cfg]
 
     def get_trainer_configs(self) -> List[TrainerConfig]:
+        """Return the trainer configuration seeded for this experiment run."""
+
         return self._trainer_configs
 
     def consolidate_results(self) -> List[Dict[str, Any]]:
+        """Collect training metrics and trigger Fourier post-processing."""
+
         trainer_cfg = self.get_trainer_configs()[0]
 
         results_path = trainer_cfg.home_dir / "results.json"
@@ -77,7 +81,10 @@ class TrainMLPExperiment(Experiment):
         The coefficients are computed for every neuron across all layers and for
         all index sets required by the sum-product structure of the trainer's
         target function.  Results are written to a dedicated subdirectory within
-        the experiment's home directory.
+        the experiment's home directory.  Constructing :class:`FourierMlp`
+        eagerly records the second moment of every neuron, ensuring downstream
+        analyses have immediate access to variance information alongside the
+        lazily-evaluated Fourier coefficients.
         """
 
         mlp = self._load_trained_mlp(trainer_cfg)

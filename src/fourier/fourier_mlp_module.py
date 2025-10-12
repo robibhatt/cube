@@ -86,6 +86,8 @@ class FourierMlpModule(torch.nn.Module):
         return ranges
 
     def _compute_fourier_products(self, x: torch.Tensor) -> torch.Tensor | None:
+        """Return the batch of Fourier basis products for the configured indices."""
+
         if not self.fourier_indices:
             return None
 
