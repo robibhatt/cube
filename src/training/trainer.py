@@ -14,9 +14,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
-import os
-import re
-import subprocess
 import time
 import torch
 import torch.nn.functional as F
@@ -128,55 +125,6 @@ class Trainer:
         cfg = TrainerConfig.from_dict(cfg_dict)
         cfg.home_dir = home_dir
         return cls(cfg)
-
-    @classmethod
-    def server_train(cls, trainer_dir: Path) -> str:
-        """Create an sbatch script in ``trainer_dir`` and submit it."""
-
-        project_root = Path(__file__).resolve().parents[3]
-        start_script = project_root / "scripts" / "start_experiment.sh"
-        if not start_script.exists():
-            raise FileNotFoundError(
-                f"Reference script not found at {start_script}"
-            )
-
-        lines = start_script.read_text().splitlines()
-        job_name = f"{trainer_dir.parent.name}_{trainer_dir.name}"
-        out_path = os.path.relpath(trainer_dir / "train.out", project_root)
-        err_path = os.path.relpath(trainer_dir / "train.err", project_root)
-        trainer_rel = os.path.relpath(trainer_dir, project_root)
-
-        new_lines = []
-        for line in lines:
-            if line.startswith("#SBATCH --job-name="):
-                new_lines.append(f"#SBATCH --job-name={job_name}")
-            elif line.startswith("#SBATCH --output="):
-                new_lines.append(f"#SBATCH --output={out_path}")
-            elif line.startswith("#SBATCH --error="):
-                new_lines.append(f"#SBATCH --error={err_path}")
-            elif line.strip().startswith("python"):
-                new_lines.append(f"python -m scripts.train {trainer_rel}")
-            else:
-                new_lines.append(line)
-
-        script_path = trainer_dir / "train.sh"
-        script_path.write_text("\n".join(new_lines) + "\n")
-        script_path.chmod(0o755)
-        script_rel = os.path.relpath(script_path, project_root)
-
-        result = subprocess.run(
-            ["sbatch", script_rel],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        match = re.search(r"(\d+)", result.stdout)
-        if not match:
-            raise RuntimeError(
-                f"Could not parse job ID from sbatch output: {result.stdout!r}"
-            )
-        return match.group(1)
 
     def __init__(self, config: TrainerConfig):
         self.config = config

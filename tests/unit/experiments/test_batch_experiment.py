@@ -12,6 +12,7 @@ from src.experiments.configs import register_experiment_config
 from src.experiments.configs import build_experiment_config
 from src.experiments.experiments.experiment import Experiment
 from src.experiments.configs import ExperimentConfig
+from src.training.trainer_config import TrainerConfig
 
 
 @register_experiment_config("DummyBatchSub")
@@ -31,9 +32,13 @@ class DummySubExperiment(Experiment):
     def __init__(self, config: DummySubExperimentConfig) -> None:
         super().__init__(config)
 
-    def get_trainer_configs(self) -> list[list]:
+    def get_trainer_configs(self) -> list[TrainerConfig]:
         DummySubExperiment.called += 1
-        return [["a"], ["b"]]
+        start = (DummySubExperiment.called - 1) * 2
+        return [
+            TrainerConfig(seed=start),
+            TrainerConfig(seed=start + 1),
+        ]
 
     def consolidate_results(self):
         out_file = self.config.home_directory / "results.csv"
@@ -71,7 +76,7 @@ def test_get_trainer_configs_returns_sub_exp(tmp_path: Path):
     batch_exp = SimpleBatchExperiment(batch_cfg, [sub_cfg1, sub_cfg2])
 
     cfgs = batch_exp.get_trainer_configs()
-    assert cfgs == [["a"], ["b"], ["a"], ["b"]]
+    assert [cfg.seed for cfg in cfgs] == [0, 1, 2, 3]
     assert DummySubExperiment.called == 2
 
     # No more experiments -> empty list

@@ -17,5 +17,3 @@ class ExperimentConfig(ABC):
     )
     # Base seed used to derive all experiment-level RNG state
     seed: int
-    # Whether to run trainers in parallel (not yet implemented)
-    run_parallel: bool = field(default=False, kw_only=True)
