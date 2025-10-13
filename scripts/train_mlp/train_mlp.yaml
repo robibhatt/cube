@@ -34,3 +34,4 @@ trainer_config:
     weight_decay_l1: 0.005
 home_directory: experiment_runs/intense/10
 seed: 12321245
+edge_threshold: 0.0

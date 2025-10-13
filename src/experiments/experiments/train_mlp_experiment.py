@@ -79,7 +79,11 @@ class TrainMLPExperiment(Experiment):
         mlp = self._load_trained_mlp(trainer_cfg)
         graph_root = Path(self.config.home_directory) / "mlp_graph"
         graph_root.mkdir(parents=True, exist_ok=True)
-        MlpActivationGraph(mlp, eps=0.0, output_dir=graph_root)
+        MlpActivationGraph(
+            mlp,
+            eps=self.config.edge_threshold,
+            output_dir=graph_root,
+        )
 
     def _load_trained_mlp(self, trainer_cfg: TrainerConfig) -> MLP:
         """Return the trained MLP restored from the trainer checkpoint."""
