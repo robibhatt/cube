@@ -1,10 +1,12 @@
 import csv
 import src.models.bootstrap  # noqa: F401
+import torch
 
 from src.data.cube_distribution_config import CubeDistributionConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
 from src.models.mlp_config import MLPConfig
+from src.models.mlp import MLP
 from src.training.trainer_config import TrainerConfig
 from src.utils.seed_manager import SeedManager
 
@@ -77,3 +79,33 @@ def test_train_and_consolidate(tmp_path):
     assert layer_dirs, "Expected serialized layer directories in the graph output"
     node_files = list(layer_dirs[0].glob('*.json'))
     assert node_files, "Expected serialized neuron files in the graph output"
+
+
+def test_graph_scaling_accounts_for_normalization(tmp_path):
+    trainer_cfg = _make_trainer_config()
+    trainer_cfg.cube_distribution_config = CubeDistributionConfig(
+        input_dim=1,
+        indices_list=[[0]],
+        weights=[2.0],
+        noise_mean=0.0,
+        noise_std=0.0,
+        normalize=True,
+    )
+
+    exp_cfg = TrainMLPExperimentConfig(
+        trainer_config=trainer_cfg, home_directory=tmp_path, seed=0
+    )
+    experiment = TrainMLPExperiment(exp_cfg)
+
+    mlp = MLP(trainer_cfg.mlp_config)
+    with torch.no_grad():
+        for param in mlp.parameters():
+            param.fill_(1.0)
+
+    lambda_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
+    experiment._apply_graph_scale(mlp, trainer_cfg)
+
+    with torch.no_grad():
+        for param in mlp.parameters():
+            expected = torch.full_like(param, lambda_scale)
+            assert torch.allclose(param, expected)
