@@ -32,6 +32,6 @@ trainer_config:
     epochs: 600
     use_full_batch: false
     weight_decay_l1: 0.005
-home_directory: experiment_runs/intense/10
+home_directory: experiment_runs/intense/13
 seed: 12321245
-edge_threshold: 0.0
+edge_threshold: 0.01
