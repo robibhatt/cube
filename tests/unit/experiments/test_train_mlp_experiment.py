@@ -4,7 +4,6 @@ import src.models.bootstrap  # noqa: F401
 from src.data.cube_distribution_config import CubeDistributionConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
-from src.fourier.fourier_mlp import FourierMlp
 from src.models.mlp_config import MLPConfig
 from src.training.trainer_config import TrainerConfig
 from src.utils.seed_manager import SeedManager
@@ -67,13 +66,14 @@ def test_train_and_consolidate(tmp_path):
         data_row = next(reader)
     assert float(data_row['final_train_loss']) == rows[0]['final_train_loss']
 
-    fourier_root = tmp_path / 'fourier_analysis'
-    assert fourier_root.exists()
+    graph_root = tmp_path / 'mlp_graph'
+    assert graph_root.exists()
 
-    fourier_dir = fourier_root / FourierMlp.FOURIER_SUBDIR_NAME
-    coeff_dir = fourier_dir / FourierMlp.COEFFICIENT_SUBDIR
-    assert coeff_dir.exists()
+    subdirs = [path for path in graph_root.iterdir() if path.is_dir()]
+    assert subdirs, "Expected the mlp_graph directory to contain at least one graph run"
+    graph_dir = subdirs[0]
 
-    expected_files = {'indices_empty.pt', 'indices_0.pt'}
-    generated_files = {path.name for path in coeff_dir.iterdir()}
-    assert expected_files.issubset(generated_files)
+    layer_dirs = [path for path in graph_dir.iterdir() if path.is_dir()]
+    assert layer_dirs, "Expected serialized layer directories in the graph output"
+    node_files = list(layer_dirs[0].glob('*.json'))
+    assert node_files, "Expected serialized neuron files in the graph output"

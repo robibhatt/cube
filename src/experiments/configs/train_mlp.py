@@ -15,6 +15,7 @@ class TrainMLPExperimentConfig(ExperimentConfig):
     """Configuration for training a single MLP."""
 
     trainer_config: TrainerConfig
+    edge_threshold: float = 0.0
 
     def __post_init__(self) -> None:
         self.experiment_type = "TrainMLP"
