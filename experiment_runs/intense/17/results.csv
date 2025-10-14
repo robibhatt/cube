@@ -1,0 +1,2 @@
+train_size,trial_number,mean_output_loss,final_test_loss,final_train_loss
+8192,0,0.9716211184859276,0.0007636808486495283,0.0007322273386307643

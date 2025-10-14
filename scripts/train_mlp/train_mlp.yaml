@@ -20,8 +20,10 @@ trainer_config:
         indices_list:
         - [0, 1]
         - [2, 3]
-        - [0, 1, 2, 3]
+        - [4, 5]
+        - [0, 1, 2, 3, 4, 5]
         weights:
+        - 1.0
         - 1.0
         - 1.0
         - 1.0
@@ -34,6 +36,6 @@ trainer_config:
     epochs: 1000
     use_full_batch: false
     weight_decay_l1: 0.005
-home_directory: experiment_runs/intense/16
+home_directory: experiment_runs/intense/17
 seed: 12321245
 edge_threshold: 0.01
