@@ -108,9 +108,15 @@ class TrainMLPExperiment(Experiment):
         if lambda_scale == 1.0:
             return mlp
 
+        num_layers = len(mlp.linear_layers)
+        if num_layers == 0:
+            return mlp
+
         with torch.no_grad():
-            for param in mlp.parameters():
-                param.mul_(lambda_scale)
+            for layer_idx, layer in enumerate(mlp.linear_layers, start=1):
+                layer.weight.mul_(lambda_scale)
+                if layer.bias is not None:
+                    layer.bias.mul_(lambda_scale ** layer_idx)
         return mlp
 
     def _compute_graph_scale(self, mlp: MLP, trainer_cfg: TrainerConfig) -> float:

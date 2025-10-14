@@ -106,6 +106,110 @@ def test_graph_scaling_accounts_for_normalization(tmp_path):
     experiment._apply_graph_scale(mlp, trainer_cfg)
 
     with torch.no_grad():
-        for param in mlp.parameters():
-            expected = torch.full_like(param, lambda_scale)
-            assert torch.allclose(param, expected)
+        for layer_idx, layer in enumerate(mlp.linear_layers, start=1):
+            expected_weight = torch.full_like(layer.weight, lambda_scale)
+            assert torch.allclose(layer.weight, expected_weight)
+            if layer.bias is not None:
+                expected_bias = torch.full_like(layer.bias, lambda_scale ** layer_idx)
+                assert torch.allclose(layer.bias, expected_bias)
+
+
+def test_graph_scaling_scales_biases_by_layer_depth(tmp_path):
+    mlp_config = MLPConfig(
+        input_dim=2,
+        output_dim=1,
+        hidden_dims=[3, 4],
+        activation='relu',
+        start_activation=False,
+        end_activation=False,
+    )
+    trainer_cfg = TrainerConfig(
+        mlp_config=mlp_config,
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=2,
+            indices_list=[[0], [1]],
+            weights=[1.0, 1.0],
+            noise_mean=0.0,
+            noise_std=0.0,
+            normalize=True,
+        ),
+        train_size=1,
+        test_size=1,
+        batch_size=1,
+        epochs=1,
+    )
+
+    exp_cfg = TrainMLPExperimentConfig(
+        trainer_config=trainer_cfg, home_directory=tmp_path, seed=0
+    )
+    experiment = TrainMLPExperiment(exp_cfg)
+
+    mlp = MLP(mlp_config)
+    with torch.no_grad():
+        for layer in mlp.linear_layers:
+            layer.weight.fill_(1.5)
+            if layer.bias is not None:
+                layer.bias.fill_(0.5)
+
+    lambda_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
+    experiment._apply_graph_scale(mlp, trainer_cfg)
+
+    with torch.no_grad():
+        for layer_idx, layer in enumerate(mlp.linear_layers, start=1):
+            expected_weight = torch.full_like(layer.weight, 1.5 * lambda_scale)
+            assert torch.allclose(layer.weight, expected_weight)
+            if layer.bias is not None:
+                expected_bias = torch.full_like(
+                    layer.bias, 0.5 * (lambda_scale ** layer_idx)
+                )
+                assert torch.allclose(layer.bias, expected_bias)
+
+
+def test_graph_scaling_restores_unnormalized_output(tmp_path):
+    mlp_config = MLPConfig(
+        input_dim=2,
+        output_dim=1,
+        hidden_dims=[3],
+        activation='relu',
+        start_activation=False,
+        end_activation=False,
+    )
+    trainer_cfg = TrainerConfig(
+        mlp_config=mlp_config,
+        cube_distribution_config=CubeDistributionConfig(
+            input_dim=2,
+            indices_list=[[0], [1]],
+            weights=[1.0, -0.5],
+            noise_mean=0.0,
+            noise_std=0.0,
+            normalize=True,
+        ),
+        train_size=1,
+        test_size=1,
+        batch_size=1,
+        epochs=1,
+    )
+
+    exp_cfg = TrainMLPExperimentConfig(
+        trainer_config=trainer_cfg, home_directory=tmp_path, seed=0
+    )
+    experiment = TrainMLPExperiment(exp_cfg)
+
+    mlp = MLP(mlp_config)
+    with torch.no_grad():
+        first_layer, second_layer = mlp.linear_layers
+        first_layer.weight.fill_(0.8)
+        first_layer.bias.fill_(0.3)
+        second_layer.weight.fill_(-0.4)
+        second_layer.bias.fill_(0.2)
+
+    x = torch.tensor([[0.6, -0.1]], dtype=torch.float32)
+    baseline = mlp(x)
+
+    lambda_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
+    experiment._apply_graph_scale(mlp, trainer_cfg)
+
+    scaled = mlp(x)
+    normalization = experiment._get_normalization_factor(trainer_cfg)
+    target_scale = 1.0 / normalization
+    assert torch.allclose(scaled, baseline * target_scale)
