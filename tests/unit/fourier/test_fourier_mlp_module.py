@@ -28,7 +28,6 @@ def _build_mlp(
         hidden_dims=hidden_dims,
         start_activation=False,
         end_activation=False,
-        bias=True,
     )
     return MLP(config)
 
