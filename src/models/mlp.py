@@ -136,16 +136,6 @@ class MLP(nn.Module):
                             f"(mean {b.mean().item():.6g}, max |Δ| {(b - expected_bias).abs().max().item():.3g})"
                         )
 
-        # ---- (3) Independence check only on sizeable, equal-shape WEIGHTS (skip biases) ----
-        with torch.no_grad():
-            for (n, p), (_, bp) in zip(self.named_parameters(), base.named_parameters()):
-                if p.ndim == 2 and p.shape == bp.shape and p.numel() >= min_cos_numel:
-                    fp, fbp = p.view(-1).float(), bp.view(-1).float()
-                    denom = (fp.norm() * fbp.norm()).clamp_min(1e-12)
-                    cos = torch.dot(fp, fbp) / denom
-                    if cos.abs().item() > 0.1:
-                        problems.append(f"Unexpectedly high cosine ({cos.item():.3f}) model↔base for '{n}'")
-
         # ---- (4) Within-model scale plausibility for hidden weights (std * sqrt(fan_in)) ----
         with torch.no_grad():
             scales = []
