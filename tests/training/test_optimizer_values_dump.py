@@ -16,7 +16,6 @@ def test_optimizer_values_written(tmp_path):
             hidden_dims=[],
             start_activation=False,
             end_activation=False,
-            bias=False,
         ),
         optimizer_config=SgdConfig(lr=0.01),
         cube_distribution_config=CubeDistributionConfig(
@@ -42,10 +41,20 @@ def test_optimizer_values_written(tmp_path):
     data = json.loads(out_file.read_text())
     assert data["optimizer"] == "SGD"
     assert data["mup_used"] is True
-    assert len(data["groups"]) == 1
+    assert len(data["groups"]) == 2
     assert data["groups"][0]["n_params"] == 1
-    assert len(data["params"]) == 1
-    param = data["params"][0]
-    assert param["name"] == "net.0.weight"
-    assert param["shape"] == [1, 1]
-    assert param["group_index"] == 0
+    assert data["groups"][1]["n_params"] == 1
+    assert data["groups"][1]["weight_decay"] == 0.0
+    assert len(data["params"]) == 2
+
+    params_by_name = {p["name"]: p for p in data["params"]}
+    assert set(params_by_name) == {"net.0.weight", "net.0.bias"}
+
+    weight = params_by_name["net.0.weight"]
+    assert weight["shape"] == [1, 1]
+    assert weight["group_index"] == 0
+
+    bias = params_by_name["net.0.bias"]
+    assert bias["shape"] == [1]
+    assert bias["group_index"] == 1
+    assert bias["weight_decay"] == 0.0

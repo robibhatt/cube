@@ -19,7 +19,6 @@ def _make_trainer(tmp_path, hidden_dims):
             hidden_dims=hidden_dims,
             start_activation=False,
             end_activation=False,
-            bias=False,
         ),
         optimizer_config=SgdConfig(lr=0.01),
         cube_distribution_config=CubeDistributionConfig(
