@@ -5,8 +5,7 @@ trainer_config:
         input_dim: 9
         output_dim: 1
         hidden_dims:
-        - 64
-        - 64
+        - 256
         start_activation: false
         end_activation: false
         bias: true
@@ -30,7 +29,7 @@ trainer_config:
     batch_size: 64
     epochs: 1000
     use_full_batch: false
-    weight_decay_l1: 0.001
-home_directory: experiment_runs/small/1c
+    weight_decay_l1: 0.1
+home_directory: experiment_runs/small/8
 seed: 12321245
 edge_threshold: 0.01
