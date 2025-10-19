@@ -26,10 +26,7 @@ from src.training.trainer_config import TrainerConfig
 from src.data.cube_distribution import CubeDistribution
 from src.data.noisy_data_provider import NoisyProvider
 from src.models.mlp import MLP
-from src.models.mlp_utils import (
-    export_neuron_input_gradients,
-    visualize,
-)
+from src.models.mlp_utils import visualize
 from src.training.sgd import Sgd
 from src.checkpoints.checkpoint import Checkpoint
 
@@ -417,9 +414,6 @@ class Trainer:
             # ------------------------------------------------------------------
             # gradient statistics and visualization
             # ------------------------------------------------------------------
-            data_provider = self.get_fresh_iterator()
-            grads_path = self.config.home_dir / "neuron_input_gradients.csv"
-            export_neuron_input_gradients(model, data_provider, grads_path)
             visualize(model, self.config.home_dir)
 
     def train(self) -> None:

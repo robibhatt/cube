@@ -7,10 +7,6 @@ from mup import Linear as MuLinear, MuReadout
 import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
-from src.models.mlp_utils import export_neuron_input_gradients
-from src.data.noisy_data_provider import NoisyProvider
-from src.data.cube_distribution import CubeDistribution
-from src.data.cube_distribution_config import CubeDistributionConfig
 
 
 @pytest.fixture
@@ -194,43 +190,5 @@ def test_bias_flag_controls_bias_params():
         l for l in model_bias.layers if isinstance(l, (MuLinear, MuReadout))
     ]
     assert all(layer.bias is not None for layer in linear_layers_bias)
-
-
-def test_export_neuron_input_gradients_layer_numbering(tmp_path):
-    """Layer indices in the exported CSV should start at 1."""
-    cfg = MLPConfig(
-        input_dim=2,
-        hidden_dims=[3],
-        activation="relu",
-        output_dim=1,
-        start_activation=False,
-        end_activation=False,
-    )
-    model = MLP(cfg)
-
-    dist_cfg = CubeDistributionConfig(
-        input_dim=2,
-        indices_list=[[0]],
-        weights=[0.0],
-        normalize=False,
-        noise_mean=0.0,
-        noise_std=0.0,
-    )
-    distribution = CubeDistribution(dist_cfg, torch.device("cpu"))
-    provider = NoisyProvider(
-        distribution,
-        seed=0,
-        dataset_size=4,
-        batch_size=4,
-    )
-    out_path = tmp_path / "grads.csv"
-    export_neuron_input_gradients(model, provider, out_path)
-
-    import csv
-
-    with out_path.open() as f:
-        rows = list(csv.DictReader(f))
-    layers = {int(row["layer"]) for row in rows}
-    assert layers == {1, 2}
 
 
