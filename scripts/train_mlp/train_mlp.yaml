@@ -16,9 +16,7 @@ trainer_config:
         input_dim: 9
         indices_list:
         - [0, 1]
-        - [0, 1, 2, 3, 4, 5]
         weights:
-        - 1.0
         - 1.0
         normalize: true
         noise_mean: 0.0
@@ -28,7 +26,7 @@ trainer_config:
     batch_size: 64
     epochs: 1000
     use_full_batch: false
-    weight_decay_l1: 0.1
-home_directory: experiment_runs/small/8
+    weight_decay_l1: 0.009
+home_directory: experiment_runs/small/12
 seed: 12321245
 edge_threshold: 0.01
