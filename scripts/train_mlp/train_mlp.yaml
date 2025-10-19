@@ -2,40 +2,36 @@ experiment_type: TrainMLP
 trainer_config:
     trainer_type: Trainer
     mlp_config:
-        input_dim: 16
+        input_dim: 9
         output_dim: 1
         hidden_dims:
-        - 128
-        - 128
+        - 64
+        - 64
         activation: relu
         start_activation: false
         end_activation: false
         bias: true
     optimizer_config:
-        lr: 0.01
+        lr: 0.02
         weight_decay: 0.0
     cube_distribution_config:
         distribution_type: CubeDistribution
-        input_dim: 16
+        input_dim: 9
         indices_list:
         - [0, 1]
-        - [2, 3]
-        - [4, 5]
         - [0, 1, 2, 3, 4, 5]
         weights:
-        - 1.0
-        - 1.0
         - 1.0
         - 1.0
         normalize: true
         noise_mean: 0.0
         noise_std: 0.0
-    train_size: 8192
-    test_size: 8192
-    batch_size: 128
+    train_size: 256
+    test_size: 256
+    batch_size: 64
     epochs: 1000
     use_full_batch: false
-    weight_decay_l1: 0.005
-home_directory: experiment_runs/intense/18
+    weight_decay_l1: 0.001
+home_directory: experiment_runs/small/1c
 seed: 12321245
 edge_threshold: 0.01
