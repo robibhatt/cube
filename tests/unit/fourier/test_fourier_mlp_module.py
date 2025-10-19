@@ -21,13 +21,11 @@ def _build_mlp(
     input_dim: int,
     hidden_dims: list[int],
     output_dim: int,
-    activation: str = "relu",
 ) -> MLP:
     config = MLPConfig(
         input_dim=input_dim,
         output_dim=output_dim,
         hidden_dims=hidden_dims,
-        activation=activation,
         start_activation=False,
         end_activation=False,
         bias=True,

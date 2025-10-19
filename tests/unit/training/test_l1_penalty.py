@@ -17,7 +17,6 @@ def _make_trainer(tmp_path, hidden_dims):
             input_dim=1,
             output_dim=1,
             hidden_dims=hidden_dims,
-            activation="relu",
             start_activation=False,
             end_activation=False,
             bias=False,

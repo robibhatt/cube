@@ -14,7 +14,6 @@ def test_optimizer_values_written(tmp_path):
             input_dim=1,
             output_dim=1,
             hidden_dims=[],
-            activation="relu",
             start_activation=False,
             end_activation=False,
             bias=False,

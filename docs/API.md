@@ -56,11 +56,11 @@ src/
 
 #### Architectures
 
-- **`MLP`** – configurable feed-forward network with optional activations before and after layers.  The implementation always uses μP layers (``mup.MuLinear``/``MuReadout``) without requiring any special configuration flags.
+- **`MLP`** – configurable feed-forward network with optional ReLU activations before and after layers.  The implementation always uses μP layers (``mup.MuLinear``/``MuReadout``) without requiring any special configuration flags.
 
 #### Configs
 
-- `MLPConfig` – defines layer dimensions, activation type, and activation placement flags.  Input and output shapes are derived from the dimensions when needed, so the config no longer stores them explicitly.
+- `MLPConfig` – defines layer dimensions and activation placement flags.  Input and output shapes are derived from the dimensions when needed, so the config no longer stores them explicitly.
 
 ### `src/training`
 
@@ -154,7 +154,6 @@ cfg = TrainerConfig(
         input_dim=cube_cfg.input_dim,
         output_dim=1,
         hidden_dims=[4],
-        activation="relu",
         start_activation=False,
         end_activation=False,
     ),

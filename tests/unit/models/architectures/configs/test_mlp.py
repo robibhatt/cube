@@ -9,7 +9,6 @@ def example_args():
         "input_dim": 8,
         "output_dim": 3,
         "hidden_dims": [16, 32],
-        "activation": "relu",
         "start_activation": True,
         "end_activation": False,
     }

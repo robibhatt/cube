@@ -4,8 +4,6 @@ import torch.nn as nn
 from dataclasses import replace
 
 from mup import Linear as MuLinear, MuReadout, set_base_shapes
-
-from src.models.activations import ACTIVATION_MAP
 from src.models.mlp_config import MLPConfig
 
 
@@ -27,7 +25,7 @@ class MLP(nn.Module):
         # Honour the ``bias`` flag in the config (defaulting to ``True``)
         bias_flag = getattr(self.config, "bias", True)
 
-        act_cls = self._get_activation()
+        act_cls = nn.ReLU
         self.layers, self.linear_layers = self._build_layers(act_cls, bias_flag)
         self.net = nn.Sequential(*self.layers)
 
@@ -41,14 +39,7 @@ class MLP(nn.Module):
                 import mup
                 for m in self.modules():
                     if isinstance(m, (MuLinear, MuReadout)):
-                        if self.config.activation == "quadratic":
-                            mup.init.kaiming_uniform_(
-                                m.weight, a=0.0, mode="fan_in", nonlinearity="linear"
-                            )
-                            with torch.no_grad():
-                                m.weight.mul_(math.sqrt(0.5))
-                        else:
-                            mup.init.kaiming_uniform_(m.weight, a=0.0)
+                        mup.init.kaiming_uniform_(m.weight, a=0.0)
                         if getattr(m, "bias", None) is not None and m.bias is not None:
                             nn.init.constant_(m.bias, 0.01)
             except ImportError:
@@ -93,12 +84,6 @@ class MLP(nn.Module):
         linear_layers.append(out_lin)
 
         return layers, linear_layers
-
-    def _get_activation(self) -> type[nn.Module]:
-        act = ACTIVATION_MAP.get(self.config.activation)
-        if act is None:
-            raise ValueError(f"Unsupported activation: {self.config.activation}")
-        return act
 
     def _mup_post_init_sanity_check(
         self,
@@ -243,7 +228,7 @@ class MLP(nn.Module):
         """Return a clean base-width model for μP shape registration.
 
         - Forces end_activation=False (μP doesn't support it).
-        - Mirrors input/output dims, activation, bias, and start_activation.
+        - Mirrors input/output dims, bias, and start_activation.
         - Uses a stable small width for all hidden layers (default 64), or a user-
         specified `base_width` attribute on the config if present.
         """

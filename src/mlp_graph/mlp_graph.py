@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 import torch
+import torch.nn as nn
 
-from src.models.activations import ACTIVATION_MAP
 from src.models.mlp import MLP
 
 
@@ -66,7 +66,7 @@ class MlpActivationGraph:
         if not self.linear_layers:
             raise ValueError("The provided MLP does not contain any linear layers")
 
-        self.activation = ACTIVATION_MAP[self.mlp.config.activation]()
+        self.activation = nn.ReLU()
         self.weight_tensors = [layer.weight.detach().cpu().clone() for layer in self.linear_layers]
         self.bias_tensors = [
             layer.bias.detach().cpu().clone() if layer.bias is not None else None

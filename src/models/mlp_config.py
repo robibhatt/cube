@@ -11,7 +11,6 @@ class MLPConfig:
     input_dim: int
     output_dim: int
     hidden_dims: List[int]
-    activation: str
     start_activation: bool
     end_activation: bool
     bias: bool = field(

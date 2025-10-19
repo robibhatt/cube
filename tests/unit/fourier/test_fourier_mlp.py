@@ -14,7 +14,6 @@ def _build_simple_mlp() -> MLP:
         input_dim=2,
         output_dim=1,
         hidden_dims=[2],
-        activation="relu",
         start_activation=False,
         end_activation=False,
         bias=False,

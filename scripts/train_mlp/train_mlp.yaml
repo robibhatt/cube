@@ -7,7 +7,6 @@ trainer_config:
         hidden_dims:
         - 64
         - 64
-        activation: relu
         start_activation: false
         end_activation: false
         bias: true

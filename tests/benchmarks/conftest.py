@@ -27,9 +27,7 @@ def benchmark_logger():
         )
 
     def describe_model(cfg):
-        return (
-            f"{cfg.__class__.__name__}(hidden={cfg.hidden_dims}, activation={cfg.activation})"
-        )
+        return f"{cfg.__class__.__name__}(hidden={cfg.hidden_dims}, activation=relu)"
 
     def describe_distribution(dist):
         if dist.config.distribution_type == "CubeDistribution":

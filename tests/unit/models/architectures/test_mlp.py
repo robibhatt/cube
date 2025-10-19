@@ -14,7 +14,6 @@ def basic_config():
     return MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
-        activation="relu",
         output_dim=1,
         start_activation=False,
         end_activation=False
@@ -48,54 +47,12 @@ def test_forward_pass(model):
     assert not torch.isinf(y).any()
 
 
-def test_different_activations():
-    """Test that different activation functions work."""
-    activations = ["relu", "tanh", "sigmoid", "quadratic"]
-
-    for activation in activations:
-        config = MLPConfig(
-            input_dim=2,
-            hidden_dims=[3],
-            activation=activation,
-            output_dim=1,
-            start_activation=False,
-            end_activation=False,
-        )
-        model = MLP(config)
-
-        # Test forward pass
-        x = torch.randn(4, 2)
-        y = model(x)
-
-        assert y.shape == (4, 1)
-        assert not torch.isnan(y).any()
-        assert not torch.isinf(y).any()
-
-
-def test_invalid_activation():
-    """Test that invalid activation raises error."""
-    config = MLPConfig(
-        input_dim=2,
-        hidden_dims=[3],
-        activation="invalid_activation",
-        output_dim=1,
-        start_activation=False,
-        end_activation=False,
-    )
-
-    with pytest.raises(ValueError, match="Unsupported activation"):
-        MLP(config)
-
-
-
-
 def test_start_and_end_activation_flags():
     """Verify the optional start‐ and end‐activation layers are inserted correctly."""
     # --- start_activation=True, end_activation=False --------------------------
     cfg_start = MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
-        activation="relu",
         output_dim=1,
         start_activation=True,
         end_activation=False,
@@ -112,7 +69,6 @@ def test_start_and_end_activation_flags():
     cfg_end = MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
-        activation="relu",
         output_dim=1,
         start_activation=False,
         end_activation=True,
@@ -123,7 +79,6 @@ def test_start_and_end_activation_flags():
     cfg_both = MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
-        activation="relu",
         output_dim=1,
         start_activation=True,
         end_activation=True,
@@ -155,7 +110,6 @@ def test_mup_disallows_end_activation(basic_config):
     cfg = MLPConfig(
         input_dim=basic_config.input_dim,
         hidden_dims=basic_config.hidden_dims,
-        activation=basic_config.activation,
         output_dim=basic_config.output_dim,
         start_activation=basic_config.start_activation,
         end_activation=True,
@@ -169,7 +123,6 @@ def test_bias_flag_controls_bias_params():
     cfg_no_bias = MLPConfig(
         input_dim=3,
         hidden_dims=[4],
-        activation="relu",
         output_dim=1,
         start_activation=False,
         end_activation=False,
