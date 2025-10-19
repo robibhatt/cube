@@ -4,7 +4,6 @@ import pytest
 import torch
 from mup import Linear as MuLinear, MuReadout
 
-import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
 from src.models.mlp_utils import export_neuron_input_gradients

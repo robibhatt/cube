@@ -1,8 +1,5 @@
 import pytest
 
-import pytest
-
-import src.models.bootstrap  # noqa: F401
 from src.models.mlp_config import MLPConfig
 
 
