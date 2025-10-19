@@ -14,7 +14,6 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import modules to ensure all registry decorators are executed
-import src.models.bootstrap  # noqa: F401
 import src.models.targets  # noqa: F401
 import src.models.targets.configs  # noqa: F401
 import src.data  # noqa: F401

@@ -1,7 +1,6 @@
 import torch
 import pytest
 
-import src.models.bootstrap  # noqa: F401
 from src.models.mlp import MLP
 from src.training.sgd import Sgd
 from src.training.sgd_config import SgdConfig

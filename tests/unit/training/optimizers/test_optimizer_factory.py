@@ -1,8 +1,5 @@
 import pytest
 
-import src.models.bootstrap  # noqa: F401
-import pytest
-
 from src.models.mlp import MLP
 from src.training.sgd import Sgd
 

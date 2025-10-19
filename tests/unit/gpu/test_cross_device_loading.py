@@ -2,7 +2,6 @@ import json
 import pytest
 import torch
 
-import src.models.bootstrap  # noqa: F401
 from tests.unit.gpu.test_gpu_compatibility import available_gpu, _cube_config
 from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig

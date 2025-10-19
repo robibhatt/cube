@@ -1,5 +1,4 @@
 import csv
-import src.models.bootstrap  # noqa: F401
 import torch
 
 from src.data.cube_distribution_config import CubeDistributionConfig

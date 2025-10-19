@@ -1,8 +1,6 @@
 import pytest
 import torch
 
-import src.models.bootstrap  # noqa: F401
-
 from src.data.cube_distribution import CubeDistribution
 from src.data.cube_distribution_config import (
     CubeDistributionConfig,
