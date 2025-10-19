@@ -22,11 +22,8 @@ class MLP(nn.Module):
         self.config = config
         self.mup = True
 
-        # Honour the ``bias`` flag in the config (defaulting to ``True``)
-        bias_flag = getattr(self.config, "bias", True)
-
         act_cls = nn.ReLU
-        self.layers, self.linear_layers = self._build_layers(act_cls, bias_flag)
+        self.layers, self.linear_layers = self._build_layers(act_cls)
         self.net = nn.Sequential(*self.layers)
 
         # μP base-shape setup for compatible parameter shapes
@@ -57,7 +54,7 @@ class MLP(nn.Module):
     # helpers
     # ------------------------------------------------------------------
     def _build_layers(
-        self, act_cls: type[nn.Module], bias_flag: bool
+        self, act_cls: type[nn.Module]
     ) -> tuple[list[nn.Module], list[nn.Module]]:
         """Construct network layers based on the current configuration."""
         layers: list[nn.Module] = []
@@ -72,13 +69,13 @@ class MLP(nn.Module):
             raise ValueError("end_activation is not supported when mup=True")
 
         for h in self.config.hidden_dims:
-            lin = self._create_linear_layer(in_dim, h, bias_flag)
+            lin = self._create_linear_layer(in_dim, h)
             layers.extend([lin, act_cls()])
             linear_layers.append(lin)
             in_dim = h
 
         out_lin = self._create_linear_layer(
-            in_dim, self.config.output_dim, bias_flag, is_output=True
+            in_dim, self.config.output_dim, is_output=True
         )
         layers.append(out_lin)
         linear_layers.append(out_lin)
@@ -170,12 +167,12 @@ class MLP(nn.Module):
             )
 
     def _create_linear_layer(
-        self, in_features: int, out_features: int, bias: bool, is_output: bool = False
+        self, in_features: int, out_features: int, is_output: bool = False
     ) -> nn.Module:
         """Return the μP linear layer for the current configuration."""
         if is_output:
-            return MuReadout(in_features, out_features, bias=bias)
-        return MuLinear(in_features, out_features, bias=bias)
+            return MuReadout(in_features, out_features, bias=True)
+        return MuLinear(in_features, out_features, bias=True)
 
     def copy_weights_from_donor(self, donor: "MLP", layers: list[int]) -> None:
         """Copy weights and biases from ``donor`` for the given ``layers``.
@@ -218,7 +215,7 @@ class MLP(nn.Module):
         """Return a clean base-width model for μP shape registration.
 
         - Forces end_activation=False (μP doesn't support it).
-        - Mirrors input/output dims, bias, and start_activation.
+        - Mirrors input/output dims and start_activation.
         - Uses a stable small width for all hidden layers (default 64), or a user-
         specified `base_width` attribute on the config if present.
         """
@@ -233,7 +230,7 @@ class MLP(nn.Module):
             end_activation=False,       # μP doesn't support an end activation
         )
 
-        # Preserve bias and start_activation exactly as-is; replace() already did.
+        # Preserve start_activation exactly as-is; replace() already did.
         # Mark as base so __init__ skips set_base_shapes() recursion.
         setattr(base_cfg, "_is_base", True)
 

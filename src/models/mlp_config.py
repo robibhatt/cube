@@ -1,8 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
 
-from dataclasses_json import config, dataclass_json
-from marshmallow import fields
+from dataclasses_json import dataclass_json
 
 
 @dataclass_json
@@ -13,10 +12,4 @@ class MLPConfig:
     hidden_dims: List[int]
     start_activation: bool
     end_activation: bool
-    bias: bool = field(
-        default=True,
-        metadata=config(
-            mm_field=fields.Boolean(load_default=True, dump_default=True)
-        ),
-    )
 

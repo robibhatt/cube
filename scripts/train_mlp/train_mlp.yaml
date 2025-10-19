@@ -8,7 +8,6 @@ trainer_config:
         - 256
         start_activation: false
         end_activation: false
-        bias: true
     optimizer_config:
         lr: 0.02
         weight_decay: 0.0

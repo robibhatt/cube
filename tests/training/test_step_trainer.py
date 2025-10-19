@@ -17,7 +17,6 @@ def test_trainer_completes_epoch(tmp_path):
             hidden_dims=[],
             start_activation=False,
             end_activation=False,
-            bias=False,
         ),
         optimizer_config=SgdConfig(lr=0.01),
         cube_distribution_config=CubeDistributionConfig(

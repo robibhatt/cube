@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 import pytest
 import torch
 from mup import Linear as MuLinear, MuReadout
@@ -118,29 +116,13 @@ def test_mup_disallows_end_activation(basic_config):
         MLP(cfg)
 
 
-def test_bias_flag_controls_bias_params():
-    """``bias=False`` removes bias terms while the default keeps them."""
-    cfg_no_bias = MLPConfig(
-        input_dim=3,
-        hidden_dims=[4],
-        output_dim=1,
-        start_activation=False,
-        end_activation=False,
-        bias=False,
-    )
-    model_no_bias = MLP(cfg_no_bias)
-    linear_layers_no_bias = [
-        l for l in model_no_bias.layers if isinstance(l, (MuLinear, MuReadout))
+def test_linear_layers_include_bias_parameters(basic_config):
+    """Every μP linear layer should include a bias parameter."""
+    model = MLP(basic_config)
+    linear_layers = [
+        layer for layer in model.layers if isinstance(layer, (MuLinear, MuReadout))
     ]
-    assert linear_layers_no_bias, "No linear layers found"
-    assert all(layer.bias is None for layer in linear_layers_no_bias)
-
-    # default ``bias=True`` should retain bias parameters
-    cfg_bias = replace(cfg_no_bias, bias=True)
-    model_bias = MLP(cfg_bias)
-    linear_layers_bias = [
-        l for l in model_bias.layers if isinstance(l, (MuLinear, MuReadout))
-    ]
-    assert all(layer.bias is not None for layer in linear_layers_bias)
+    assert linear_layers, "No linear layers found"
+    assert all(layer.bias is not None for layer in linear_layers)
 
 
