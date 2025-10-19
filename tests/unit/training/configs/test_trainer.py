@@ -1,4 +1,3 @@
-import pytest
 from src.training.trainer_config import TrainerConfig
 from src.models.mlp_config import MLPConfig
 from src.data.cube_distribution_config import (
@@ -15,7 +14,6 @@ def test_trainer_config_json_roundtrip(tmp_path):
             input_dim=3,
             output_dim=1,
             hidden_dims=[4, 2],
-            activation="relu",
             start_activation=False,
             end_activation=False,
         ),
@@ -67,7 +65,6 @@ def test_trainer_config_validates_output_dim(tmp_path):
             input_dim=2,
             output_dim=2,
             hidden_dims=[],
-            activation="relu",
             start_activation=False,
             end_activation=False,
         ),

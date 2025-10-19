@@ -14,7 +14,6 @@ def test_default_optimizer(tmp_path):
             input_dim=3,
             output_dim=1,
             hidden_dims=[4, 2],
-            activation="relu",
             start_activation=False,
             end_activation=False,
         ),

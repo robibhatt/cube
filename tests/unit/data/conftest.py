@@ -36,7 +36,6 @@ def create_mlp_config(tmp_path) -> MLPConfig:
     config = MLPConfig(
         input_dim=8,
         hidden_dims=[3, 4, 5],
-        activation="relu",
         output_dim=6,
         start_activation=False,
         end_activation=False,
@@ -85,7 +84,6 @@ def trained_noisy_trainer(tmp_path, sgd_config) -> Trainer:
     model_cfg = MLPConfig(
         input_dim=2,
         hidden_dims=[],
-        activation="relu",
         output_dim=1,
         start_activation=False,
         end_activation=False,

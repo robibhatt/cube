@@ -17,7 +17,6 @@ def test_trainer_reports_mse_loss(tmp_path):
             input_dim=1,
             output_dim=1,
             hidden_dims=[],
-            activation="relu",
             start_activation=False,
             end_activation=False,
             bias=False,

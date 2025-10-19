@@ -59,7 +59,6 @@ cfg = TrainerConfig(
         input_dim=cube_cfg.input_dim,
         output_dim=1,
         hidden_dims=[4],
-        activation="relu",
         start_activation=False,
         end_activation=False,
     ),

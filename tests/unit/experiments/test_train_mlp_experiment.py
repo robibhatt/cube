@@ -15,7 +15,6 @@ def _make_trainer_config() -> TrainerConfig:
         input_dim=1,
         output_dim=1,
         hidden_dims=[],
-        activation='relu',
         start_activation=False,
         end_activation=False,
     )
@@ -122,7 +121,6 @@ def test_graph_scaling_scales_biases_by_layer_depth(tmp_path):
         input_dim=2,
         output_dim=1,
         hidden_dims=[3, 4],
-        activation='relu',
         start_activation=False,
         end_activation=False,
     )
@@ -172,7 +170,6 @@ def test_graph_scaling_restores_unnormalized_output(tmp_path):
         input_dim=2,
         output_dim=1,
         hidden_dims=[3],
-        activation='relu',
         start_activation=False,
         end_activation=False,
     )
