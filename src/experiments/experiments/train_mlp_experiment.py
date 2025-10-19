@@ -3,8 +3,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-import torch
-
 from src.experiments.experiments import register_experiment
 from src.experiments.experiments.experiment import Experiment
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
@@ -12,7 +10,6 @@ from src.training.trainer_config import TrainerConfig
 from src.checkpoints.checkpoint import Checkpoint
 from src.mlp_graph.mlp_graph import MlpActivationGraph
 from src.models.mlp import MLP
-from src.models.targets.sum_prod import SumProdTarget
 
 
 @register_experiment("TrainMLP")
@@ -80,7 +77,6 @@ class TrainMLPExperiment(Experiment):
         """Create an activation graph for the trained MLP."""
 
         mlp = self._load_trained_mlp(trainer_cfg)
-        mlp = self._apply_graph_scale(mlp, trainer_cfg)
         graph_root = Path(self.config.home_directory) / "mlp_graph"
         graph_root.mkdir(parents=True, exist_ok=True)
         MlpActivationGraph(
@@ -101,39 +97,3 @@ class TrainMLPExperiment(Experiment):
         mlp.eval()
         return mlp
 
-    def _apply_graph_scale(self, mlp: MLP, trainer_cfg: TrainerConfig) -> MLP:
-        """Scale model parameters so the graph reflects the unnormalised target."""
-
-        target_scale = self._compute_graph_scale(mlp, trainer_cfg)
-        if target_scale == 1.0:
-            return mlp
-
-        if not mlp.linear_layers:
-            return mlp
-
-        with torch.no_grad():
-            readout = mlp.linear_layers[-1]
-            readout.weight.mul_(target_scale)
-            if readout.bias is not None:
-                readout.bias.mul_(target_scale)
-        return mlp
-
-    def _compute_graph_scale(self, mlp: MLP, trainer_cfg: TrainerConfig) -> float:
-        """Return the multiplicative factor applied to each MLP parameter."""
-
-        normalization = self._get_normalization_factor(trainer_cfg)
-        if normalization <= 0.0:
-            return 1.0
-
-        return 1.0 / normalization
-
-    def _get_normalization_factor(self, trainer_cfg: TrainerConfig) -> float:
-        """Return the normalisation constant ``G`` used by the target function."""
-
-        dist_cfg = trainer_cfg.cube_distribution_config
-        if dist_cfg is None:
-            return 1.0
-
-        target_cfg = dist_cfg.target_function_config
-        target = SumProdTarget(target_cfg)
-        return float(target.scale)
