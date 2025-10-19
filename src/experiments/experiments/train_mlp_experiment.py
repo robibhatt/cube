@@ -104,35 +104,28 @@ class TrainMLPExperiment(Experiment):
     def _apply_graph_scale(self, mlp: MLP, trainer_cfg: TrainerConfig) -> MLP:
         """Scale model parameters so the graph reflects the unnormalised target."""
 
-        lambda_scale = self._compute_graph_scale(mlp, trainer_cfg)
-        if lambda_scale == 1.0:
+        target_scale = self._compute_graph_scale(mlp, trainer_cfg)
+        if target_scale == 1.0:
             return mlp
 
-        num_layers = len(mlp.linear_layers)
-        if num_layers == 0:
+        if not mlp.linear_layers:
             return mlp
 
         with torch.no_grad():
-            for layer_idx, layer in enumerate(mlp.linear_layers, start=1):
-                layer.weight.mul_(lambda_scale)
-                if layer.bias is not None:
-                    layer.bias.mul_(lambda_scale ** layer_idx)
+            readout = mlp.linear_layers[-1]
+            readout.weight.mul_(target_scale)
+            if readout.bias is not None:
+                readout.bias.mul_(target_scale)
         return mlp
 
     def _compute_graph_scale(self, mlp: MLP, trainer_cfg: TrainerConfig) -> float:
         """Return the multiplicative factor applied to each MLP parameter."""
 
-        num_layers = len(mlp.linear_layers)
-        if num_layers == 0:
-            return 1.0
-
         normalization = self._get_normalization_factor(trainer_cfg)
         if normalization <= 0.0:
             return 1.0
 
-        target_scale = 1.0 / normalization
-        lambda_scale = target_scale ** (1.0 / num_layers)
-        return lambda_scale
+        return 1.0 / normalization
 
     def _get_normalization_factor(self, trainer_cfg: TrainerConfig) -> float:
         """Return the normalisation constant ``G`` used by the target function."""

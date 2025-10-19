@@ -102,15 +102,19 @@ def test_graph_scaling_accounts_for_normalization(tmp_path):
         for param in mlp.parameters():
             param.fill_(1.0)
 
-    lambda_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
+    target_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
     experiment._apply_graph_scale(mlp, trainer_cfg)
 
     with torch.no_grad():
         for layer_idx, layer in enumerate(mlp.linear_layers, start=1):
-            expected_weight = torch.full_like(layer.weight, lambda_scale)
+            expected_weight = torch.full_like(
+                layer.weight, target_scale if layer_idx == len(mlp.linear_layers) else 1.0
+            )
             assert torch.allclose(layer.weight, expected_weight)
             if layer.bias is not None:
-                expected_bias = torch.full_like(layer.bias, lambda_scale ** layer_idx)
+                expected_bias = torch.full_like(
+                    layer.bias, target_scale if layer_idx == len(mlp.linear_layers) else 1.0
+                )
                 assert torch.allclose(layer.bias, expected_bias)
 
 
@@ -151,17 +155,16 @@ def test_graph_scaling_scales_biases_by_layer_depth(tmp_path):
             if layer.bias is not None:
                 layer.bias.fill_(0.5)
 
-    lambda_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
+    target_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
     experiment._apply_graph_scale(mlp, trainer_cfg)
 
     with torch.no_grad():
         for layer_idx, layer in enumerate(mlp.linear_layers, start=1):
-            expected_weight = torch.full_like(layer.weight, 1.5 * lambda_scale)
+            scale = target_scale if layer_idx == len(mlp.linear_layers) else 1.0
+            expected_weight = torch.full_like(layer.weight, 1.5 * scale)
             assert torch.allclose(layer.weight, expected_weight)
             if layer.bias is not None:
-                expected_bias = torch.full_like(
-                    layer.bias, 0.5 * (lambda_scale ** layer_idx)
-                )
+                expected_bias = torch.full_like(layer.bias, 0.5 * scale)
                 assert torch.allclose(layer.bias, expected_bias)
 
 
@@ -206,10 +209,10 @@ def test_graph_scaling_restores_unnormalized_output(tmp_path):
     x = torch.tensor([[0.6, -0.1]], dtype=torch.float32)
     baseline = mlp(x)
 
-    lambda_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
+    target_scale = experiment._compute_graph_scale(mlp, trainer_cfg)
     experiment._apply_graph_scale(mlp, trainer_cfg)
 
     scaled = mlp(x)
     normalization = experiment._get_normalization_factor(trainer_cfg)
-    target_scale = 1.0 / normalization
-    assert torch.allclose(scaled, baseline * target_scale)
+    expected_scale = 1.0 / normalization
+    assert torch.allclose(scaled, baseline * expected_scale)
