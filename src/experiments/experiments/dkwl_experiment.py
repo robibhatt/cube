@@ -145,7 +145,7 @@ class DkwlExperiment(BatchExperiment):
             f"batch{batch_size}",
             f"l1{self._format_float(l1_decay)}",
         ]
-        return self.config.home_directory / "_".join(parts)
+        return self.config.home_directory.joinpath(*parts)
 
     @staticmethod
     def _format_float(value: float) -> str:
