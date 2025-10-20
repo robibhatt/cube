@@ -30,7 +30,10 @@ class DummyExperiment(Experiment):
         self.called = getattr(self, "called", 0) + 1
         return []
 
-    def consolidate_results(self):
+    def _consolidate_results(self):
+        out_file = self.config.home_directory / "results.csv"
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        out_file.write_text("")
         return None
 
 

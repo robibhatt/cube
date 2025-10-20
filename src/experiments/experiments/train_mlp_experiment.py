@@ -32,7 +32,7 @@ class TrainMLPExperiment(Experiment):
 
         return self._trainer_configs
 
-    def consolidate_results(self) -> List[Dict[str, Any]]:
+    def _consolidate_results(self) -> List[Dict[str, Any]]:
         """Collect training metrics and trigger Fourier post-processing."""
 
         trainer_cfg = self.get_trainer_configs()[0]
