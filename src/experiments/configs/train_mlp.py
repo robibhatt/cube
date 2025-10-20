@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
+
 from dataclasses_json import dataclass_json
 
 from src.experiments.configs.experiment import ExperimentConfig
@@ -15,7 +17,7 @@ class TrainMLPExperimentConfig(ExperimentConfig):
     """Configuration for training a single MLP."""
 
     trainer_config: TrainerConfig
-    edge_threshold: float = 0.0
+    edge_thresholds: List[float] = field(default_factory=lambda: [0.0])
 
     def __post_init__(self) -> None:
         self.experiment_type = "TrainMLP"
