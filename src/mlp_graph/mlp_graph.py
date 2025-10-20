@@ -14,6 +14,7 @@ import torch
 import torch.nn as nn
 
 from src.models.mlp import MLP
+from mup import MuReadout
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,14 @@ class MlpActivationGraph:
         self.input_dim = self.mlp.config.input_dim
         self.num_layers = len(self.linear_layers)
         self.activation_batch_size = 1024
+
+        # μP models apply an input scaling before the readout linear layer.
+        # Persist the per-layer scale so that our standalone forward pass
+        # mirrors the live module exactly, regardless of the current width.
+        self.layer_input_scales = [
+            float(layer.output_mult / layer.width_mult()) if isinstance(layer, MuReadout) else 1.0
+            for layer in self.linear_layers
+        ]
 
         self.layer_connections: List[Dict[int, Set[int]]] = []
         self.layer_ancestors: List[Dict[int, Set[int]]] = []
@@ -250,11 +259,13 @@ class MlpActivationGraph:
 
         activations: List[torch.Tensor] = []
         prev = inputs
-        for layer_idx, (weight, bias) in enumerate(
-            zip(self.weight_tensors, self.bias_tensors),
+        for layer_idx, (weight, bias, input_scale) in enumerate(
+            zip(self.weight_tensors, self.bias_tensors, self.layer_input_scales),
             start=1,
         ):
             pre_activation = prev @ weight.t()
+            if input_scale != 1.0:
+                pre_activation = pre_activation * input_scale
             if bias is not None:
                 pre_activation = pre_activation + bias
             if layer_idx == self.num_layers:
