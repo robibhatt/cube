@@ -77,13 +77,16 @@ class TrainMLPExperiment(Experiment):
         """Create an activation graph for the trained MLP."""
 
         mlp = self._load_trained_mlp(trainer_cfg)
-        graph_root = Path(self.config.home_directory) / "mlp_graph"
-        graph_root.mkdir(parents=True, exist_ok=True)
-        MlpActivationGraph(
-            mlp,
-            eps=self.config.edge_threshold,
-            output_dir=graph_root,
-        )
+        for edge_threshold in self.config.edge_thresholds:
+            graph_root = Path(self.config.home_directory) / self._edge_threshold_dir_name(
+                edge_threshold
+            )
+            graph_root.mkdir(parents=True, exist_ok=True)
+            MlpActivationGraph(
+                mlp,
+                eps=edge_threshold,
+                output_dir=graph_root,
+            )
 
     def _load_trained_mlp(self, trainer_cfg: TrainerConfig) -> MLP:
         """Return the trained MLP restored from the trainer checkpoint."""
@@ -96,4 +99,9 @@ class TrainMLPExperiment(Experiment):
         checkpoint.load(model=mlp)
         mlp.eval()
         return mlp
+
+    @staticmethod
+    def _edge_threshold_dir_name(edge_threshold: float) -> str:
+        threshold_label = format(edge_threshold, "g")
+        return f"mlp_graph_{threshold_label}"
 

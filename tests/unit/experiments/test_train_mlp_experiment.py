@@ -50,8 +50,12 @@ def test_trainer_seed_from_experiment_seed(tmp_path):
 
 def test_train_and_consolidate(tmp_path):
     trainer_cfg = _make_trainer_config()
+    edge_thresholds = [0.0, 0.5]
     exp_cfg = TrainMLPExperimentConfig(
-        trainer_config=trainer_cfg, home_directory=tmp_path, seed=0
+        trainer_config=trainer_cfg,
+        home_directory=tmp_path,
+        seed=0,
+        edge_thresholds=edge_thresholds,
     )
     experiment = TrainMLPExperiment(exp_cfg)
     experiment.train()
@@ -64,14 +68,17 @@ def test_train_and_consolidate(tmp_path):
         data_row = next(reader)
     assert float(data_row['final_train_loss']) == rows[0]['final_train_loss']
 
-    graph_root = tmp_path / 'mlp_graph'
-    assert graph_root.exists()
+    for threshold in edge_thresholds:
+        graph_root = tmp_path / TrainMLPExperiment._edge_threshold_dir_name(threshold)
+        assert graph_root.exists()
 
-    subdirs = [path for path in graph_root.iterdir() if path.is_dir()]
-    assert subdirs, "Expected the mlp_graph directory to contain at least one graph run"
-    graph_dir = subdirs[0]
+        subdirs = [path for path in graph_root.iterdir() if path.is_dir()]
+        assert (
+            subdirs
+        ), "Expected the mlp_graph directory to contain at least one graph run"
+        graph_dir = subdirs[0]
 
-    layer_dirs = [path for path in graph_dir.iterdir() if path.is_dir()]
-    assert layer_dirs, "Expected serialized layer directories in the graph output"
-    node_files = list(layer_dirs[0].glob('*.json'))
-    assert node_files, "Expected serialized neuron files in the graph output"
+        layer_dirs = [path for path in graph_dir.iterdir() if path.is_dir()]
+        assert layer_dirs, "Expected serialized layer directories in the graph output"
+        node_files = list(layer_dirs[0].glob('*.json'))
+        assert node_files, "Expected serialized neuron files in the graph output"
