@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import csv
 import pytest
@@ -6,8 +6,7 @@ import pytest
 from dataclasses_json import dataclass_json
 
 from src.experiments.experiments.batch_experiment import BatchExperiment
-from src.experiments.configs.batch_experiment import BatchExperimentConfig
-from src.experiments.experiments import register_experiment
+from src.experiments.experiments import create_experiment, register_experiment
 from src.experiments.configs import register_experiment_config
 from src.experiments.configs import build_experiment_config
 from src.experiments.experiments.experiment import Experiment
@@ -50,14 +49,25 @@ class DummySubExperiment(Experiment):
         return [{"a": 1, "b": 2}]
 
 
+@register_experiment_config("SimpleBatch")
+@dataclass_json
+@dataclass
+class SimpleBatchExperimentConfig(ExperimentConfig):
+    sub_configs: list[DummySubExperimentConfig] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.experiment_type = "SimpleBatch"
+
+
+@register_experiment("SimpleBatch")
 class SimpleBatchExperiment(BatchExperiment):
-    def __init__(self, config: BatchExperimentConfig, configs: list[ExperimentConfig]):
+    def __init__(self, config: SimpleBatchExperimentConfig):
         super().__init__(config)
-        self._configs = configs
+        self._pending_configs = list(config.sub_configs)
 
     def get_experiment_configs(self) -> list[ExperimentConfig]:
-        cfgs = self._configs
-        self._configs = []
+        cfgs = self._pending_configs
+        self._pending_configs = []
         return cfgs
 
     def get_config_params(self, config: ExperimentConfig) -> dict:
@@ -65,6 +75,8 @@ class SimpleBatchExperiment(BatchExperiment):
 
 
 def test_get_trainer_configs_returns_sub_exp(tmp_path: Path):
+    DummySubExperiment.called = 0
+
     sub_cfg1 = build_experiment_config(
         "DummyBatchSub", home_directory=tmp_path / "sub1", seed=0
     )
@@ -72,8 +84,12 @@ def test_get_trainer_configs_returns_sub_exp(tmp_path: Path):
         "DummyBatchSub", home_directory=tmp_path / "sub2", seed=0
     )
 
-    batch_cfg = BatchExperimentConfig(home_directory=tmp_path / "batch", seed=0)
-    batch_exp = SimpleBatchExperiment(batch_cfg, [sub_cfg1, sub_cfg2])
+    batch_cfg = SimpleBatchExperimentConfig(
+        home_directory=tmp_path / "batch",
+        seed=0,
+        sub_configs=[sub_cfg1, sub_cfg2],
+    )
+    batch_exp = create_experiment(batch_cfg)
 
     cfgs = batch_exp.get_trainer_configs()
     assert [cfg.seed for cfg in cfgs] == [0, 1, 2, 3]
@@ -85,8 +101,10 @@ def test_get_trainer_configs_returns_sub_exp(tmp_path: Path):
 
 
 def test_train_consolidates_when_empty(tmp_path: Path, monkeypatch):
-    batch_cfg = BatchExperimentConfig(home_directory=tmp_path / "batch", seed=0)
-    batch_exp = SimpleBatchExperiment(batch_cfg, [])
+    batch_cfg = SimpleBatchExperimentConfig(
+        home_directory=tmp_path / "batch", seed=0, sub_configs=[]
+    )
+    batch_exp = create_experiment(batch_cfg)
 
     consolidated = {"done": False}
 
@@ -107,10 +125,12 @@ def test_consolidate_results(tmp_path: Path):
         "DummyBatchSub", home_directory=tmp_path / "sub2", seed=0, param=2
     )
 
-    batch_cfg = BatchExperimentConfig(home_directory=tmp_path / "batch", seed=0)
+    batch_cfg = SimpleBatchExperimentConfig(
+        home_directory=tmp_path / "batch", seed=0, sub_configs=[sub_cfg1, sub_cfg2]
+    )
 
     # consolidation should fail if sub-experiment results are missing
-    batch_exp_missing = SimpleBatchExperiment(batch_cfg, [sub_cfg1, sub_cfg2])
+    batch_exp_missing = create_experiment(batch_cfg)
     with pytest.raises(FileNotFoundError):
         batch_exp_missing.consolidate_results()
 
@@ -119,7 +139,12 @@ def test_consolidate_results(tmp_path: Path):
     DummySubExperiment(sub_cfg2).consolidate_results()
 
     # consolidate once results exist
-    batch_exp = SimpleBatchExperiment(batch_cfg, [sub_cfg1, sub_cfg2])
+    batch_cfg_loaded = SimpleBatchExperimentConfig(
+        home_directory=tmp_path / "batch",
+        seed=0,
+        sub_configs=[sub_cfg1, sub_cfg2],
+    )
+    batch_exp = create_experiment(batch_cfg_loaded)
     rows = batch_exp.consolidate_results()
 
     assert rows == [
