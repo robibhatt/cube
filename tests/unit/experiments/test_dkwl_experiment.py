@@ -62,7 +62,15 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
     expected_dir = (
         tmp_path
         / "dkwl"
-        / "d3_k2_width16_layers2_train256_epochs20_lr0p01_batch32_l10p001"
+        / "d3"
+        / "k2"
+        / "width16"
+        / "layers2"
+        / "train256"
+        / "epochs20"
+        / "lr0p01"
+        / "batch32"
+        / "l10p001"
     )
     assert sub_cfg.home_directory == expected_dir
 
