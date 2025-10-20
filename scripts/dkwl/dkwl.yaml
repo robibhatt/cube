@@ -1,0 +1,24 @@
+server_train: false
+experiment_type: DKWL
+ds:
+  - 9
+ks:
+  - 2
+widths:
+  - 64
+layers:
+  - 2
+train_sizes:
+  - 256
+epochs:
+  - 500
+l1_decays:
+  - 0.01
+edge_thresholds:
+  - 0.01
+learning_rates:
+  - 0.02
+batch_sizes:
+  - 64
+home_directory: experiment_runs/dkwl/testing
+seed: 12345
