@@ -24,6 +24,7 @@ import src.experiments.experiments.dkwl_experiment  # noqa: F401
 from src.experiments.configs import build_experiment_config_from_dict
 from src.experiments.experiments import Experiment, create_experiment
 from src.experiments.experiments.batch_experiment import BatchExperiment
+from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
 
 CONFIG_FILE = SCRIPT_DIR / "dkwl.yaml"
 

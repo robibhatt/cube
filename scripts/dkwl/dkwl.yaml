@@ -1,4 +1,4 @@
-server_train: false
+server_train: true
 experiment_type: DKWL
 ds:
   - 9
@@ -20,5 +20,5 @@ learning_rates:
   - 0.02
 batch_sizes:
   - 64
-home_directory: experiment_runs/dkwl/testing
+home_directory: experiment_runs/dkwl/test/1
 seed: 12345
