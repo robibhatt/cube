@@ -6,6 +6,7 @@ trainer_config:
         output_dim: 1
         hidden_dims:
         - 256
+        - 256
         start_activation: false
         end_activation: false
     optimizer_config:
@@ -16,7 +17,17 @@ trainer_config:
         input_dim: 9
         indices_list:
         - [0, 1]
+        - [2, 3]
+        - [4, 5]
+        - [6, 7]
+        - [0, 3]
+        - [3, 4]
         weights:
+        - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
         - 1.0
         normalize: true
         noise_mean: 0.0
@@ -24,9 +35,9 @@ trainer_config:
     train_size: 256
     test_size: 256
     batch_size: 64
-    epochs: 1000
+    epochs: 2000
     use_full_batch: false
-    weight_decay_l1: 0.009
-home_directory: experiment_runs/small/12
+    weight_decay_l1: 0.01
+home_directory: experiment_runs/new_testing/1
 seed: 12321245
 edge_threshold: 0.01
