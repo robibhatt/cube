@@ -39,7 +39,7 @@ class DummySubExperiment(Experiment):
             TrainerConfig(seed=start + 1),
         ]
 
-    def consolidate_results(self):
+    def _consolidate_results(self):
         out_file = self.config.home_directory / "results.csv"
         out_file.parent.mkdir(parents=True, exist_ok=True)
         with open(out_file, "w", newline="") as f:
@@ -111,7 +111,13 @@ def test_train_consolidates_when_empty(tmp_path: Path, monkeypatch):
     def dummy_consolidate(self):
         consolidated["done"] = True
 
-    monkeypatch.setattr(SimpleBatchExperiment, "consolidate_results", dummy_consolidate)
+        out_file = self.config.home_directory / "results.csv"
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        out_file.write_text("")
+
+        return []
+
+    monkeypatch.setattr(SimpleBatchExperiment, "_consolidate_results", dummy_consolidate)
 
     batch_exp.train()
     assert consolidated["done"] is True

@@ -77,13 +77,24 @@ class Experiment(ABC):
             trainer.train()
             trainer.save_results()
 
-    @abstractmethod
     def consolidate_results(self) -> Any:
-        """
-        Aggregate and process results across all trainers
-        Must be implemented by subclasses.
-        """
-        pass
+        """Run subclass consolidation and ensure ``results.csv`` exists."""
+
+        results = self._consolidate_results()
+
+        results_file = self.config.home_directory / "results.csv"
+        if not results_file.exists():
+            raise AssertionError(
+                "Experiment consolidation must create results.csv at "
+                f"{results_file}"
+            )
+
+        return results
+
+    @abstractmethod
+    def _consolidate_results(self) -> Any:
+        """Aggregate and process results across all trainers."""
+        raise NotImplementedError
 
     @classmethod
     def server_run(cls, experiment_dir: Path) -> str:

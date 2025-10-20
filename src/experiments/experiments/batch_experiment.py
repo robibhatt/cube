@@ -70,7 +70,7 @@ class BatchExperiment(Experiment, ABC):
 
         return combined
 
-    def consolidate_results(self) -> List[Dict[str, Any]]:
+    def _consolidate_results(self) -> List[Dict[str, Any]]:
         """Consolidate results from all sub-experiments into one CSV.
 
         Assumes that each sub-experiment has already saved its results to a
@@ -95,13 +95,16 @@ class BatchExperiment(Experiment, ABC):
                     combined.update(row)
                     rows.append(combined)
 
+        out_file = self.config.home_directory / "results.csv"
+        out_file.parent.mkdir(parents=True, exist_ok=True)
         if rows:
             fieldnames = sorted({key for row in rows for key in row})
-            out_file = self.config.home_directory / "results.csv"
             with open(out_file, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(rows)
+        else:
+            out_file.write_text("")
 
         return rows
 
