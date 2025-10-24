@@ -13,4 +13,4 @@ scontrol show job $SLURM_JOB_ID
 pwd
 nvidia-smi # only if you requested gpus
 
-python -m scripts.dkwl.dkwl
+python -m scripts.train_mlp.train_mlp
