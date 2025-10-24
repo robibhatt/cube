@@ -10,7 +10,7 @@ from typing import Iterable, Sequence
 import torch
 import torch.nn as nn
 
-from mup import MuLinear
+from mup import Linear as MuLinear
 
 from src.data.cube_distribution import CubeDistribution
 from src.data.cube_distribution_config import CubeDistributionConfig
