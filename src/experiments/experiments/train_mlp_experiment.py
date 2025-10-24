@@ -10,6 +10,7 @@ from src.training.trainer_config import TrainerConfig
 from src.checkpoints.checkpoint import Checkpoint
 from src.mlp_graph.mlp_graph import MlpActivationGraph
 from src.models.mlp import MLP
+from src.models.mlp_linear_util import run_first_layer_linear_regression
 
 
 @register_experiment("TrainMLP")
@@ -66,17 +67,28 @@ class TrainMLPExperiment(Experiment):
             writer.writeheader()
             writer.writerow(row)
 
-        self._generate_mlp_graph(trainer_cfg)
+        mlp = self._load_trained_mlp(trainer_cfg)
+        self._run_linear_probe(trainer_cfg, mlp)
+        self._generate_mlp_graph(trainer_cfg, mlp)
 
         return [row]
 
     # ------------------------------------------------------------------
     # Graph helpers
     # ------------------------------------------------------------------
-    def _generate_mlp_graph(self, trainer_cfg: TrainerConfig) -> None:
-        """Create an activation graph for the trained MLP."""
+    def _run_linear_probe(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
+        if trainer_cfg.cube_distribution_config is None:
+            raise ValueError("Trainer configuration missing cube distribution config")
 
-        mlp = self._load_trained_mlp(trainer_cfg)
+        run_first_layer_linear_regression(
+            mlp,
+            trainer_cfg.cube_distribution_config,
+            Path(self.config.home_directory),
+            seed=self.seed_mgr.spawn_seed(),
+        )
+
+    def _generate_mlp_graph(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
+        """Create an activation graph for the trained MLP."""
         for edge_threshold in self.config.edge_thresholds:
             graph_root = Path(self.config.home_directory) / self._edge_threshold_dir_name(
                 edge_threshold
