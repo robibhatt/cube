@@ -38,7 +38,7 @@ trainer_config:
     epochs: 2000
     use_full_batch: false
     weight_decay_l1: 0.01
-home_directory: experiment_runs/new_testing/1
+home_directory: experiment_runs/best_testing/1
 seed: 12321245
 edge_thresholds:
 - 0.01
