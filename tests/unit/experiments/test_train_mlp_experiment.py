@@ -12,7 +12,7 @@ def _make_trainer_config() -> TrainerConfig:
     model_cfg = MLPConfig(
         input_dim=1,
         output_dim=1,
-        hidden_dims=[],
+        hidden_dims=[1],
         start_activation=False,
         end_activation=False,
     )
@@ -80,5 +80,9 @@ def test_train_and_consolidate(tmp_path):
 
         layer_dirs = [path for path in graph_dir.iterdir() if path.is_dir()]
         assert layer_dirs, "Expected serialized layer directories in the graph output"
-        node_files = list(layer_dirs[0].glob('*.json'))
+        node_files = [
+            node_file
+            for layer_dir in layer_dirs
+            for node_file in layer_dir.glob('*.json')
+        ]
         assert node_files, "Expected serialized neuron files in the graph output"
