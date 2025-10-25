@@ -1,67 +1,29 @@
 server_train: true
 experiment_type: DKWL
 ds:
-  - 15
-  - 16
-  - 17
-  - 18
-  - 19
   - 20
-  - 21
-  - 22
-  - 23
-  - 24
   - 25
-  - 30
-  - 35
-  - 40
-  - 45
-  - 50
-  - 55
-  - 60
-  - 65
 ks:
   - 2
   - 3
   - 4
-  - 5
-  - 6
-  - 7
 widths:
-  - 64
-  - 128
   - 256
-  - 512
   - 1024
 layers:
   - 2
   - 3
   - 4
-  - 5
 train_sizes:
-  - 256
-  - 512
-  - 1024
-  - 2048
   - 4096
   - 8192
   - 12000
 epochs:
   - 2000
 l1_decays:
-  - 0.00001
-  - 0.00002
-  - 0.00005
-  - 0.0001
-  - 0.0002
   - 0.0005
   - 0.001
-  - 0.002
   - 0.005
-  - 0.01
-  - 0.02
-  - 0.05
-  - 0.1
 edge_thresholds:
   - 0.00001
   - 0.0001
@@ -69,20 +31,10 @@ edge_thresholds:
   - 0.01
   - 0.1
 learning_rates:
-  - 0.00002
-  - 0.00005
-  - 0.0001
-  - 0.0002
-  - 0.0005
-  - 0.001
-  - 0.002
   - 0.005
   - 0.01
   - 0.02
-  - 0.05
-  - 0.1
 batch_sizes:
-  - 64
   - 128
-home_directory: experiment_runs/dkwl/big_sweep_0
+home_directory: experiment_runs/dkwl/big_sweep_1
 seed: 112131
