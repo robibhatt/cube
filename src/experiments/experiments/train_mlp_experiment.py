@@ -1,5 +1,6 @@
 import csv
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -20,6 +21,10 @@ class TrainMLPExperiment(Experiment):
     def __init__(self, config: TrainMLPExperimentConfig) -> None:
         super().__init__(config)
 
+        self._log_path = Path(self.config.home_directory) / "steps.log"
+        self._log_path.write_text("")
+        self._log_step("Initialized TrainMLPExperiment")
+
         trainer_cfg = self.config.trainer_config.deep_copy()
         trainer_cfg.seed = self.seed_mgr.spawn_seed()
         trainer_cfg.home_dir = self.config.home_directory / "trainer"
@@ -33,6 +38,10 @@ class TrainMLPExperiment(Experiment):
 
         return self._trainer_configs
 
+    def train(self) -> None:
+        super().train()
+        self._log_step("Finished training")
+
     def _consolidate_results(self) -> List[Dict[str, Any]]:
         """Collect training metrics and trigger Fourier post-processing."""
 
@@ -43,6 +52,8 @@ class TrainMLPExperiment(Experiment):
             raise FileNotFoundError(f"Missing metrics file: {results_path}")
         with open(results_path, "r") as f:
             metrics = json.load(f)
+
+        self._log_step("Loaded training metrics")
 
         row = {
             "train_size": trainer_cfg.train_size if trainer_cfg.train_size is not None else 0,
@@ -67,6 +78,8 @@ class TrainMLPExperiment(Experiment):
             writer.writeheader()
             writer.writerow(row)
 
+        self._log_step("Wrote results.csv")
+
         mlp = self._load_trained_mlp(trainer_cfg)
         self._run_linear_probe(trainer_cfg, mlp)
         self._generate_mlp_graph(trainer_cfg, mlp)
@@ -87,6 +100,8 @@ class TrainMLPExperiment(Experiment):
             seed=self.seed_mgr.spawn_seed(),
         )
 
+        self._log_step("Finished linear probe")
+
     def _generate_mlp_graph(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
         """Create an activation graph for the trained MLP."""
         for edge_threshold in self.config.edge_thresholds:
@@ -100,6 +115,10 @@ class TrainMLPExperiment(Experiment):
                 output_dir=graph_root,
             )
 
+            self._log_step(
+                f"Finished creating MLP activation graph (edge_threshold={edge_threshold})"
+            )
+
     def _load_trained_mlp(self, trainer_cfg: TrainerConfig) -> MLP:
         """Return the trained MLP restored from the trainer checkpoint."""
 
@@ -110,10 +129,16 @@ class TrainMLPExperiment(Experiment):
         mlp = MLP(trainer_cfg.mlp_config)
         checkpoint.load(model=mlp)
         mlp.eval()
+        self._log_step("Loaded trained MLP checkpoint")
         return mlp
 
     @staticmethod
     def _edge_threshold_dir_name(edge_threshold: float) -> str:
         threshold_label = format(edge_threshold, "g")
         return f"mlp_graph_{threshold_label}"
+
+    def _log_step(self, message: str) -> None:
+        timestamp = datetime.now(UTC).isoformat(timespec="seconds")
+        with self._log_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(f"[{timestamp} UTC] {message}\n")
 
