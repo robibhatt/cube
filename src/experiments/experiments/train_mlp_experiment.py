@@ -1,6 +1,7 @@
 import csv
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+UTC = timezone.utc
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -12,6 +13,8 @@ from src.checkpoints.checkpoint import Checkpoint
 from src.mlp_graph.mlp_graph import MlpActivationGraph
 from src.models.mlp import MLP
 from src.models.mlp_linear_util import run_first_layer_linear_regression
+
+
 
 
 @register_experiment("TrainMLP")
