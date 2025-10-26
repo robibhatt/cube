@@ -116,6 +116,9 @@ class TrainMLPExperiment(Experiment):
                 mlp,
                 eps=edge_threshold,
                 output_dir=graph_root,
+                cube_distribution_config=trainer_cfg.cube_distribution_config,
+                sample_size=trainer_cfg.test_size,
+                sample_seed=self.seed_mgr.spawn_seed(),
             )
 
             self._log_step(
