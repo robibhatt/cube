@@ -6,15 +6,17 @@ import csv
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from itertools import product
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Set
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import torch
 import torch.nn as nn
 
-from src.models.mlp import MLP
 from mup import MuReadout
+
+from src.data.cube_distribution import CubeDistribution
+from src.data.cube_distribution_config import CubeDistributionConfig
+from src.models.mlp import MLP
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,8 @@ class MlpActivationGraph:
         on the current timestamp is used.
     """
 
+    DEFAULT_SAMPLE_SIZE = 1024
+
     def __init__(
         self,
         mlp: MLP,
@@ -56,6 +60,9 @@ class MlpActivationGraph:
         output_dir: Path | str,
         *,
         graph_name: Optional[str] = None,
+        cube_distribution_config: Optional[CubeDistributionConfig] = None,
+        sample_size: Optional[int] = None,
+        sample_seed: Optional[int] = None,
     ) -> None:
         self.mlp = mlp
         self.eps = float(eps)
@@ -75,7 +82,14 @@ class MlpActivationGraph:
         ]
         self.input_dim = self.mlp.config.input_dim
         self.num_layers = len(self.linear_layers)
-        self.activation_batch_size = 1024
+        self.sample_size = int(sample_size) if sample_size is not None else self.DEFAULT_SAMPLE_SIZE
+        if self.sample_size <= 0:
+            raise ValueError("sample_size must be a positive integer")
+        self.sample_seed = int(sample_seed) if sample_seed is not None else 0
+        self.device = self.weight_tensors[0].device
+        self.cube_distribution: Optional[CubeDistribution] = None
+        if cube_distribution_config is not None:
+            self.cube_distribution = CubeDistribution(cube_distribution_config, device=self.device)
 
         # μP models apply an input scaling before the readout linear layer.
         # Persist the per-layer scale so that our standalone forward pass
@@ -147,108 +161,110 @@ class MlpActivationGraph:
     # ------------------------------------------------------------------
     def _serialize_node_activations(self) -> None:
         dtype = self.weight_tensors[0].dtype
+        sample_inputs = self._draw_input_sample(dtype=dtype)
         with torch.no_grad():
-            for layer_idx, (weight, bias) in enumerate(
-                zip(self.weight_tensors, self.bias_tensors),
-                start=1,
-            ):
-                layer_dir = self.graph_dir / f"layer_{layer_idx:02d}"
-                layer_dir.mkdir(parents=True, exist_ok=True)
+            layer_outputs = self._forward(sample_inputs)
+        activation_stats = self._collect_activation_statistics(sample_inputs, layer_outputs)
 
-                for neuron_idx in range(weight.size(0)):
-                    ancestors = sorted(
-                        self.layer_ancestors[layer_idx - 1].get(neuron_idx, set())
-                    )
-                    if not ancestors:
-                        continue
-                    parents = sorted(self.layer_connections[layer_idx - 1][neuron_idx])
-                    activations_file = self._evaluate_node(
-                        layer_idx,
-                        neuron_idx,
-                        ancestors,
-                        dtype=dtype,
-                        layer_dir=layer_dir,
-                    )
-                    node_data = {
-                        "layer_index": layer_idx,
-                        "neuron_index": neuron_idx,
-                        "parents": parents,
-                        "ancestors": ancestors,
-                        "activations_csv": activations_file,
-                    }
-                    node_file = layer_dir / NodeKey(layer_idx, neuron_idx).filename()
-                    with open(node_file, "w", encoding="utf-8") as f:
-                        json.dump(node_data, f, indent=2)
+        for layer_idx, weight in enumerate(self.weight_tensors, start=1):
+            layer_dir = self.graph_dir / f"layer_{layer_idx:02d}"
+            layer_dir.mkdir(parents=True, exist_ok=True)
 
-    def _evaluate_node(
+            for neuron_idx in range(weight.size(0)):
+                ancestors = sorted(self.layer_ancestors[layer_idx - 1].get(neuron_idx, set()))
+                if not ancestors:
+                    continue
+                parent_connections = sorted(self.layer_connections[layer_idx - 1][neuron_idx])
+                stats = activation_stats[layer_idx - 1].get(neuron_idx, {})
+                if not stats:
+                    continue
+
+                csv_path = layer_dir / NodeKey(layer_idx, neuron_idx).activation_filename()
+                fieldnames = [str(idx) for idx in ancestors] + ["activation"]
+                with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for assignment in sorted(stats):
+                        row = {str(idx): int(value) for idx, value in zip(ancestors, assignment)}
+                        row["activation"] = stats[assignment]
+                        writer.writerow(row)
+
+                node_data = {
+                    "layer_index": layer_idx,
+                    "neuron_index": neuron_idx,
+                    "parents": parent_connections,
+                    "ancestors": ancestors,
+                    "activations_csv": csv_path.name,
+                }
+                node_file = layer_dir / NodeKey(layer_idx, neuron_idx).filename()
+                with open(node_file, "w", encoding="utf-8") as f:
+                    json.dump(node_data, f, indent=2)
+
+    def _draw_input_sample(self, *, dtype: torch.dtype) -> torch.Tensor:
+        if self.cube_distribution is not None:
+            inputs, _ = self.cube_distribution.base_sample(self.sample_size, self.sample_seed)
+            return inputs.to(dtype=dtype).cpu()
+
+        generator = torch.Generator(device=self.device)
+        generator.manual_seed(self.sample_seed)
+        raw = torch.randint(
+            0,
+            2,
+            (self.sample_size, self.input_dim),
+            dtype=torch.int64,
+            generator=generator,
+            device=self.device,
+        )
+        inputs = raw * 2 - 1
+        return inputs.to(dtype=dtype, device="cpu")
+
+    def _collect_activation_statistics(
         self,
-        layer_index: int,
-        neuron_index: int,
-        ancestors: Sequence[int],
-        *,
-        dtype: torch.dtype,
-        layer_dir: Path,
-    ) -> str:
-        csv_path = layer_dir / NodeKey(layer_index, neuron_index).activation_filename()
-        fieldnames = [str(idx) for idx in ancestors] + ["activation"]
-        non_ancestors = self._non_ancestor_indices(ancestors)
+        sample_inputs: torch.Tensor,
+        layer_outputs: Sequence[torch.Tensor],
+    ) -> List[Dict[int, Dict[Tuple[int, ...], float]]]:
+        input_assignments = sample_inputs.to(torch.int8)
+        stats_per_layer: List[Dict[int, Dict[Tuple[int, ...], float]]] = []
 
-        with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for assignment in product([-1, 1], repeat=len(ancestors)):
-                averaged_value = self._average_activation(
-                    layer_index,
-                    neuron_index,
-                    ancestors,
-                    assignment,
-                    non_ancestors,
-                    dtype=dtype,
+        for layer_idx, activations in enumerate(layer_outputs, start=1):
+            activations_cpu = activations.detach().cpu()
+            layer_stats: Dict[int, Dict[Tuple[int, ...], float]] = {}
+            for neuron_idx in range(activations_cpu.size(1)):
+                ancestors = sorted(self.layer_ancestors[layer_idx - 1].get(neuron_idx, set()))
+                if not ancestors:
+                    continue
+                ancestor_values = input_assignments[:, ancestors]
+                if ancestor_values.numel() == 0:
+                    continue
+
+                unique_assignments, inverse_indices = torch.unique(
+                    ancestor_values,
+                    dim=0,
+                    return_inverse=True,
                 )
-                row = {str(idx): int(value) for idx, value in zip(ancestors, assignment)}
-                row["activation"] = averaged_value
-                writer.writerow(row)
-        return csv_path.name
 
-    def _average_activation(
-        self,
-        layer_index: int,
-        neuron_index: int,
-        ancestors: Sequence[int],
-        assignment: Sequence[int],
-        non_ancestors: Sequence[int],
-        *,
-        dtype: torch.dtype,
-    ) -> float:
-        input_batch = self._sample_input_batch(ancestors, assignment, non_ancestors, dtype=dtype)
-        layer_outputs = self._forward(input_batch)
-        target_values = layer_outputs[layer_index - 1][:, neuron_index]
-        return float(target_values.mean().item())
+                values = activations_cpu[:, neuron_idx].to(torch.float64)
+                sums = torch.zeros(unique_assignments.size(0), dtype=torch.float64)
+                counts = torch.zeros(unique_assignments.size(0), dtype=torch.int64)
+                sums.scatter_add_(0, inverse_indices, values)
+                ones = torch.ones_like(inverse_indices, dtype=torch.int64)
+                counts.scatter_add_(0, inverse_indices, ones)
 
-    def _non_ancestor_indices(self, ancestors: Iterable[int]) -> List[int]:
-        ancestor_set = set(ancestors)
-        return [idx for idx in range(self.input_dim) if idx not in ancestor_set]
+                neuron_stats: Dict[Tuple[int, ...], float] = {}
+                for idx in range(unique_assignments.size(0)):
+                    count = int(counts[idx].item())
+                    if count == 0:
+                        continue
+                    assignment = tuple(int(v.item()) for v in unique_assignments[idx])
+                    mean_value = float((sums[idx] / count).item())
+                    neuron_stats[assignment] = mean_value
 
-    def _sample_input_batch(
-        self,
-        ancestors: Sequence[int],
-        assignment: Sequence[int],
-        non_ancestors: Sequence[int],
-        *,
-        dtype: torch.dtype,
-    ) -> torch.Tensor:
-        batch = torch.zeros((self.activation_batch_size, self.input_dim), dtype=dtype)
-        for idx, value in zip(ancestors, assignment):
-            batch[:, idx] = float(value)
-        if non_ancestors:
-            random_signs = torch.randint(
-                0,
-                2,
-                (self.activation_batch_size, len(non_ancestors)),
-            )
-            random_signs = random_signs.to(dtype=dtype) * 2 - 1
-            batch[:, non_ancestors] = random_signs
-        return batch
+                if neuron_stats:
+                    layer_stats[neuron_idx] = neuron_stats
+
+            stats_per_layer.append(layer_stats)
+
+        return stats_per_layer
 
     def _forward(self, inputs: torch.Tensor) -> List[torch.Tensor]:
         if inputs.dim() == 1:
