@@ -3,18 +3,27 @@ experiment_type: DKWL
 ds:
   - 20
 ks:
-  - 2
+  - 4
 widths:
   - 256
+  - 1024
 layers:
-  - 2
   - 3
 train_sizes:
-  - 4096
+  - 10000
 epochs:
-  - 2000
+  - 3000
 l1_decays:
+  - 0.0001
+  - 0.0002
   - 0.0005
+  - 0.001
+  - 0.002
+  - 0.005
+  - 0.01
+  - 0.02
+  - 0.05
+  - 0.1
 edge_thresholds:
   - 0.00001
   - 0.0001
@@ -22,9 +31,22 @@ edge_thresholds:
   - 0.01
   - 0.1
 learning_rates:
+  - 0.0005
+  - 0.001
+  - 0.002
+  - 0.003
+  - 0.004
   - 0.005
+  - 0.006
+  - 0.007
+  - 0.008
+  - 0.009
   - 0.01
+  - 0.02
+  - 0.03
+  - 0.04
+  - 0.05
 batch_sizes:
   - 128
-home_directory: experiment_runs/dkwl/real_test/1
+home_directory: experiment_runs/dkwl/learning_rate_l1_tuning
 seed: 1121314
