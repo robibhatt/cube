@@ -42,7 +42,7 @@ def test_run_first_layer_linear_regression_creates_csv(tmp_path: Path) -> None:
         mlp,
         cube_config,
         tmp_path,
-        lambda_values=[1e-3, 1e-1, 1.0],
+        sample_count=32,
         seed=123,
         batch_size=8,
     )
@@ -57,9 +57,9 @@ def test_run_first_layer_linear_regression_creates_csv(tmp_path: Path) -> None:
     assert len(rows) == 1
     row = rows[0]
 
-    assert results.train_samples == 20 * hidden_width
-    assert results.test_samples == 5 * hidden_width
-    assert results.best_lambda in {1e-3, 1e-1, 1.0}
+    assert results.train_samples == 32
+    assert results.test_samples == 32
+    assert results.best_lambda == 1e-3
     assert torch.isfinite(torch.tensor(results.test_mse)), "test MSE must be finite"
 
     # Values in the CSV should match the returned dataclass.
