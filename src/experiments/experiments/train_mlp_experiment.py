@@ -95,11 +95,14 @@ class TrainMLPExperiment(Experiment):
     def _run_linear_probe(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
         if trainer_cfg.cube_distribution_config is None:
             raise ValueError("Trainer configuration missing cube distribution config")
+        if trainer_cfg.train_size is None:
+            raise ValueError("Trainer configuration missing train_size for linear probe")
 
         run_first_layer_linear_regression(
             mlp,
             trainer_cfg.cube_distribution_config,
             Path(self.config.home_directory),
+            sample_count=trainer_cfg.train_size,
             seed=self.seed_mgr.spawn_seed(),
         )
 
