@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
 
 import torch
 import torch.nn as nn
@@ -40,8 +39,8 @@ def run_first_layer_linear_regression(
     cube_config: CubeDistributionConfig,
     output_dir: Path,
     *,
-    k_folds: int = 5,
-    lambda_values: Sequence[float] | None = None,
+    sample_count: int,
+    lambda_value: float = 1e-3,
     seed: int = 0,
     batch_size: int = 4096,
 ) -> LinearProbeResults:
@@ -49,11 +48,10 @@ def run_first_layer_linear_regression(
 
     The function samples data from the cube distribution described by
     ``cube_config`` and learns a linear model mapping the activations of the
-    first hidden layer to the distribution outputs.  The amount of training
-    data used scales with the width ``w`` of the first hidden layer; by default
-    ``20 * w`` samples are used for training to emphasise representability over
-    optimisation challenges.  The regularisation strength for the ridge model is
-    selected via ``k``-fold cross validation (default ``k=5``).
+    first hidden layer to the distribution outputs.  The number of samples used
+    both for training the probe and evaluating its test loss is controlled by
+    ``sample_count``.  Ridge regularisation is applied with the fixed strength
+    ``lambda_value``.
 
     Parameters
     ----------
@@ -64,12 +62,11 @@ def run_first_layer_linear_regression(
         used during training.
     output_dir:
         Directory where ``linear_results.csv`` will be created.
-    k_folds:
-        Number of folds used during cross validation.  The value is clamped to
-        the number of available training samples.
-    lambda_values:
-        Optional iterable of candidate regularisation strengths.  When not
-        provided a log-spaced grid spanning ``1e-6`` to ``1e2`` is used.
+    sample_count:
+        Number of samples drawn from the distribution for both the training and
+        evaluation datasets.
+    lambda_value:
+        Regularisation strength applied to the ridge regression weights.
     seed:
         Random seed controlling data shuffling and sampling from the
         distribution.
@@ -83,9 +80,11 @@ def run_first_layer_linear_regression(
     device = next(mlp.parameters()).device
     mlp = mlp.eval()
 
-    width = mlp.config.hidden_dims[0]
-    train_samples = max(20 * width, width)
-    test_samples = max(5 * width, width)
+    if sample_count <= 0:
+        raise ValueError("sample_count must be a positive integer")
+
+    train_samples = sample_count
+    test_samples = sample_count
 
     distribution = CubeDistribution(cube_config, device)
 
@@ -101,23 +100,17 @@ def run_first_layer_linear_regression(
     train_targets = train_targets.to(device)
     test_targets = test_targets.to(device)
 
-    if lambda_values is None:
-        lambda_values = torch.logspace(-6, 2, steps=9, base=10.0, device=device).tolist()
-
-    best_lambda = _select_ridge_lambda(
+    weights, bias = _fit_ridge_with_gradient_descent(
         train_features,
         train_targets,
-        lambda_values,
-        k_folds=k_folds,
+        lambda_value,
         seed=seed,
     )
-
-    weights, bias = _fit_ridge(train_features, train_targets, best_lambda)
     predictions = _predict_ridge(test_features, weights, bias)
     test_mse = torch.mean((predictions - test_targets) ** 2).item()
 
     results = LinearProbeResults(
-        best_lambda=best_lambda,
+        best_lambda=lambda_value,
         train_samples=train_samples,
         test_samples=test_samples,
         test_mse=test_mse,
@@ -163,87 +156,95 @@ def _first_hidden_layer_activations(
     return torch.cat(activations, dim=0)
 
 
-def _select_ridge_lambda(
+def _fit_ridge_with_gradient_descent(
     features: torch.Tensor,
     targets: torch.Tensor,
-    lambda_values: Sequence[float],
+    lambda_value: float,
     *,
-    k_folds: int,
     seed: int,
-) -> float:
-    """Return the regularisation strength with the best cross-validation score."""
+    initial_subset_size: int = 5000,
+    gd_batch_size: int = 8192,
+    learning_rate: float = 1e-3,
+    max_epochs: int = 200,
+    convergence_tol: float = 1e-6,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Fit a ridge regressor using a two-stage optimisation procedure."""
 
-    n_samples = features.shape[0]
-    if k_folds <= 1:
-        raise ValueError("k_folds must be greater than 1 for cross validation")
-
-    k_folds = min(k_folds, n_samples)
+    n_samples, _ = features.shape
+    if n_samples == 0:
+        raise ValueError("Cannot fit ridge regression without data")
 
     generator = (
         torch.Generator(device=features.device) if features.is_cuda else torch.Generator()
     )
     generator.manual_seed(seed)
-    perm = torch.randperm(n_samples, generator=generator, device=features.device)
 
-    fold_sizes = _compute_fold_sizes(n_samples, k_folds)
-    folds: list[torch.Tensor] = []
-    start = 0
-    for size in fold_sizes:
-        end = start + size
-        folds.append(perm[start:end])
-        start = end
+    subset_size = min(initial_subset_size, n_samples)
+    subset_perm = torch.randperm(n_samples, generator=generator, device=features.device)
+    subset_idx = subset_perm[:subset_size]
 
-    best_lambda = None
-    best_loss = float("inf")
+    init_weights, init_bias = _solve_ridge_closed_form(
+        features.index_select(0, subset_idx),
+        targets.index_select(0, subset_idx),
+        lambda_value,
+    )
 
-    for lambda_value in lambda_values:
-        lambda_loss = 0.0
-        for fold_idx in range(k_folds):
-            val_idx = folds[fold_idx]
-            train_idx = torch.cat(
-                [folds[i] for i in range(k_folds) if i != fold_idx], dim=0
-            )
+    weights = init_weights.clone().detach().requires_grad_(True)
+    bias = init_bias.clone().detach().requires_grad_(True)
 
-            weights, bias = _fit_ridge(
-                features.index_select(0, train_idx),
-                targets.index_select(0, train_idx),
-                float(lambda_value),
-            )
-            preds = _predict_ridge(features.index_select(0, val_idx), weights, bias)
-            fold_loss = torch.mean((preds - targets.index_select(0, val_idx)) ** 2)
-            lambda_loss += fold_loss.item()
+    prev_loss = float("inf")
+    for _ in range(max_epochs):
+        perm = torch.randperm(n_samples, generator=generator, device=features.device)
+        for start in range(0, n_samples, gd_batch_size):
+            end = min(start + gd_batch_size, n_samples)
+            batch_idx = perm[start:end]
+            batch_features = features.index_select(0, batch_idx)
+            batch_targets = targets.index_select(0, batch_idx)
 
-        avg_loss = lambda_loss / k_folds
-        if avg_loss < best_loss:
-            best_loss = avg_loss
-            best_lambda = float(lambda_value)
+            predictions = batch_features @ weights + bias
+            mse = torch.mean((predictions - batch_targets) ** 2)
+            reg = lambda_value * torch.sum(weights**2)
+            loss = 0.5 * mse + 0.5 * reg
 
-    assert best_lambda is not None, "No lambda value evaluated"
-    return best_lambda
+            loss.backward()
+            with torch.no_grad():
+                weights -= learning_rate * weights.grad
+                bias -= learning_rate * bias.grad
+            weights.grad.zero_()
+            bias.grad.zero_()
+
+        with torch.no_grad():
+            full_predictions = features @ weights + bias
+            full_mse = torch.mean((full_predictions - targets) ** 2)
+            reg_term = lambda_value * torch.sum(weights**2)
+            total_loss = 0.5 * full_mse + 0.5 * reg_term
+
+        improvement = prev_loss - float(total_loss)
+        if improvement >= 0.0 and improvement < convergence_tol * max(1.0, prev_loss):
+            break
+        prev_loss = float(total_loss)
+
+    return weights.detach(), bias.detach()
 
 
-def _compute_fold_sizes(n_samples: int, k_folds: int) -> Iterable[int]:
-    base_size = n_samples // k_folds
-    remainder = n_samples % k_folds
-    for fold in range(k_folds):
-        yield base_size + (1 if fold < remainder else 0)
-
-
-def _fit_ridge(
+def _solve_ridge_closed_form(
     features: torch.Tensor, targets: torch.Tensor, lambda_value: float
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Solve the ridge regression normal equations."""
+    """Return the ridge solution using the closed-form normal equations."""
 
     n_samples, n_features = features.shape
+    if n_samples == 0:
+        raise ValueError("Cannot fit ridge regression without data")
+
     ones = torch.ones(n_samples, 1, device=features.device, dtype=features.dtype)
     design = torch.cat([features, ones], dim=1)
 
-    gram = design.T @ design
+    gram = design.T @ design / n_samples
     reg = torch.eye(n_features + 1, device=features.device, dtype=features.dtype)
     reg[-1, -1] = 0.0  # Do not regularise the bias term
     reg = reg * lambda_value
 
-    rhs = design.T @ targets
+    rhs = design.T @ targets / n_samples
     solution = torch.linalg.solve(gram + reg, rhs)
 
     weights = solution[:-1]
