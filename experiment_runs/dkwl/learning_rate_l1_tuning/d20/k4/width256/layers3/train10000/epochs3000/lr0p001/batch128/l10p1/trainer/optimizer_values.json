@@ -1,0 +1,114 @@
+{
+  "optimizer": "SGD",
+  "mup_used": true,
+  "groups": [
+    {
+      "group_index": 0,
+      "lr": 0.001,
+      "weight_decay": 0.0,
+      "n_params": 131072
+    },
+    {
+      "group_index": 1,
+      "lr": 0.004,
+      "weight_decay": 0.0,
+      "n_params": 5376
+    },
+    {
+      "group_index": 2,
+      "lr": 0.001,
+      "weight_decay": 0.0,
+      "n_params": 0
+    },
+    {
+      "group_index": 3,
+      "lr": 0.004,
+      "weight_decay": 0.0,
+      "n_params": 768
+    },
+    {
+      "group_index": 4,
+      "lr": 0.001,
+      "weight_decay": 0.0,
+      "n_params": 1
+    }
+  ],
+  "params": [
+    {
+      "name": "net.2.weight",
+      "shape": [
+        256,
+        256
+      ],
+      "group_index": 0,
+      "lr": 0.001,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.4.weight",
+      "shape": [
+        256,
+        256
+      ],
+      "group_index": 0,
+      "lr": 0.001,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.0.weight",
+      "shape": [
+        256,
+        20
+      ],
+      "group_index": 1,
+      "lr": 0.004,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.6.weight",
+      "shape": [
+        1,
+        256
+      ],
+      "group_index": 1,
+      "lr": 0.004,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.0.bias",
+      "shape": [
+        256
+      ],
+      "group_index": 3,
+      "lr": 0.004,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.2.bias",
+      "shape": [
+        256
+      ],
+      "group_index": 3,
+      "lr": 0.004,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.4.bias",
+      "shape": [
+        256
+      ],
+      "group_index": 3,
+      "lr": 0.004,
+      "weight_decay": 0.0
+    },
+    {
+      "name": "net.6.bias",
+      "shape": [
+        1
+      ],
+      "group_index": 4,
+      "lr": 0.001,
+      "weight_decay": 0.0
+    }
+  ]
+}

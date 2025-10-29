@@ -1,0 +1,6 @@
+{
+  "final_train_loss": 0.9999190805435181,
+  "final_test_loss": 0.9999949314117431,
+  "mean_output_loss": 0.9999789148330689,
+  "epochs_trained": 3000
+}

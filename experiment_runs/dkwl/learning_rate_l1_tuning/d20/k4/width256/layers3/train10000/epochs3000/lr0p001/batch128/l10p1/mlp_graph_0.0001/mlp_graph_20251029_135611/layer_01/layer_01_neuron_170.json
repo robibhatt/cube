@@ -1,0 +1,31 @@
+{
+  "layer_index": 1,
+  "neuron_index": 170,
+  "parents": [
+    0,
+    3,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    14,
+    18,
+    19
+  ],
+  "ancestors": [
+    0,
+    3,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    14,
+    18,
+    19
+  ],
+  "activations_csv": "layer_01_neuron_170_activations.csv"
+}
