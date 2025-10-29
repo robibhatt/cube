@@ -2,10 +2,11 @@ import argparse
 import csv
 import json
 import os
-from typing import Iterable, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Iterable, Iterator, List, Optional
 
 
-MAX_ANCESTOR_COUNT = 3
+MAX_ANCESTOR_COUNT = 4
 """Maximum allowed number of ancestors for an activation to qualify."""
 
 MIN_LINEAR_LOSS = 0.1
@@ -13,6 +14,19 @@ MIN_LINEAR_LOSS = 0.1
 
 MAX_FINAL_TEST_LOSS = 0.01
 """Maximum allowed ``final_test_loss`` found in ``trainer/results.csv``."""
+
+MIN_ACTIVATION = 1.0
+"""Minimum activation value required for a neuron to be considered."""
+
+
+@dataclass(frozen=True)
+class NeuronMatch:
+    """Data describing a neuron that satisfies the search criteria."""
+
+    neuron_path: str
+    activation_path: str
+    ancestor_count: int
+    max_activation: float
 
 
 def iter_training_directories(root: str) -> Iterable[str]:
@@ -23,36 +37,83 @@ def iter_training_directories(root: str) -> Iterable[str]:
             yield dirpath
 
 
-def find_activation_with_few_ancestors(
-    training_dir: str,
-) -> Optional[Tuple[str, int]]:
-    """Return the path and ancestor count for a qualifying activation, if any."""
+def _iter_neuron_json_paths(training_dir: str) -> Iterator[str]:
+    """Yield JSON files that describe individual neurons within a training run."""
 
-    for current_root, dirnames, _ in os.walk(training_dir):
-        graph_dirs = [
-            os.path.join(current_root, dirname)
-            for dirname in dirnames
-            if dirname.startswith("mlp_graph")
-        ]
+    for current_root, _, filenames in os.walk(training_dir):
+        for filename in filenames:
+            if not filename.endswith(".json"):
+                continue
+            if not filename.startswith("layer_") or "_neuron_" not in filename:
+                continue
+            yield os.path.join(current_root, filename)
 
-        for mlp_graph_dir in graph_dirs:
-            for root, _, files in os.walk(mlp_graph_dir):
-                for filename in files:
-                    if not filename.endswith(".json"):
-                        continue
 
-                    filepath = os.path.join(root, filename)
-                    try:
-                        with open(filepath, "r", encoding="utf-8") as fh:
-                            data = json.load(fh)
-                    except (OSError, json.JSONDecodeError):
-                        continue
+def _activation_csv_path(json_path: str) -> str:
+    base, _ = os.path.splitext(json_path)
+    return f"{base}_activations.csv"
 
-                    ancestors = data.get("ancestors")
-                    if isinstance(ancestors, list) and len(ancestors) <= MAX_ANCESTOR_COUNT:
-                        return filepath, len(ancestors)
 
+def _max_activation_from_csv(path: str) -> Optional[float]:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            if reader.fieldnames is None or "activation" not in reader.fieldnames:
+                return None
+            values = []
+            for row in reader:
+                raw = row.get("activation")
+                if raw is None:
+                    continue
+                try:
+                    values.append(float(raw))
+                except (TypeError, ValueError):
+                    continue
+            if not values:
+                return None
+            return max(values)
+    except OSError:
+        return None
+
+
+def _load_neuron_match(json_path: str) -> Optional[NeuronMatch]:
+    try:
+        with open(json_path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    ancestors = data.get("ancestors")
+    if not isinstance(ancestors, list) or len(ancestors) > MAX_ANCESTOR_COUNT:
+        return None
+
+    activation_path = _activation_csv_path(json_path)
+    max_activation = _max_activation_from_csv(activation_path)
+    if max_activation is None or max_activation < MIN_ACTIVATION:
+        return None
+
+    return NeuronMatch(
+        neuron_path=json_path,
+        activation_path=activation_path,
+        ancestor_count=len(ancestors),
+        max_activation=max_activation,
+    )
+
+
+def find_activation_with_few_ancestors(training_dir: str) -> Optional[NeuronMatch]:
+    """Return the first neuron that satisfies the ancestor and activation filters."""
+
+    for json_path in _iter_neuron_json_paths(training_dir):
+        match = _load_neuron_match(json_path)
+        if match is not None:
+            return match
     return None
+
+
+def has_activation_with_few_ancestors(training_dir: str) -> bool:
+    """Return ``True`` if the training directory contains a qualifying neuron."""
+
+    return find_activation_with_few_ancestors(training_dir) is not None
 
 
 TEST_ERROR_KEYS = {
@@ -187,8 +248,8 @@ def read_final_test_loss(training_dir: str) -> Optional[float]:
 def find_training_directories_with_criteria(root: str) -> List[str]:
     qualifying: List[str] = []
     for training_dir in iter_training_directories(root):
-        activation_info = find_activation_with_few_ancestors(training_dir)
-        if activation_info is None:
+        neuron = find_activation_with_few_ancestors(training_dir)
+        if neuron is None:
             continue
 
         final_test_loss = read_final_test_loss(training_dir)
@@ -196,13 +257,18 @@ def find_training_directories_with_criteria(root: str) -> List[str]:
             continue
 
         max_error = max_test_error(training_dir)
-        if max_error is not None and max_error > MIN_LINEAR_LOSS:
-            qualifying.append(training_dir)
-            activation_path, ancestor_count = activation_info
-            print(training_dir)
-            print(f"  activation_path: {activation_path} (ancestors: {ancestor_count})")
-            print(f"  final_test_loss: {final_test_loss}")
-            print(f"  max_linear_loss: {max_error}")
+        if max_error is None or max_error < MIN_LINEAR_LOSS:
+            continue
+
+        qualifying.append(training_dir)
+        print(training_dir)
+        print(
+            "  activation_path:"
+            f" {neuron.activation_path} (ancestors: {neuron.ancestor_count},"
+            f" max_activation: {neuron.max_activation})"
+        )
+        print(f"  final_test_loss: {final_test_loss}")
+        print(f"  max_linear_loss: {max_error}")
 
     return qualifying
 
