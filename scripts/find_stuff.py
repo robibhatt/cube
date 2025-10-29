@@ -16,57 +16,56 @@ MAX_FINAL_TEST_LOSS = 10.0
 
 
 def iter_training_directories(root: str) -> Iterable[str]:
-    """Yield directories containing ``frobenius_drifts.json``."""
+    """Yield directories that look like completed training runs."""
 
     for dirpath, _, filenames in os.walk(root):
-        if "frobenius_drifts.json" in filenames:
+        if any(name.startswith("linear_results") for name in filenames):
             yield dirpath
 
 
 def has_activation_with_few_ancestors(training_dir: str) -> bool:
     """Return ``True`` if an ancestor with <= ``MAX_ANCESTOR_COUNT`` nodes exists."""
 
-    parent_dir = os.path.dirname(training_dir)
-
-    try:
-        candidate_dirs = [
-            os.path.join(parent_dir, entry)
-            for entry in os.listdir(parent_dir)
-            if entry.startswith("mlp_graph")
+    for current_root, dirnames, _ in os.walk(training_dir):
+        graph_dirs = [
+            os.path.join(current_root, dirname)
+            for dirname in dirnames
+            if dirname.startswith("mlp_graph")
         ]
-    except OSError:
-        return False
 
-    if not candidate_dirs:
-        return False
+        for mlp_graph_dir in graph_dirs:
+            for root, _, files in os.walk(mlp_graph_dir):
+                for filename in files:
+                    if not filename.endswith(".json"):
+                        continue
 
-    for mlp_graph_dir in candidate_dirs:
-        if not os.path.isdir(mlp_graph_dir):
-            continue
+                    filepath = os.path.join(root, filename)
+                    try:
+                        with open(filepath, "r", encoding="utf-8") as fh:
+                            data = json.load(fh)
+                    except (OSError, json.JSONDecodeError):
+                        continue
 
-        for root, _, files in os.walk(mlp_graph_dir):
-            for filename in files:
-                if not filename.endswith(".json"):
-                    continue
-                filepath = os.path.join(root, filename)
-                try:
-                    with open(filepath, "r", encoding="utf-8") as fh:
-                        data = json.load(fh)
-                except (OSError, json.JSONDecodeError):
-                    continue
-
-                ancestors = data.get("ancestors")
-                if isinstance(ancestors, list) and len(ancestors) <= MAX_ANCESTOR_COUNT:
-                    return True
+                    ancestors = data.get("ancestors")
+                    if isinstance(ancestors, list) and len(ancestors) <= MAX_ANCESTOR_COUNT:
+                        return True
 
     return False
 
 
 TEST_ERROR_KEYS = {
     "test_error",
+    "test_mse",
     "final_test_error",
     "final_test_loss",
 }
+
+
+CSV_TEST_ERROR_COLUMNS = (
+    "test_error",
+    "test_mse",
+    "mse",
+)
 
 
 def _extract_test_errors_from_json(data: object) -> List[float]:
@@ -99,17 +98,24 @@ def _read_test_errors_from_csv(path: str) -> List[float]:
     try:
         with open(path, "r", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
-            if reader.fieldnames is None or "test_error" not in reader.fieldnames:
+            if reader.fieldnames is None:
+                return []
+            candidate_columns = [
+                column for column in reader.fieldnames if column in CSV_TEST_ERROR_COLUMNS
+            ]
+            if not candidate_columns:
                 return []
             values = []
             for row in reader:
-                raw = row.get("test_error")
-                if raw is None:
-                    continue
-                try:
-                    values.append(float(raw))
-                except (TypeError, ValueError):
-                    continue
+                for column in candidate_columns:
+                    raw = row.get(column)
+                    if raw is None:
+                        continue
+                    try:
+                        values.append(float(raw))
+                        break
+                    except (TypeError, ValueError):
+                        continue
             return values
     except OSError:
         return []
@@ -145,27 +151,35 @@ def max_test_error(training_dir: str) -> Optional[float]:
 
 
 def read_final_test_loss(training_dir: str) -> Optional[float]:
-    """Read the ``final_test_loss`` from ``trainer/results.csv`` if available."""
+    """Read the ``final_test_loss`` from ``results.csv`` if available."""
 
-    results_path = os.path.join(training_dir, "trainer", "results.csv")
-    try:
-        with open(results_path, "r", encoding="utf-8") as fh:
-            reader = csv.DictReader(fh)
-            if reader.fieldnames is None or "final_test_loss" not in reader.fieldnames:
-                return None
+    candidate_paths = [
+        os.path.join(training_dir, "results.csv"),
+        os.path.join(training_dir, "trainer", "results.csv"),
+    ]
 
-            final_loss: Optional[float] = None
-            for row in reader:
-                raw = row.get("final_test_loss")
-                if raw is None:
+    for results_path in candidate_paths:
+        try:
+            with open(results_path, "r", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)
+                if reader.fieldnames is None or "final_test_loss" not in reader.fieldnames:
                     continue
-                try:
-                    final_loss = float(raw)
-                except (TypeError, ValueError):
-                    continue
-            return final_loss
-    except OSError:
-        return None
+
+                final_loss: Optional[float] = None
+                for row in reader:
+                    raw = row.get("final_test_loss")
+                    if raw is None:
+                        continue
+                    try:
+                        final_loss = float(raw)
+                    except (TypeError, ValueError):
+                        continue
+                if final_loss is not None:
+                    return final_loss
+        except OSError:
+            continue
+
+    return None
 
 
 def find_training_directories_with_criteria(root: str) -> List[str]:
