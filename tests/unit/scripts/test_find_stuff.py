@@ -12,35 +12,45 @@ def _write_json(path: Path, payload: dict) -> None:
 
 
 def test_has_activation_accepts_prefixed_graph_directory(tmp_path: Path) -> None:
-    run_dir = tmp_path / "run"
-    training_dir = run_dir / "trainer"
-    training_dir.mkdir(parents=True)
-
-    graph_dir = run_dir / "mlp_graph_0.5"
-    graph_dir.mkdir()
+    training_dir = tmp_path / "trainer"
+    graph_dir = training_dir / "mlp_graph_0.5"
+    graph_dir.mkdir(parents=True)
     _write_json(graph_dir / "graph.json", {"ancestors": [1, 2, 3]})
 
     assert has_activation_with_few_ancestors(str(training_dir))
 
 
 def test_find_training_directories_with_criteria_includes_prefixed_graph(tmp_path: Path) -> None:
-    run_dir = tmp_path / "experiment"
-    training_dir = run_dir / "trainer"
-    training_dir.mkdir(parents=True)
-
-    # Identify the training directory
-    (training_dir / "frobenius_drifts.json").write_text("{}", encoding="utf-8")
+    training_dir = tmp_path / "trainer"
+    training_dir.mkdir()
 
     # Provide ancestor data in a prefixed graph directory
-    graph_dir = run_dir / "mlp_graph_1.0"
+    graph_dir = training_dir / "mlp_graph_1.0"
     graph_dir.mkdir()
     _write_json(graph_dir / "graph.json", {"ancestors": [1, 2, 3]})
 
     # Supply linear probe results with a sufficiently large test error
-    linear_dir = training_dir / "linear_results"
-    linear_dir.mkdir()
-    _write_json(linear_dir / "results.json", {"test_error": 1e-6})
+    linear_results = training_dir / "linear_results.csv"
+    linear_results.write_text("test_mse\n1e-6\n", encoding="utf-8")
+
+    # Provide final test loss information
+    trainer_results = training_dir / "results.csv"
+    trainer_results.write_text("final_test_loss\n0.1\n", encoding="utf-8")
 
     result = find_training_directories_with_criteria(str(tmp_path))
 
     assert [Path(path) for path in result] == [training_dir]
+
+
+def test_find_training_directories_with_criteria_matches_fixture_run() -> None:
+    repo_root = Path(__file__).resolve().parents[3]
+    run_root = repo_root / "experiment_runs"
+
+    result = [Path(path) for path in find_training_directories_with_criteria(str(run_root))]
+
+    expected = repo_root / (
+        "experiment_runs/dkwl/learning_rate_l1_tuning/d20/k4/width256/"
+        "layers3/train10000/epochs3000/lr0p02/batch128/l10p001"
+    )
+
+    assert expected in result
