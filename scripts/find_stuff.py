@@ -33,7 +33,7 @@ def has_activation_with_few_ancestors(training_dir: str) -> bool:
                 continue
 
             ancestors = data.get("ancestors")
-            if isinstance(ancestors, list) and len(ancestors) < 4:
+            if isinstance(ancestors, list) and len(ancestors) < 50:
                 return True
 
     return False
@@ -120,7 +120,7 @@ def find_training_directories_with_criteria(root: str) -> List[str]:
             continue
 
         max_error = max_test_error(training_dir)
-        if max_error is not None and max_error > 0.3:
+        if max_error is not None and max_error > 0.000000000000003:
             qualifying.append(training_dir)
 
     return qualifying
