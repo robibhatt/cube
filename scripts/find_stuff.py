@@ -52,11 +52,18 @@ def has_activation_with_few_ancestors(training_dir: str) -> bool:
     return False
 
 
+TEST_ERROR_KEYS = {
+    "test_error",
+    "final_test_error",
+    "final_test_loss",
+}
+
+
 def _extract_test_errors_from_json(data: object) -> List[float]:
     values: List[float] = []
     if isinstance(data, dict):
         for key, value in data.items():
-            if key == "test_error":
+            if key in TEST_ERROR_KEYS:
                 try:
                     values.append(float(value))
                 except (TypeError, ValueError):
@@ -107,7 +114,8 @@ def collect_test_errors(training_dir: str) -> List[float]:
         root_has_linear = "linear_results" in basename
         for filename in files:
             file_has_linear = "linear_results" in filename
-            if not (root_has_linear or file_has_linear):
+            is_results_file = filename == "results.json"
+            if not (root_has_linear or file_has_linear or is_results_file):
                 continue
 
             path = os.path.join(root, filename)
