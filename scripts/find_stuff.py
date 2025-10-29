@@ -2,7 +2,7 @@ import argparse
 import csv
 import json
 import os
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 
 
 MAX_ANCESTOR_COUNT = 3
@@ -23,8 +23,10 @@ def iter_training_directories(root: str) -> Iterable[str]:
             yield dirpath
 
 
-def has_activation_with_few_ancestors(training_dir: str) -> bool:
-    """Return ``True`` if an ancestor with <= ``MAX_ANCESTOR_COUNT`` nodes exists."""
+def find_activation_with_few_ancestors(
+    training_dir: str,
+) -> Optional[Tuple[str, int]]:
+    """Return the path and ancestor count for a qualifying activation, if any."""
 
     for current_root, dirnames, _ in os.walk(training_dir):
         graph_dirs = [
@@ -48,9 +50,9 @@ def has_activation_with_few_ancestors(training_dir: str) -> bool:
 
                     ancestors = data.get("ancestors")
                     if isinstance(ancestors, list) and len(ancestors) <= MAX_ANCESTOR_COUNT:
-                        return True
+                        return filepath, len(ancestors)
 
-    return False
+    return None
 
 
 TEST_ERROR_KEYS = {
@@ -185,7 +187,8 @@ def read_final_test_loss(training_dir: str) -> Optional[float]:
 def find_training_directories_with_criteria(root: str) -> List[str]:
     qualifying: List[str] = []
     for training_dir in iter_training_directories(root):
-        if not has_activation_with_few_ancestors(training_dir):
+        activation_info = find_activation_with_few_ancestors(training_dir)
+        if activation_info is None:
             continue
 
         final_test_loss = read_final_test_loss(training_dir)
@@ -195,7 +198,11 @@ def find_training_directories_with_criteria(root: str) -> List[str]:
         max_error = max_test_error(training_dir)
         if max_error is not None and max_error > MIN_LINEAR_LOSS:
             qualifying.append(training_dir)
+            activation_path, ancestor_count = activation_info
             print(training_dir)
+            print(f"  activation_path: {activation_path} (ancestors: {ancestor_count})")
+            print(f"  final_test_loss: {final_test_loss}")
+            print(f"  max_linear_loss: {max_error}")
 
     return qualifying
 
@@ -209,10 +216,7 @@ def main() -> None:
     args = parser.parse_args()
 
     qualifying = find_training_directories_with_criteria(args.directory)
-    if qualifying:
-        for path in qualifying:
-            print(path)
-    else:
+    if not qualifying:
         print("No training directories meeting the criteria were found.")
 
 
