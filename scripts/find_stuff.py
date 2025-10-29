@@ -17,24 +17,37 @@ def has_activation_with_few_ancestors(training_dir: str) -> bool:
     """Return ``True`` if an ancestor with <4 nodes exists in the parent ``mlp_graph``."""
 
     parent_dir = os.path.dirname(training_dir)
-    mlp_graph_dir = os.path.join(parent_dir, "mlp_graph")
-    if not os.path.isdir(mlp_graph_dir):
+
+    try:
+        candidate_dirs = [
+            os.path.join(parent_dir, entry)
+            for entry in os.listdir(parent_dir)
+            if entry.startswith("mlp_graph")
+        ]
+    except OSError:
         return False
 
-    for root, _, files in os.walk(mlp_graph_dir):
-        for filename in files:
-            if not filename.endswith(".json"):
-                continue
-            filepath = os.path.join(root, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as fh:
-                    data = json.load(fh)
-            except (OSError, json.JSONDecodeError):
-                continue
+    if not candidate_dirs:
+        return False
 
-            ancestors = data.get("ancestors")
-            if isinstance(ancestors, list) and len(ancestors) < 50:
-                return True
+    for mlp_graph_dir in candidate_dirs:
+        if not os.path.isdir(mlp_graph_dir):
+            continue
+
+        for root, _, files in os.walk(mlp_graph_dir):
+            for filename in files:
+                if not filename.endswith(".json"):
+                    continue
+                filepath = os.path.join(root, filename)
+                try:
+                    with open(filepath, "r", encoding="utf-8") as fh:
+                        data = json.load(fh)
+                except (OSError, json.JSONDecodeError):
+                    continue
+
+                ancestors = data.get("ancestors")
+                if isinstance(ancestors, list) and len(ancestors) < 50:
+                    return True
 
     return False
 
