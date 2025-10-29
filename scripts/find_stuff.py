@@ -5,6 +5,16 @@ import os
 from typing import Iterable, List, Optional
 
 
+MAX_ANCESTOR_COUNT = 3
+"""Maximum allowed number of ancestors for an activation to qualify."""
+
+MIN_LINEAR_LOSS = 0.3
+"""Minimum linear loss (``test_error``) value required to flag a directory."""
+
+MAX_FINAL_TEST_LOSS = 0.005
+"""Maximum allowed ``final_test_loss`` found in ``trainer/results.csv``."""
+
+
 def iter_training_directories(root: str) -> Iterable[str]:
     """Yield directories containing ``frobenius_drifts.json``."""
 
@@ -14,7 +24,7 @@ def iter_training_directories(root: str) -> Iterable[str]:
 
 
 def has_activation_with_few_ancestors(training_dir: str) -> bool:
-    """Return ``True`` if an ancestor with <4 nodes exists in the parent ``mlp_graph``."""
+    """Return ``True`` if an ancestor with <= ``MAX_ANCESTOR_COUNT`` nodes exists."""
 
     parent_dir = os.path.dirname(training_dir)
 
@@ -46,7 +56,7 @@ def has_activation_with_few_ancestors(training_dir: str) -> bool:
                     continue
 
                 ancestors = data.get("ancestors")
-                if isinstance(ancestors, list) and len(ancestors) < 4:
+                if isinstance(ancestors, list) and len(ancestors) <= MAX_ANCESTOR_COUNT:
                     return True
 
     return False
@@ -134,14 +144,42 @@ def max_test_error(training_dir: str) -> Optional[float]:
     return max(errors)
 
 
+def read_final_test_loss(training_dir: str) -> Optional[float]:
+    """Read the ``final_test_loss`` from ``trainer/results.csv`` if available."""
+
+    results_path = os.path.join(training_dir, "trainer", "results.csv")
+    try:
+        with open(results_path, "r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            if reader.fieldnames is None or "final_test_loss" not in reader.fieldnames:
+                return None
+
+            final_loss: Optional[float] = None
+            for row in reader:
+                raw = row.get("final_test_loss")
+                if raw is None:
+                    continue
+                try:
+                    final_loss = float(raw)
+                except (TypeError, ValueError):
+                    continue
+            return final_loss
+    except OSError:
+        return None
+
+
 def find_training_directories_with_criteria(root: str) -> List[str]:
     qualifying: List[str] = []
     for training_dir in iter_training_directories(root):
         if not has_activation_with_few_ancestors(training_dir):
             continue
 
+        final_test_loss = read_final_test_loss(training_dir)
+        if final_test_loss is None or final_test_loss > MAX_FINAL_TEST_LOSS:
+            continue
+
         max_error = max_test_error(training_dir)
-        if max_error is not None and max_error > 0.3:
+        if max_error is not None and max_error > MIN_LINEAR_LOSS:
             qualifying.append(training_dir)
             print(training_dir)
 
