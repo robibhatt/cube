@@ -1,0 +1,77 @@
+{
+  "experiment_type": "TrainMLP",
+  "home_directory": "experiment_runs/dkwl/learning_rate_l1_tuning/d20/k4/width256/layers3/train10000/epochs3000/lr0p02/batch128/l10p001",
+  "seed": 5998434462963521854,
+  "trainer_config": {
+    "mlp_config": {
+      "input_dim": 20,
+      "output_dim": 1,
+      "hidden_dims": [
+        256,
+        256,
+        256
+      ],
+      "start_activation": false,
+      "end_activation": false
+    },
+    "cube_distribution_config": {
+      "input_dim": 20,
+      "indices_list": [
+        [
+          0,
+          1,
+          2,
+          3
+        ]
+      ],
+      "weights": [
+        1.0
+      ],
+      "normalize": false,
+      "noise_mean": 0.0,
+      "noise_std": 0.0,
+      "distribution_type": "CubeDistribution",
+      "target_function_config": {
+        "model_type": "SumProdTarget",
+        "input_shape": [
+          20
+        ],
+        "output_shape": [
+          1
+        ],
+        "indices_list": [
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ],
+        "weights": [
+          1.0
+        ],
+        "normalize": false
+      }
+    },
+    "optimizer_config": {
+      "lr": 0.02,
+      "weight_decay": 0.0
+    },
+    "early_stopping": null,
+    "train_size": 10000,
+    "test_size": 10000,
+    "batch_size": 128,
+    "epochs": 3000,
+    "use_full_batch": false,
+    "weight_decay_l1": 0.001,
+    "home_dir": null,
+    "seed": null
+  },
+  "edge_thresholds": [
+    1e-05,
+    0.0001,
+    0.001,
+    0.01,
+    0.1
+  ]
+}

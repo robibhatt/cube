@@ -5,13 +5,13 @@ import os
 from typing import Iterable, List, Optional
 
 
-MAX_ANCESTOR_COUNT = 3
+MAX_ANCESTOR_COUNT = 30
 """Maximum allowed number of ancestors for an activation to qualify."""
 
-MIN_LINEAR_LOSS = 0.3
+MIN_LINEAR_LOSS = 0.0000005
 """Minimum linear loss (``test_error``) value required to flag a directory."""
 
-MAX_FINAL_TEST_LOSS = 0.005
+MAX_FINAL_TEST_LOSS = 10.0
 """Maximum allowed ``final_test_loss`` found in ``trainer/results.csv``."""
 
 

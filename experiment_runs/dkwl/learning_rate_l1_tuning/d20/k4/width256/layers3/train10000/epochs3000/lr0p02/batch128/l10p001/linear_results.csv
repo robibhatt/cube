@@ -1,0 +1,2 @@
+best_lambda,train_samples,test_samples,test_mse
+1.0,5120,1280,0.9048407673835754
