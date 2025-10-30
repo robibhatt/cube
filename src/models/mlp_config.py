@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Mapping, Any
 
-from dataclasses_json import dataclass_json
+from dataclasses_json import dataclass_json, config
+from marshmallow import fields
 
 
 @dataclass_json
@@ -16,8 +17,10 @@ class MLPConfig:
     read-only property that always returns ``1``.
     """
 
-    input_dim: int
-    hidden_dims: List[int]
+    input_dim: int = field(metadata=config(mm_field=fields.Integer()))
+    hidden_dims: List[int] = field(
+        metadata=config(mm_field=fields.List(fields.Integer()))
+    )
 
     @property
     def output_dim(self) -> int:
