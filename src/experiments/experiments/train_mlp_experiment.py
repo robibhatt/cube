@@ -12,7 +12,6 @@ from src.training.trainer_config import TrainerConfig
 from src.checkpoints.checkpoint import Checkpoint
 from src.mlp_graph.mlp_graph import MlpActivationGraph
 from src.models.mlp import MLP
-from src.models.mlp_linear_util import run_first_layer_linear_regression
 
 
 
@@ -46,7 +45,7 @@ class TrainMLPExperiment(Experiment):
         self._log_step("Finished training")
 
     def _consolidate_results(self) -> List[Dict[str, Any]]:
-        """Collect training metrics and trigger Fourier post-processing."""
+        """Collect training metrics and generate auxiliary artefacts."""
 
         trainer_cfg = self.get_trainer_configs()[0]
 
@@ -84,7 +83,6 @@ class TrainMLPExperiment(Experiment):
         self._log_step("Wrote results.csv")
 
         mlp = self._load_trained_mlp(trainer_cfg)
-        self._run_linear_probe(trainer_cfg, mlp)
         self._generate_mlp_graph(trainer_cfg, mlp)
 
         return [row]
@@ -92,23 +90,6 @@ class TrainMLPExperiment(Experiment):
     # ------------------------------------------------------------------
     # Graph helpers
     # ------------------------------------------------------------------
-    def _run_linear_probe(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
-        if trainer_cfg.cube_distribution_config is None:
-            raise ValueError("Trainer configuration missing cube distribution config")
-        if trainer_cfg.train_size is None:
-            raise ValueError("Trainer configuration missing train_size for linear probe")
-
-        run_first_layer_linear_regression(
-            mlp,
-            trainer_cfg.cube_distribution_config,
-            Path(self.config.home_directory),
-            sample_count=trainer_cfg.train_size,
-            seed=self.seed_mgr.spawn_seed(),
-            max_epochs=trainer_cfg.epochs,
-        )
-
-        self._log_step("Finished linear probe")
-
     def _generate_mlp_graph(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
         """Create an activation graph for the trained MLP."""
         for edge_threshold in self.config.edge_thresholds:
