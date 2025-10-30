@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Iterable, Iterator, List, Optional
 
 
-MAX_ANCESTOR_COUNT = 3
+MAX_ANCESTOR_COUNT = 4
 """Maximum allowed number of ancestors for an activation to qualify."""
 
 MIN_LINEAR_LOSS = 0.2
