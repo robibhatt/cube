@@ -29,7 +29,7 @@ trainer_config:
     epochs: 5
     use_full_batch: false
     weight_decay_l1: 0.001
-home_directory: experiment_runs/test/1
+home_directory: experiment_runs/test/2
 seed: 1
 edge_thresholds:
 - 1.0e-05
