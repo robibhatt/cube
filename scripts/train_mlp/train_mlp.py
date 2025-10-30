@@ -45,9 +45,7 @@ def main() -> None:
 
     shutil.copy(CONFIG_FILE, home / CONFIG_FILE.name)
 
-    #experiment.train()
-    #experiment.consolidate_results()
-    Experiment.server_run(experiment_dir=cfg.home_directory)
+    experiment.run()
 
 
 if __name__ == "__main__":

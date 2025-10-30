@@ -77,6 +77,12 @@ class Experiment(ABC):
             trainer.train()
             trainer.save_results()
 
+    def run(self) -> Any:
+        """Execute the experiment end-to-end locally."""
+
+        self.train()
+        return self.consolidate_results()
+
     def consolidate_results(self) -> Any:
         """Run subclass consolidation and ensure ``results.csv`` exists."""
 

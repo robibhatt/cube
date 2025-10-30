@@ -104,6 +104,7 @@ class TrainMLPExperiment(Experiment):
             Path(self.config.home_directory),
             sample_count=trainer_cfg.train_size,
             seed=self.seed_mgr.spawn_seed(),
+            max_epochs=trainer_cfg.epochs,
         )
 
         self._log_step("Finished linear probe")

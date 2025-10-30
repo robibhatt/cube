@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -43,6 +44,7 @@ def run_first_layer_linear_regression(
     lambda_value: float = 1e-3,
     seed: int = 0,
     batch_size: int = 4096,
+    max_epochs: Optional[int] = None,
 ) -> LinearProbeResults:
     """Fit a ridge regressor on the first hidden layer activations of *mlp*.
 
@@ -72,6 +74,9 @@ def run_first_layer_linear_regression(
         distribution.
     batch_size:
         Batch size used when computing hidden activations.
+    max_epochs:
+        Maximum number of optimisation epochs for the ridge regression solver.
+        When ``None``, the default iteration limit is used.
     """
 
     if not mlp.config.hidden_dims:
@@ -105,6 +110,7 @@ def run_first_layer_linear_regression(
         train_targets,
         lambda_value,
         seed=seed,
+        max_epochs=200 if max_epochs is None else max_epochs,
     )
     predictions = _predict_ridge(test_features, weights, bias)
     test_mse = torch.mean((predictions - test_targets) ** 2).item()
