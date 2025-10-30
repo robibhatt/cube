@@ -61,6 +61,21 @@ def test_sparsify_mlp_zeroes_weights_below_threshold(populated_mlp: MLP) -> None
     assert torch.equal(last_weight, expected_last)
 
 
+def test_sparsify_mlp_thresholds_by_absolute_value(populated_mlp: MLP) -> None:
+    with torch.no_grad():
+        first = populated_mlp.linear_layers[0]
+        first.weight.data[0, 0] = -0.19
+        first.weight.data[0, 1] = -0.21
+
+    threshold = 0.2
+
+    result = sparsify_mlp(populated_mlp, threshold)
+    first_weight = result.linear_layers[0].weight.detach()
+
+    assert first_weight[0, 0].item() == pytest.approx(0.0)
+    assert first_weight[0, 1].item() == pytest.approx(-0.21)
+
+
 def test_sparsify_mlp_does_not_modify_original(populated_mlp: MLP) -> None:
     original_first = populated_mlp.linear_layers[0].weight.clone()
 
