@@ -20,14 +20,10 @@ def _build_mlp(
     *,
     input_dim: int,
     hidden_dims: list[int],
-    output_dim: int,
 ) -> MLP:
     config = MLPConfig(
         input_dim=input_dim,
-        output_dim=output_dim,
         hidden_dims=hidden_dims,
-        start_activation=False,
-        end_activation=False,
     )
     return MLP(config)
 
@@ -35,14 +31,14 @@ def _build_mlp(
 def test_fourier_mlp_computes_expected_values() -> None:
     torch.manual_seed(123)
     input_dim = 3
-    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[4], output_dim=2)
+    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[4])
 
     fourier_indices = [[0], [1, 2], []]
     model = FourierMlpModule(
         input_dim=input_dim,
         fourier_indices=fourier_indices,
         mlp=mlp,
-        neuron_start_index=1,
+        neuron_start_index=0,
         neuron_end_index=3,
     )
 
@@ -59,7 +55,7 @@ def test_fourier_mlp_computes_expected_values() -> None:
     fourier_products = _compute_fourier_products(batch, fourier_indices)
 
     # Hidden layer slice (neurons 1 and 2)
-    hidden_slice = hidden_act[:, 1:3]
+    hidden_slice = hidden_act[:, 0:3]
     expected_hidden = (
         hidden_slice.unsqueeze(2) * fourier_products.unsqueeze(1)
     ).mean(dim=0)
@@ -69,7 +65,7 @@ def test_fourier_mlp_computes_expected_values() -> None:
     torch.testing.assert_close(outputs[0], expected_hidden)
 
     # Output layer slice (neuron 1 only)
-    output_slice = final_out[:, 1:2]
+    output_slice = final_out[:, 0:1]
     expected_output = (
         output_slice.unsqueeze(2) * fourier_products.unsqueeze(1)
     ).mean(dim=0)
@@ -81,7 +77,7 @@ def test_fourier_mlp_computes_expected_values() -> None:
 
 def test_fourier_mlp_returns_none_for_empty_ranges() -> None:
     input_dim = 2
-    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3], output_dim=1)
+    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3])
     model = FourierMlpModule(
         input_dim=input_dim,
         fourier_indices=[[0]],
@@ -98,7 +94,7 @@ def test_fourier_mlp_returns_none_for_empty_ranges() -> None:
 
 def test_fourier_mlp_validates_fourier_indices() -> None:
     input_dim = 3
-    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[], output_dim=2)
+    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[])
 
     with pytest.raises(ValueError):
         FourierMlpModule(
@@ -111,7 +107,7 @@ def test_fourier_mlp_validates_fourier_indices() -> None:
 
 
 def test_fourier_mlp_validates_input_dim_match() -> None:
-    mlp = _build_mlp(input_dim=3, hidden_dims=[4], output_dim=2)
+    mlp = _build_mlp(input_dim=3, hidden_dims=[4])
 
     with pytest.raises(ValueError):
         FourierMlpModule(
@@ -130,7 +126,7 @@ def test_fourier_mlp_handles_mup_linear_layers() -> None:
         pytest.skip("mup not installed")
 
     input_dim = 2
-    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3], output_dim=1)
+    mlp = _build_mlp(input_dim=input_dim, hidden_dims=[3])
 
     model = FourierMlpModule(
         input_dim=input_dim,

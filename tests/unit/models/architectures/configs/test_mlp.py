@@ -7,17 +7,14 @@ from src.models.mlp_config import MLPConfig
 def example_args():
     return {
         "input_dim": 8,
-        "output_dim": 3,
         "hidden_dims": [16, 32],
-        "start_activation": True,
-        "end_activation": False,
     }
 
 
 def test_direct_instantiation(example_args):
     cfg = MLPConfig(**example_args)
     assert cfg.input_dim == example_args["input_dim"]
-    assert cfg.output_dim == example_args["output_dim"]
+    assert cfg.output_dim == 1
 
 
 def test_roundtrip_via_json(example_args):

@@ -1,3 +1,5 @@
+import types
+
 import pytest
 import torch
 
@@ -16,10 +18,15 @@ def _constant_cube_distribution(input_dim: int = 2, value: float = 5.0) -> CubeD
         indices_list=[[0]],
         weights=[0.0],
         normalize=False,
-        noise_mean=value,
         noise_std=0.0,
     )
-    return CubeDistribution(config, torch.device("cpu"))
+    dist = CubeDistribution(config, torch.device("cpu"))
+
+    def _constant_target(self: CubeDistribution, x: torch.Tensor) -> torch.Tensor:
+        return torch.full((x.size(0), 1), value, dtype=torch.float32, device=self.device)
+
+    dist.target = types.MethodType(_constant_target, dist)  # type: ignore[assignment]
+    return dist
 
 
 @pytest.fixture
@@ -36,9 +43,6 @@ def create_mlp_config(tmp_path) -> MLPConfig:
     config = MLPConfig(
         input_dim=8,
         hidden_dims=[3, 4, 5],
-        output_dim=6,
-        start_activation=False,
-        end_activation=False,
     )
 
     model = MLP(config)
@@ -60,7 +64,6 @@ def trained_trainer(tmp_path, mlp_config, sgd_config) -> Trainer:
             input_dim=mlp_config.input_dim,
             indices_list=[[i] for i in range(mlp_config.input_dim)],
             weights=[1.0 for _ in range(mlp_config.input_dim)],
-            noise_mean=0.0,
             noise_std=0.0,
         ),
         train_size=4,
@@ -84,9 +87,6 @@ def trained_noisy_trainer(tmp_path, sgd_config) -> Trainer:
     model_cfg = MLPConfig(
         input_dim=2,
         hidden_dims=[],
-        output_dim=1,
-        start_activation=False,
-        end_activation=False,
     )
     cfg = TrainerConfig(
         mlp_config=model_cfg,
@@ -96,7 +96,6 @@ def trained_noisy_trainer(tmp_path, sgd_config) -> Trainer:
             indices_list=[[0]],
             weights=[0.0],
             normalize=False,
-            noise_mean=1.0,
             noise_std=0.0,
         ),
         train_size=4,

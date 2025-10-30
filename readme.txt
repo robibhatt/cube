@@ -51,16 +51,12 @@ cube_cfg = CubeDistributionConfig(
     input_dim=3,
     indices_list=[[0], [1], [2]],
     weights=[1.0, 1.0, 1.0],
-    noise_mean=0.0,
     noise_std=0.0,
 )
 cfg = TrainerConfig(
     mlp_config=MLPConfig(
         input_dim=cube_cfg.input_dim,
-        output_dim=1,
         hidden_dims=[4],
-        start_activation=False,
-        end_activation=False,
     ),
     optimizer_config=SgdConfig(lr=1e-3),
     cube_distribution_config=cube_cfg,

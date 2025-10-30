@@ -1,4 +1,6 @@
 import pytest
+import types
+
 import torch
 
 from src.data.cube_distribution import CubeDistribution
@@ -12,10 +14,15 @@ def _make_distribution():
         indices_list=[[0]],
         weights=[0.0],
         normalize=False,
-        noise_mean=1.0,
         noise_std=0.0,
     )
-    return CubeDistribution(cfg, torch.device("cpu"))
+    dist = CubeDistribution(cfg, torch.device("cpu"))
+
+    def _constant_target(self: CubeDistribution, x: torch.Tensor) -> torch.Tensor:
+        return torch.ones((x.size(0), 1), dtype=torch.float32, device=self.device)
+
+    dist.target = types.MethodType(_constant_target, dist)  # type: ignore[assignment]
+    return dist
 
 
 def test_noisy_iterator_batches_apply_noise():

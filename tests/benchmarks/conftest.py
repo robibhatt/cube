@@ -39,7 +39,7 @@ def benchmark_logger():
             noise = getattr(
                 dist,
                 "noise_distribution_description",
-                f"Normal(mean={dist.config.noise_mean}, std={dist.config.noise_std})",
+                f"Normal(mean=0.0, std={dist.config.noise_std})",
             )
             return f"CubeDistribution(base={base}, noise={noise})"
         return dist.__class__.__name__

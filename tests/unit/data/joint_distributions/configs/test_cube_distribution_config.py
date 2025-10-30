@@ -10,14 +10,13 @@ def test_cube_config_validates_and_sets_defaults():
         indices_list=[[0], [1]],
         weights=[1.0, 2.0],
         normalize=False,
-        noise_mean=1.0,
         noise_std=0.5,
     )
     assert cfg.distribution_type == "CubeDistribution"
     assert cfg.input_shape == torch.Size([2])
     assert cfg.output_shape == torch.Size([1])
-    assert cfg.noise_mean == pytest.approx(1.0)
     assert cfg.noise_std == pytest.approx(0.5)
+    assert not hasattr(cfg, "noise_mean")
     assert cfg.target_function_config.indices_list == [[0], [1]]
 
 
@@ -27,7 +26,6 @@ def test_cube_config_json_roundtrip():
         indices_list=[[0], [1, 2]],
         weights=[0.5, 1.5],
         normalize=True,
-        noise_mean=0.0,
         noise_std=1.0,
     )
     json_str = cfg.to_json()

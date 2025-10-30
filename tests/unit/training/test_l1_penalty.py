@@ -15,17 +15,13 @@ def _make_trainer(tmp_path, hidden_dims):
     cfg = TrainerConfig(
         mlp_config=MLPConfig(
             input_dim=1,
-            output_dim=1,
             hidden_dims=hidden_dims,
-            start_activation=False,
-            end_activation=False,
         ),
         optimizer_config=SgdConfig(lr=0.01),
         cube_distribution_config=CubeDistributionConfig(
             input_dim=1,
             indices_list=[[0]],
             weights=[1.0],
-            noise_mean=0.0,
             noise_std=0.0,
         ),
         train_size=4,

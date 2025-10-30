@@ -26,7 +26,6 @@ def _cube_config(input_dim: int = 3) -> CubeDistributionConfig:
         input_dim=input_dim,
         indices_list=[[i] for i in range(input_dim)],
         weights=[1.0 for _ in range(input_dim)],
-        noise_mean=0.0,
         noise_std=0.0,
     )
 

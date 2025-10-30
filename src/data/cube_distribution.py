@@ -36,19 +36,16 @@ class CubeDistribution:
         self.noise_shape = y_clean.shape[1:]
         noise_dtype = y_clean.dtype if torch.is_floating_point(y_clean) else torch.float32
         self.noise_dtype = noise_dtype
-        self.noise_mean_tensor = torch.full(
-            self.noise_shape, config.noise_mean, dtype=self.noise_dtype, device=self.device
-        )
         self.noise_std = config.noise_std
         self.noise_distribution_description = (
-            f"{self.output_dim}-dimensional Normal(mean={self.config.noise_mean}, "
+            f"{self.output_dim}-dimensional Normal(mean=0.0, "
             f"std={self.config.noise_std})"
         )
 
     def __str__(self) -> str:
         base_str = self._base_distribution_str
         noise_str = (
-            f"{self.output_dim}-dimensional Normal(mean={self.config.noise_mean}, "
+            f"{self.output_dim}-dimensional Normal(mean=0.0, "
             f"std={self.config.noise_std})"
         )
         return f"CubeDistribution with {base_str} and {noise_str}"
@@ -112,7 +109,7 @@ class CubeDistribution:
             device=self.device,
             generator=generator,
         )
-        noise = noise * self.noise_std + self.noise_mean_tensor
+        noise = noise * self.noise_std
         return noise
 
     def _sample_base_inputs(self, n_samples: int, seed: int) -> torch.Tensor:

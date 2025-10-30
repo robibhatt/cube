@@ -46,8 +46,6 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
     assert mlp_cfg.input_dim == 3
     assert mlp_cfg.output_dim == 1
     assert mlp_cfg.hidden_dims == [16, 16]
-    assert mlp_cfg.start_activation is False
-    assert mlp_cfg.end_activation is False
 
     dist_cfg = trainer_cfg.cube_distribution_config
     assert dist_cfg is not None
@@ -55,7 +53,6 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
     assert dist_cfg.indices_list == [[0, 1]]
     assert dist_cfg.weights == [1.0]
     assert dist_cfg.noise_std == 0.0
-    assert dist_cfg.noise_mean == 0.0
 
     assert sub_cfg.edge_thresholds == [0.1, 0.2]
 

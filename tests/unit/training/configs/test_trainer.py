@@ -1,9 +1,13 @@
-from src.training.trainer_config import TrainerConfig
-from src.models.mlp_config import MLPConfig
+import typing
+
+import pytest
+import torch
+
 from src.data.cube_distribution_config import (
     CubeDistributionConfig,
 )
-import pytest
+from src.models.mlp_config import MLPConfig
+from src.training.trainer_config import TrainerConfig
 
 
 def test_trainer_config_json_roundtrip(tmp_path):
@@ -12,16 +16,12 @@ def test_trainer_config_json_roundtrip(tmp_path):
     cfg = TrainerConfig(
         mlp_config=MLPConfig(
             input_dim=3,
-            output_dim=1,
             hidden_dims=[4, 2],
-            start_activation=False,
-            end_activation=False,
         ),
         cube_distribution_config=CubeDistributionConfig(
             input_dim=3,
             indices_list=[[0]],
             weights=[1.0],
-            noise_mean=0.0,
             noise_std=0.0,
         ),
         train_size=10,
@@ -60,19 +60,20 @@ def test_trainer_config_validates_input_dim(tmp_path, mlp_config):
 def test_trainer_config_validates_output_dim(tmp_path):
     home_dir = tmp_path / "h2"
     home_dir.mkdir()
+
+    class DummyDist:
+        input_dim = 2
+
+        @property
+        def output_shape(self):  # pragma: no cover - simple property
+            return torch.Size([2])
+
     cfg = TrainerConfig(
         mlp_config=MLPConfig(
             input_dim=2,
-            output_dim=2,
             hidden_dims=[],
-            start_activation=False,
-            end_activation=False,
         ),
-        cube_distribution_config=CubeDistributionConfig(
-            input_dim=2,
-            indices_list=[[0]],
-            weights=[1.0],
-        ),
+        cube_distribution_config=typing.cast(CubeDistributionConfig, DummyDist()),
         train_size=1,
         test_size=1,
         batch_size=1,

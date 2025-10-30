@@ -8,13 +8,10 @@ from src.models.mlp_config import MLPConfig
 from src.mlp_graph.mlp_graph import MlpActivationGraph, NodeKey
 
 
-def _build_mlp(input_dim: int = 4, hidden_dim: int = 8, output_dim: int = 1) -> MLP:
+def _build_mlp(input_dim: int = 4, hidden_dim: int = 8) -> MLP:
     cfg = MLPConfig(
         input_dim=input_dim,
-        output_dim=output_dim,
         hidden_dims=[hidden_dim],
-        start_activation=False,
-        end_activation=False,
     )
     model = MLP(cfg)
     model.eval()
@@ -44,7 +41,7 @@ def test_readout_scale_matches_layer_metadata(tmp_path):
 
 
 def test_activation_csv_matches_sample_average(tmp_path):
-    mlp = _build_mlp(input_dim=2, hidden_dim=1, output_dim=1)
+    mlp = _build_mlp(input_dim=2, hidden_dim=1)
     with torch.no_grad():
         first_layer = mlp.linear_layers[0]
         first_layer.weight.copy_(torch.tensor([[1.0, 1.0]]))

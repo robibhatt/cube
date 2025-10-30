@@ -13,9 +13,6 @@ def _build_test_mlp() -> MLP:
     config = MLPConfig(
         input_dim=2,
         hidden_dims=[2],
-        output_dim=1,
-        start_activation=False,
-        end_activation=False,
     )
 
     model = MLP(config)

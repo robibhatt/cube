@@ -23,10 +23,7 @@ def _build_cube_config(input_dim: int) -> CubeDistributionConfig:
 def _build_mlp(input_dim: int, hidden_width: int) -> MLP:
     config = MLPConfig(
         input_dim=input_dim,
-        output_dim=1,
         hidden_dims=[hidden_width],
-        start_activation=False,
-        end_activation=False,
     )
     mlp = MLP(config)
     mlp.eval()

@@ -50,16 +50,12 @@ class DkwlExperiment(BatchExperiment):
                     trainer_cfg = TrainerConfig(
                         mlp_config=MLPConfig(
                             input_dim=d,
-                            output_dim=1,
                             hidden_dims=[width] * layer_count,
-                            start_activation=False,
-                            end_activation=False,
                         ),
                         cube_distribution_config=CubeDistributionConfig(
                             input_dim=d,
                             indices_list=[list(range(k))],
                             weights=[1.0],
-                            noise_mean=0.0,
                             noise_std=0.0,
                         ),
                         train_size=train_size,

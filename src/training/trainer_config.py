@@ -43,7 +43,6 @@ class TrainerConfig:
     test_size: Optional[int] = None
     batch_size: Optional[int] = None
     epochs: Optional[int] = None
-    use_full_batch: bool = False
     weight_decay_l1: float = 0.0
     home_dir: Optional[Path] = field(
         default=None,
