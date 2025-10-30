@@ -28,7 +28,8 @@ def _zero_small_weights(linear_layers: Iterable[torch.nn.Module], threshold: flo
             weight = getattr(layer, "weight", None)
             if weight is None:
                 continue
-            mask = weight.abs() < threshold
+            abs_weight = weight.detach().abs()
+            mask = abs_weight < threshold
             weight.data.masked_fill_(mask, 0.0)
 
 
