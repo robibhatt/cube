@@ -12,9 +12,6 @@ def basic_config():
     return MLPConfig(
         input_dim=3,
         hidden_dims=[4, 2],
-        output_dim=1,
-        start_activation=False,
-        end_activation=False
     )
 
 
@@ -44,53 +41,12 @@ def test_forward_pass(model):
     assert not torch.isnan(y).any()
     assert not torch.isinf(y).any()
 
-
-def test_start_and_end_activation_flags():
-    """Verify the optional start‐ and end‐activation layers are inserted correctly."""
-    # --- start_activation=True, end_activation=False --------------------------
-    cfg_start = MLPConfig(
-        input_dim=3,
-        hidden_dims=[4, 2],
-        output_dim=1,
-        start_activation=True,
-        end_activation=False,
-    )
-    m_start = MLP(cfg_start)
-
-    # Forward pass should respect configured dimensions
-    assert m_start(torch.randn(2, cfg_start.input_dim)).shape == (
-        2,
-        cfg_start.output_dim,
-    )
-
-    # ``end_activation=True`` is no longer supported under μP-only mode.
-    cfg_end = MLPConfig(
-        input_dim=3,
-        hidden_dims=[4, 2],
-        output_dim=1,
-        start_activation=False,
-        end_activation=True,
-    )
-    with pytest.raises(ValueError):
-        MLP(cfg_end)
-
-    cfg_both = MLPConfig(
-        input_dim=3,
-        hidden_dims=[4, 2],
-        output_dim=1,
-        start_activation=True,
-        end_activation=True,
-    )
-    with pytest.raises(ValueError):
-        MLP(cfg_both)
-
-
 def test_mup_initialization_uses_mup_layers(basic_config):
     """MLP should use μP-aware layers by default."""
     model = MLP(basic_config)
 
     # first hidden layer should be MuLinear and last layer MuReadout
-    assert isinstance(model.layers[0 if not basic_config.start_activation else 1], MuLinear)
+    assert isinstance(model.layers[0], MuLinear)
     assert isinstance(model.layers[-1], MuReadout)
 
 
@@ -101,19 +57,6 @@ def test_mup_get_base_model(basic_config):
     assert isinstance(base, MLP)
     assert base.mup is True
     assert base.config.hidden_dims == [64] * len(basic_config.hidden_dims)
-
-
-def test_mup_disallows_end_activation(basic_config):
-    """MuP mode should reject ``end_activation=True``."""
-    cfg = MLPConfig(
-        input_dim=basic_config.input_dim,
-        hidden_dims=basic_config.hidden_dims,
-        output_dim=basic_config.output_dim,
-        start_activation=basic_config.start_activation,
-        end_activation=True,
-    )
-    with pytest.raises(ValueError):
-        MLP(cfg)
 
 
 def test_linear_layers_include_bias_parameters(basic_config):

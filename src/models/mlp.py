@@ -60,13 +60,7 @@ class MLP(nn.Module):
         layers: list[nn.Module] = []
         linear_layers: list[nn.Module] = []
 
-        if self.config.start_activation:
-            layers.append(act_cls())
-
         in_dim = self.config.input_dim
-
-        if self.config.end_activation:
-            raise ValueError("end_activation is not supported when mup=True")
 
         for h in self.config.hidden_dims:
             lin = self._create_linear_layer(in_dim, h)
@@ -214,8 +208,7 @@ class MLP(nn.Module):
     def get_base_model(self):  # type: ignore[override]
         """Return a clean base-width model for μP shape registration.
 
-        - Forces end_activation=False (μP doesn't support it).
-        - Mirrors input/output dims and start_activation.
+        - Mirrors the input and output dimensions.
         - Uses a stable small width for all hidden layers (default 64), or a user-
         specified `base_width` attribute on the config if present.
         """
@@ -223,14 +216,12 @@ class MLP(nn.Module):
         base_w = getattr(self.config, "base_width", 64)
         base_hidden = [base_w] * len(self.config.hidden_dims)
 
-        # Build a fresh config with μP on, no freezing, and no end activation.
+        # Build a fresh config with μP on.
         base_cfg = replace(
             self.config,
             hidden_dims=base_hidden,
-            end_activation=False,       # μP doesn't support an end activation
         )
 
-        # Preserve start_activation exactly as-is; replace() already did.
         # Mark as base so __init__ skips set_base_shapes() recursion.
         setattr(base_cfg, "_is_base", True)
 

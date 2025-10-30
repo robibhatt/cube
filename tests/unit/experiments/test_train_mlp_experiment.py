@@ -11,16 +11,12 @@ from src.utils.seed_manager import SeedManager
 def _make_trainer_config() -> TrainerConfig:
     model_cfg = MLPConfig(
         input_dim=1,
-        output_dim=1,
         hidden_dims=[1],
-        start_activation=False,
-        end_activation=False,
     )
     dist_cfg = CubeDistributionConfig(
         input_dim=1,
         indices_list=[[0]],
         weights=[1.0],
-        noise_mean=0.0,
         noise_std=0.0,
     )
     return TrainerConfig(

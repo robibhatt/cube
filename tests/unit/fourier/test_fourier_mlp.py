@@ -12,10 +12,7 @@ from src.models.mlp_config import MLPConfig
 def _build_simple_mlp() -> MLP:
     config = MLPConfig(
         input_dim=2,
-        output_dim=1,
         hidden_dims=[2],
-        start_activation=False,
-        end_activation=False,
     )
     mlp = MLP(config)
     with torch.no_grad():

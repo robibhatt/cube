@@ -343,9 +343,6 @@ class Trainer:
             load_time, step_time = 0.0, 0.0
             batch_count = 0
 
-            if self.config.use_full_batch:
-                optimizer.stepper.zero_grad()
-
             for Xb, yb in train_loader:
                 t0 = time.perf_counter()
 
@@ -353,27 +350,19 @@ class Trainer:
 
                 t1 = time.perf_counter()
 
-                if not self.config.use_full_batch:
-                    optimizer.stepper.zero_grad()
+                optimizer.stepper.zero_grad()
 
                 loss = self._mse_loss(model(Xb), yb)
                 if self.config.weight_decay_l1 != 0.0 and isinstance(model, MLP):
                     loss = loss + self.config.weight_decay_l1 * self._l1_penalty(model)
                 loss.backward()
 
-                if not self.config.use_full_batch:
-                    optimizer.step()
+                optimizer.step()
 
                 t2 = time.perf_counter()
                 load_time += t1 - t0
                 step_time += t2 - t1
                 batch_count += 1
-
-            if self.config.use_full_batch:
-                for p in model.parameters():
-                    if p.grad is not None:
-                        p.grad.div_(batch_count)
-                optimizer.step()
 
             base_loss, l1_loss = self._train_losses(model)
             self._save_checkpoint(

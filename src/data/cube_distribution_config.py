@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Mapping, Any
 
 import torch
 from dataclasses_json import dataclass_json, config
@@ -16,7 +18,6 @@ class CubeDistributionConfig:
     indices_list: List[List[int]] = field(default_factory=list)
     weights: List[float] = field(default_factory=list)
     normalize: bool = False
-    noise_mean: float = 0.0
     noise_std: float = 1.0
     distribution_type: str = field(init=False, default="CubeDistribution")
     target_function_config: SumProdTargetConfig = field(
@@ -64,3 +65,20 @@ class CubeDistributionConfig:
     @property
     def output_shape(self) -> torch.Size:
         return torch.Size([1])
+
+    @classmethod
+    def from_dict(
+        cls, kvs: Mapping[str, Any]
+    ) -> "CubeDistributionConfig":  # type: ignore[override]
+        data = dict(kvs)
+
+        invalid_keys = {"noise_mean"}
+        present = sorted(invalid_keys.intersection(data.keys()))
+        if present:
+            joined = ", ".join(present)
+            raise ValueError(
+                "CubeDistributionConfig no longer accepts the following option(s): "
+                f"{joined}. Please remove them from the configuration."
+            )
+
+        return cls.schema().load(data)

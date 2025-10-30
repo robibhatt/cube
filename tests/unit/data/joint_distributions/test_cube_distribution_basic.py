@@ -11,7 +11,6 @@ def test_cube_distribution_construct_and_sample():
         input_dim=2,
         indices_list=[[0]],
         weights=[1.0],
-        noise_mean=1.0,
         noise_std=0.0,
     )
     dist = CubeDistribution(cfg, torch.device("cpu"))
@@ -39,7 +38,6 @@ def test_cube_distribution_requires_scalar_target(monkeypatch):
         input_dim=2,
         indices_list=[[0]],
         weights=[1.0],
-        noise_mean=0.0,
         noise_std=1.0,
     )
 
