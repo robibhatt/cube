@@ -6,16 +6,16 @@ from dataclasses import dataclass
 from typing import Iterable, Iterator, List, Optional
 
 
-MAX_ANCESTOR_COUNT = 4
+MAX_ANCESTOR_COUNT = 3
 """Maximum allowed number of ancestors for an activation to qualify."""
 
-MIN_LINEAR_LOSS = 0.1
+MIN_LINEAR_LOSS = 0.2
 """Minimum linear loss (``test_error``) value required to flag a directory."""
 
 MAX_FINAL_TEST_LOSS = 0.01
 """Maximum allowed ``final_test_loss`` found in ``trainer/results.csv``."""
 
-MIN_ACTIVATION = 1.0
+MIN_ACTIVATION = 0.1
 """Minimum activation value required for a neuron to be considered."""
 
 
