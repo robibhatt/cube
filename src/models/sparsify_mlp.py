@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import math
 from typing import Iterable
 
 import torch
@@ -63,7 +64,9 @@ def sparsify_mlp(model: MLP, threshold: float) -> MLP:
     if threshold <= 0:
         raise ValueError("threshold must be a positive float")
 
-    sparsified = deepcopy(model)
+    config_copy = deepcopy(model.config)
+    sparsified = MLP(config_copy)
+    sparsified.load_state_dict(model.state_dict())
     _zero_small_weights(sparsified.linear_layers, threshold)
     return sparsified
 
@@ -129,3 +132,123 @@ def mse_diff(number_of_samples: int, mlp_a: MLP, mlp_b: MLP) -> float:
 
     mse = F.mse_loss(outputs_a, outputs_b.to(device_a, dtype=outputs_a.dtype))
     return float(mse.detach().cpu().item())
+
+
+def binary_search_sparsify_threshold(
+    model: MLP,
+    mse_threshold: float,
+    *,
+    sample_multiplier: float = 64.0,
+    tolerance_ratio: float = 0.05,
+    max_iterations: int = 50,
+) -> float:
+    """Find the largest sparsification threshold that preserves a target MSE.
+
+    Parameters
+    ----------
+    model:
+        The :class:`~src.models.mlp.MLP` instance whose weights should be
+        sparsified.
+    mse_threshold:
+        Maximum acceptable mean-squared error between the original model and
+        its sparsified counterpart. Must be strictly positive.
+    sample_multiplier:
+        Positive constant that controls how many random samples are used when
+        estimating the mean-squared error. The number of samples is computed as
+        ``ceil(sample_multiplier / mse_threshold)`` and bounded below by 16 to
+        provide a reasonably accurate estimate. The value can be tuned by
+        callers but defaults to a conservative ``64.0``.
+    tolerance_ratio:
+        Relative difference between the upper and lower bounds of the binary
+        search interval at which the algorithm stops and returns the best known
+        feasible threshold.
+    max_iterations:
+        Maximum number of binary search iterations performed as an additional
+        safeguard against infinite loops.
+
+    Returns
+    -------
+    float
+        The largest threshold ``t`` (up to the configured tolerance) such that
+        sparsifying ``model`` with ``t`` produces an MLP whose mean-squared
+        difference from the original model does not exceed ``mse_threshold``.
+
+    Raises
+    ------
+    TypeError
+        If ``model`` is not an instance of :class:`~src.models.mlp.MLP`.
+    ValueError
+        If ``mse_threshold`` is not strictly positive or if
+        ``sample_multiplier`` is non-positive.
+    """
+
+    if not isinstance(model, MLP):
+        raise TypeError("model must be an instance of MLP")
+    if mse_threshold <= 0:
+        raise ValueError("mse_threshold must be a positive float")
+    if sample_multiplier <= 0:
+        raise ValueError("sample_multiplier must be positive")
+
+    max_weight = 0.0
+    for layer in model.linear_layers:
+        weight = getattr(layer, "weight", None)
+        if weight is None:
+            continue
+        layer_max = float(weight.detach().abs().max().item())
+        max_weight = max(max_weight, layer_max)
+
+    if max_weight == 0.0:
+        return 0.0
+
+    samples = max(16, int(math.ceil(sample_multiplier / mse_threshold)))
+    samples = min(samples, 100_000)
+
+    def mse_for_threshold(threshold: float) -> float:
+        sparsified = sparsify_mlp(model, threshold)
+        return mse_diff(samples, model, sparsified)
+
+    low = 0.0
+    high = max_weight
+    upper_mse = mse_for_threshold(high)
+
+    if upper_mse <= mse_threshold:
+        # Expand the search interval in an attempt to find a threshold that
+        # violates the constraint. If this never happens we can safely return
+        # the last tested value because sparsifying with larger thresholds will
+        # not change the model any further.
+        for _ in range(10):
+            candidate = high * 2.0
+            if candidate == high:
+                break
+            candidate_mse = mse_for_threshold(candidate)
+            if candidate_mse > mse_threshold:
+                low = high
+                high = candidate
+                upper_mse = candidate_mse
+                break
+            high = candidate
+            upper_mse = candidate_mse
+        else:
+            return high
+
+    iterations = 0
+    while iterations < max_iterations:
+        if high <= 0:
+            break
+        relative_width = (high - low) / max(high, 1e-12)
+        if relative_width <= tolerance_ratio:
+            break
+
+        mid = (low + high) / 2.0
+        mid_mse = mse_for_threshold(mid)
+        if mid_mse <= mse_threshold:
+            low = mid
+        else:
+            high = mid
+            upper_mse = mid_mse
+        iterations += 1
+
+    if upper_mse <= mse_threshold:
+        return high
+
+    return low

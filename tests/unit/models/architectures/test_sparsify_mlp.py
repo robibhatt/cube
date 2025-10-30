@@ -3,7 +3,11 @@ import pytest
 
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
-from src.models.sparsify_mlp import mse_diff, sparsify_mlp
+from src.models.sparsify_mlp import (
+    binary_search_sparsify_threshold,
+    mse_diff,
+    sparsify_mlp,
+)
 
 
 @pytest.fixture()
@@ -111,3 +115,51 @@ def test_mse_diff_validates_arguments(small_mlp_config: MLPConfig) -> None:
 
     with pytest.raises(ValueError):
         mse_diff(1, mlp, other_mlp)
+
+
+def test_binary_search_sparsify_threshold_respects_budget(populated_mlp: MLP) -> None:
+    torch.manual_seed(0)
+    mse_budget = 0.05
+
+    threshold = binary_search_sparsify_threshold(
+        populated_mlp,
+        mse_budget,
+        tolerance_ratio=0.02,
+    )
+
+    sparsified = sparsify_mlp(populated_mlp, threshold)
+    torch.manual_seed(0)
+    measured_mse = mse_diff(2000, populated_mlp, sparsified)
+
+    assert measured_mse <= mse_budget * 1.2
+
+    torch.manual_seed(0)
+    slightly_higher = sparsify_mlp(populated_mlp, threshold * 1.1 + 1e-6)
+    torch.manual_seed(0)
+    higher_mse = mse_diff(2000, populated_mlp, slightly_higher)
+
+    assert higher_mse >= measured_mse
+
+
+def test_binary_search_sparsify_threshold_validates_inputs(populated_mlp: MLP) -> None:
+    with pytest.raises(ValueError):
+        binary_search_sparsify_threshold(populated_mlp, 0.0)
+
+    with pytest.raises(ValueError):
+        binary_search_sparsify_threshold(populated_mlp, 0.1, sample_multiplier=0.0)
+
+    with pytest.raises(TypeError):
+        binary_search_sparsify_threshold(object(), 0.1)  # type: ignore[arg-type]
+
+
+def test_binary_search_returns_zero_for_zero_weights(small_mlp_config: MLPConfig) -> None:
+    model = MLP(small_mlp_config)
+    with torch.no_grad():
+        for layer in model.linear_layers:
+            weight = getattr(layer, "weight", None)
+            if weight is not None:
+                weight.zero_()
+
+    threshold = binary_search_sparsify_threshold(model, 0.1)
+
+    assert threshold == 0.0
