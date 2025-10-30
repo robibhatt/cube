@@ -24,7 +24,7 @@ trainer_config:
     batch_size: 64
     epochs: 5
     weight_decay_l1: 0.001
-home_directory: experiment_runs/test/2
+home_directory: experiment_runs/test/3
 seed: 1
 edge_thresholds:
 - 1.0e-05
