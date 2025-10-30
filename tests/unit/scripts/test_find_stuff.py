@@ -76,15 +76,82 @@ def test_find_training_directories_with_criteria_includes_prefixed_graph(tmp_pat
     assert [Path(path) for path in result] == [training_dir]
 
 
-def test_find_training_directories_with_criteria_matches_fixture_run() -> None:
-    repo_root = Path(__file__).resolve().parents[3]
-    run_root = repo_root / "experiment_runs"
+def _create_training_directory(
+    root: Path,
+    name: str,
+    *,
+    activation: float,
+    test_mse: float,
+    final_test_loss: float,
+    ancestor_count: int = MAX_ANCESTOR_COUNT,
+) -> Path:
+    training_dir = root / name
+    training_dir.mkdir()
 
-    result = [Path(path) for path in find_training_directories_with_criteria(str(run_root))]
+    graph_dir = training_dir / "mlp_graph_0.5"
+    graph_dir.mkdir()
 
-    expected = repo_root / (
-        "experiment_runs/dkwl/learning_rate_l1_tuning/d20/k4/width256/"
-        "layers3/train10000/epochs3000/lr0p02/batch128/l10p001"
+    neuron_path = graph_dir / "layer_00_neuron_000.json"
+    _write_json(
+        neuron_path,
+        {
+            "ancestors": list(range(ancestor_count)),
+        },
+    )
+    neuron_path.with_name("layer_00_neuron_000_activations.csv").write_text(
+        "activation\n" f"{activation}\n",
+        encoding="utf-8",
     )
 
-    assert expected in result
+    linear_results = training_dir / "linear_results.csv"
+    linear_results.write_text(
+        "test_mse\n" f"{test_mse}\n",
+        encoding="utf-8",
+    )
+
+    trainer_results = training_dir / "results.csv"
+    trainer_results.write_text(
+        "final_test_loss\n" f"{final_test_loss}\n",
+        encoding="utf-8",
+    )
+
+    return training_dir
+
+
+def test_find_training_directories_with_criteria_filters_candidates(tmp_path: Path) -> None:
+    run_root = tmp_path / "runs"
+    run_root.mkdir()
+
+    qualifying = _create_training_directory(
+        run_root,
+        "qualifying_run",
+        activation=MIN_ACTIVATION + 0.3,
+        test_mse=MIN_LINEAR_LOSS + 0.1,
+        final_test_loss=MAX_FINAL_TEST_LOSS,
+    )
+
+    _create_training_directory(
+        run_root,
+        "too_many_ancestors",
+        activation=MIN_ACTIVATION + 1.0,
+        test_mse=MIN_LINEAR_LOSS + 0.5,
+        final_test_loss=MAX_FINAL_TEST_LOSS,
+        ancestor_count=MAX_ANCESTOR_COUNT + 1,
+    )
+
+    _create_training_directory(
+        run_root,
+        "high_final_loss",
+        activation=MIN_ACTIVATION + 0.5,
+        test_mse=MIN_LINEAR_LOSS + 0.2,
+        final_test_loss=MAX_FINAL_TEST_LOSS + 0.1,
+    )
+
+    extra = run_root / "incomplete_run"
+    (extra / "mlp_graph_0.5").mkdir(parents=True)
+
+    result = {
+        Path(path) for path in find_training_directories_with_criteria(str(run_root))
+    }
+
+    assert result == {qualifying}
