@@ -64,21 +64,9 @@ def test_train_and_consolidate(tmp_path):
         data_row = next(reader)
     assert float(data_row['final_train_loss']) == rows[0]['final_train_loss']
 
-    for threshold in edge_thresholds:
-        graph_root = tmp_path / TrainMLPExperiment._edge_threshold_dir_name(threshold)
-        assert graph_root.exists()
-
-        subdirs = [path for path in graph_root.iterdir() if path.is_dir()]
-        assert (
-            subdirs
-        ), "Expected the mlp_graph directory to contain at least one graph run"
-        graph_dir = subdirs[0]
-
-        layer_dirs = [path for path in graph_dir.iterdir() if path.is_dir()]
-        assert layer_dirs, "Expected serialized layer directories in the graph output"
-        node_files = [
-            node_file
-            for layer_dir in layer_dirs
-            for node_file in layer_dir.glob('*.json')
-        ]
-        assert node_files, "Expected serialized neuron files in the graph output"
+    graph_dirs = [
+        path
+        for path in tmp_path.iterdir()
+        if path.is_dir() and path.name.startswith('mlp_graph_')
+    ]
+    assert not graph_dirs, "MLP graph generation should be disabled"
