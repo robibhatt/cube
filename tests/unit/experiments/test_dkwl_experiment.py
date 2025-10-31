@@ -16,7 +16,8 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
         train_sizes=[256],
         epochs=[20],
         l1_decays=[0.001],
-        edge_thresholds=[0.1, 0.2],
+        mse_threshold=0.05,
+        mse_samples=64,
         learning_rates=[0.01],
         batch_sizes=[32],
         home_directory=tmp_path / "dkwl",
@@ -54,7 +55,8 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
     assert dist_cfg.weights == [1.0]
     assert dist_cfg.noise_std == 0.0
 
-    assert sub_cfg.edge_thresholds == [0.1, 0.2]
+    assert sub_cfg.mse_threshold == 0.05
+    assert sub_cfg.mse_samples == 64
 
     expected_dir = (
         tmp_path
@@ -84,7 +86,6 @@ def test_get_config_params_reports_hyperparameters(tmp_path: Path) -> None:
         train_sizes=[512],
         epochs=[50],
         l1_decays=[0.0],
-        edge_thresholds=[],
         learning_rates=[0.1],
         batch_sizes=[64],
         home_directory=tmp_path / "exp",
@@ -105,6 +106,7 @@ def test_get_config_params_reports_hyperparameters(tmp_path: Path) -> None:
         "l1_decay": 0.0,
         "learning_rate": 0.1,
         "batch_size": 64,
-        "edge_thresholds": [],
+        "mse_threshold": cfg.mse_threshold,
+        "mse_samples": cfg.mse_samples,
         "seed": sub_cfg.seed,
     }
