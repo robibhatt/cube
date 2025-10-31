@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
+import csv
+import json
 from copy import deepcopy
 import math
-from typing import Iterable, List, Set, Tuple
+from itertools import product
+from pathlib import Path
+from typing import Dict, Iterable, List, Set, Tuple
 
 import torch
 import torch.nn.functional as F
 
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
+
+
+def _node_basename(layer_index: int, neuron_index: int) -> str:
+    return f"layer_{layer_index:02d}_neuron_{neuron_index:03d}"
 
 
 def _zero_small_weights(linear_layers: Iterable[torch.nn.Module], threshold: float) -> None:
@@ -216,6 +224,128 @@ def prune(model: MLP) -> Tuple[MLP, Set[int]]:
     connected_inputs = {idx for idx, is_active in enumerate(active_inputs.tolist()) if is_active}
 
     return pruned_model, connected_inputs
+
+
+def visualize_pruned_mlp(
+    pruned_mlp: MLP,
+    active_inputs: Iterable[int],
+    output_dir: Path | str,
+) -> None:
+    """Serialize connectivity and activations for a pruned MLP."""
+
+    output_root = Path(output_dir)
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    linear_layers = list(pruned_mlp.linear_layers)
+    if not linear_layers:
+        return
+
+    weight_tensors = [layer.weight.detach().cpu().clone() for layer in linear_layers]
+    bias_tensors = [
+        layer.bias.detach().cpu().clone() if layer.bias is not None else None
+        for layer in linear_layers
+    ]
+
+    input_dim = pruned_mlp.config.input_dim
+    dtype = weight_tensors[0].dtype
+    active_input_set: Set[int] = {int(idx) for idx in active_inputs}
+
+    layer_connections: List[Dict[int, List[int]]] = []
+    layer_ancestors: List[Dict[int, Set[int]]] = []
+
+    for layer_idx, weight in enumerate(weight_tensors, start=1):
+        layer_conn: Dict[int, List[int]] = {}
+        layer_anc: Dict[int, Set[int]] = {}
+        for neuron_idx in range(weight.size(0)):
+            parent_indices = [
+                int(parent)
+                for parent in torch.nonzero(weight[neuron_idx], as_tuple=False)
+                .flatten()
+                .tolist()
+            ]
+            layer_conn[neuron_idx] = parent_indices
+
+            if layer_idx == 1:
+                candidates = set(parent_indices)
+                if active_input_set:
+                    ancestors = candidates & active_input_set
+                else:
+                    ancestors = candidates
+                if not ancestors and parent_indices:
+                    ancestors = candidates
+            else:
+                prev_ancestors = layer_ancestors[layer_idx - 2]
+                ancestors = set()
+                for parent in parent_indices:
+                    ancestors.update(prev_ancestors.get(parent, set()))
+            layer_anc[neuron_idx] = ancestors
+        layer_connections.append(layer_conn)
+        layer_ancestors.append(layer_anc)
+
+    def forward(inputs: torch.Tensor) -> List[torch.Tensor]:
+        if inputs.dim() == 1:
+            inputs = inputs.unsqueeze(0)
+        if inputs.dim() != 2:
+            raise ValueError("Expected inputs to be a 1D or 2D tensor")
+
+        prev = inputs.to(dtype=dtype)
+        activations: List[torch.Tensor] = []
+        for layer_idx, (weight, bias) in enumerate(zip(weight_tensors, bias_tensors), start=1):
+            pre_act = F.linear(prev, weight, bias)
+            if layer_idx == len(weight_tensors):
+                activations.append(pre_act)
+                prev = pre_act
+            else:
+                post_act = F.relu(pre_act)
+                activations.append(post_act)
+                prev = post_act
+        return [tensor.squeeze(0) for tensor in activations]
+
+    for layer_idx, weight in enumerate(weight_tensors, start=1):
+        layer_dir = output_root / f"layer_{layer_idx:02d}"
+        layer_dir.mkdir(parents=True, exist_ok=True)
+
+        for neuron_idx in range(weight.size(0)):
+            parents = layer_connections[layer_idx - 1][neuron_idx]
+            ancestors = sorted(layer_ancestors[layer_idx - 1][neuron_idx])
+
+            csv_path = layer_dir / f"{_node_basename(layer_idx, neuron_idx)}_activations.csv"
+
+            if ancestors:
+                fieldnames = [str(idx) for idx in ancestors] + ["activation"]
+                assignments = list(product([-1, 1], repeat=len(ancestors)))
+            else:
+                fieldnames = ["activation"]
+                assignments = [tuple()]
+
+            with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+
+                for assignment in assignments:
+                    input_vector = torch.zeros(input_dim, dtype=dtype)
+                    for value, ancestor_idx in zip(assignment, ancestors):
+                        input_vector[ancestor_idx] = float(value)
+
+                    with torch.no_grad():
+                        activations = forward(input_vector)
+                        activation_value = float(activations[layer_idx - 1][neuron_idx].item())
+
+                    row = {str(idx): int(val) for idx, val in zip(ancestors, assignment)}
+                    row["activation"] = activation_value
+                    writer.writerow(row)
+
+            node_data = {
+                "layer_index": layer_idx,
+                "neuron_index": neuron_idx,
+                "parents": parents,
+                "ancestors": ancestors,
+                "activations_csv": csv_path.name,
+            }
+
+            node_file = layer_dir / f"{_node_basename(layer_idx, neuron_idx)}.json"
+            with open(node_file, "w", encoding="utf-8") as f:
+                json.dump(node_data, f, indent=2)
 
 
 def mse_diff(number_of_samples: int, mlp_a: MLP, mlp_b: MLP) -> float:
