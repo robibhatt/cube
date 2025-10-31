@@ -6,6 +6,7 @@ from src.models.mlp_config import MLPConfig
 from src.models.sparsify_mlp import (
     binary_search_sparsify_threshold,
     mse_diff,
+    prune,
     sparsify_mlp,
 )
 
@@ -90,6 +91,38 @@ def test_sparsify_mlp_requires_positive_threshold(populated_mlp: MLP) -> None:
 
     with pytest.raises(ValueError):
         sparsify_mlp(populated_mlp, threshold=-0.1)
+
+
+def test_prune_returns_connected_inputs(populated_mlp: MLP) -> None:
+    with torch.no_grad():
+        first = populated_mlp.linear_layers[0]
+        first.weight.zero_()
+        first.weight[1, 1] = 0.5
+
+        last = populated_mlp.linear_layers[-1]
+        last.weight.zero_()
+        last.weight[0, 1] = -0.75
+
+    pruned, connected = prune(populated_mlp)
+
+    assert pruned.config.hidden_dims == [1]
+    assert connected == {1}
+
+
+def test_prune_handles_models_without_hidden_layers() -> None:
+    config = MLPConfig(input_dim=3, hidden_dims=[])
+    model = MLP(config)
+
+    with torch.no_grad():
+        out = model.linear_layers[0]
+        out.weight.zero_()
+        out.weight[0, 1] = 0.3
+        out.weight[0, 2] = -0.2
+
+    pruned, connected = prune(model)
+
+    assert pruned.config.hidden_dims == []
+    assert connected == {1, 2}
 
 
 def test_mse_diff_returns_zero_for_identical_models(small_mlp_config: MLPConfig) -> None:
