@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 import json
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional, Tuple
 import torch
 import os
+import shutil
 import subprocess
 import re
 
@@ -77,8 +78,76 @@ class Experiment(ABC):
             trainer.train()
             trainer.save_results()
 
+    def _done_file(self) -> Path:
+        return self.config.home_directory / "done.txt"
+
+    def _trainer_directories(self) -> List[Path]:
+        home = self.config.home_directory
+        if not home.exists():
+            return []
+
+        trainer_dirs: List[Path] = []
+        for child in home.iterdir():
+            if not child.is_dir():
+                continue
+            if (child / "results.json").exists() or (child / "trainer_config.json").exists():
+                trainer_dirs.append(child)
+        return trainer_dirs
+
+    def _cleanup_non_trainer_items(self, trainer_dirs: List[Path]) -> None:
+        keep_names = {
+            "experiment_config.json",
+            "steps.log",
+            "run.err",
+            "run.out",
+            "run.sh",
+        }
+
+        trainer_set = {path.resolve() for path in trainer_dirs}
+        home = self.config.home_directory
+        for item in home.iterdir():
+            if item.resolve() in trainer_set:
+                continue
+            if item.name in keep_names:
+                continue
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                item.unlink()
+
+    def _reset_experiment_directory(self) -> None:
+        home = self.config.home_directory
+        if home.exists():
+            for item in home.iterdir():
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+
+        home.mkdir(parents=True, exist_ok=True)
+        self.save()
+
+    def prepare_for_execution(self) -> Tuple[bool, Optional[Any]]:
+        if self._done_file().exists():
+            return True, None
+
+        trainer_dirs = [d for d in self._trainer_directories() if d.exists()]
+        if trainer_dirs and all((d / "results.json").exists() for d in trainer_dirs):
+            self._cleanup_non_trainer_items(trainer_dirs)
+            result = self.consolidate_results()
+            return True, result
+
+        if trainer_dirs:
+            self._reset_experiment_directory()
+
+        return False, None
+
     def run(self) -> Any:
         """Execute the experiment end-to-end locally."""
+
+        skip, result = self.prepare_for_execution()
+        if skip:
+            return result
 
         self.train()
         return self.consolidate_results()
@@ -88,12 +157,16 @@ class Experiment(ABC):
 
         results = self._consolidate_results()
 
-        results_file = self.config.home_directory / "results.csv"
+        home = self.config.home_directory
+        results_file = home / "results.csv"
         if not results_file.exists():
             raise AssertionError(
                 "Experiment consolidation must create results.csv at "
                 f"{results_file}"
             )
+
+        done_file = self._done_file()
+        done_file.write_text("finished consolodating results in it.")
 
         return results
 

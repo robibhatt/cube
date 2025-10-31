@@ -75,11 +75,8 @@ def test_run_script_invokes_experiment(monkeypatch, tmp_path: Path):
     calls = []
 
     class Dummy:
-        def train(self):
-            calls.append("train")
-
-        def consolidate_results(self):
-            calls.append("consolidate")
+        def run(self):
+            calls.append("run")
 
     def fake_from_dir(path):
         assert path == tmp_path
@@ -90,4 +87,4 @@ def test_run_script_invokes_experiment(monkeypatch, tmp_path: Path):
 
     run_script.main()
 
-    assert calls == ["train", "consolidate"]
+    assert calls == ["run"]

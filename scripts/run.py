@@ -32,8 +32,7 @@ def main() -> None:
 
     exp_dir = Path(sys.argv[1])
     experiment = Experiment.from_dir(exp_dir)
-    experiment.train()
-    experiment.consolidate_results()
+    experiment.run()
 
 
 if __name__ == "__main__":
