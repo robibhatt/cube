@@ -6,15 +6,12 @@ import csv
 import shutil
 import time
 import subprocess
-import json
 
 from src.experiments.experiments.experiment import Experiment
 from src.training.trainer_config import TrainerConfig
 from src.experiments.configs.experiment import ExperimentConfig
-from src.experiments.configs.experiment_config_registry import build_experiment_config_from_dict
 from src.experiments.configs import ExperimentConfig
 from src.experiments.experiments.experiment_factory import create_experiment
-from pathlib import Path
 
 
 class BatchExperiment(Experiment, ABC):
@@ -41,12 +38,18 @@ class BatchExperiment(Experiment, ABC):
 
         from src.experiments.experiments.experiment_factory import create_experiment
 
+        skip, _ = self.prepare_for_execution()
+        if skip:
+            return
+
         configs = self.get_experiment_configs()
 
         for cfg in configs:
-            exp = create_experiment(cfg)
-            exp.train()
-            exp.consolidate_results()
+            if cfg.home_directory.exists():
+                exp = Experiment.from_dir(cfg.home_directory)
+            else:
+                exp = create_experiment(cfg)
+            exp.run()
 
         self.consolidate_results()
 
@@ -165,14 +168,12 @@ class BatchExperiment(Experiment, ABC):
 
         active_configs[:] = remaining
 
-    def _verify_sub_exp(self, sub_exp_dir: Path) -> None:
-        """Load the sub-experiment configuration to ensure it's valid."""
-        build_experiment_config_from_dict(
-            json.loads((sub_exp_dir / "experiment_config.json").read_text())
-        )
-
     def run_parallel(self, configs: List[ExperimentConfig]) -> None:
         """Run sub-experiments in parallel using the cluster scheduler."""
+
+        skip, _ = self.prepare_for_execution()
+        if skip:
+            return
 
         if not configs:
             self.consolidate_results()
@@ -193,18 +194,21 @@ class BatchExperiment(Experiment, ABC):
             # active is small so it is time to add some new jobs
             if cfg.home_directory.exists():
                 try:
-                    self._verify_sub_exp(cfg.home_directory)
+                    sub_experiment = Experiment.from_dir(cfg.home_directory)
                 except Exception:
-                    # the directory got made but somehow a config was never initiailized there so kill it.
                     for item in cfg.home_directory.iterdir():
                         if item.is_dir():
                             shutil.rmtree(item)
                         else:
                             item.unlink()
-                    create_experiment(cfg)
+                    sub_experiment = create_experiment(cfg)
             else:
                 cfg.home_directory.mkdir(parents=True, exist_ok=True)
-                create_experiment(cfg)
+                sub_experiment = create_experiment(cfg)
+
+            skip_sub, _ = sub_experiment.prepare_for_execution()
+            if skip_sub:
+                continue
 
             # only add this experiment to the queue if it hasn't already been run
             results_file = cfg.home_directory / "results.csv"
