@@ -9,11 +9,6 @@ from src.experiments.experiments import register_experiment
 from src.experiments.experiments.experiment import Experiment
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.training.trainer_config import TrainerConfig
-from src.checkpoints.checkpoint import Checkpoint
-from src.mlp_graph.mlp_graph import MlpActivationGraph
-from src.models.mlp import MLP
-
-
 
 
 @register_experiment("TrainMLP")
@@ -82,51 +77,7 @@ class TrainMLPExperiment(Experiment):
 
         self._log_step("Wrote results.csv")
 
-        mlp = self._load_trained_mlp(trainer_cfg)
-        self._generate_mlp_graph(trainer_cfg, mlp)
-
         return [row]
-
-    # ------------------------------------------------------------------
-    # Graph helpers
-    # ------------------------------------------------------------------
-    def _generate_mlp_graph(self, trainer_cfg: TrainerConfig, mlp: MLP) -> None:
-        """Create an activation graph for the trained MLP."""
-        for edge_threshold in self.config.edge_thresholds:
-            graph_root = Path(self.config.home_directory) / self._edge_threshold_dir_name(
-                edge_threshold
-            )
-            graph_root.mkdir(parents=True, exist_ok=True)
-            MlpActivationGraph(
-                mlp,
-                eps=edge_threshold,
-                output_dir=graph_root,
-                cube_distribution_config=trainer_cfg.cube_distribution_config,
-                sample_size=trainer_cfg.test_size,
-                sample_seed=self.seed_mgr.spawn_seed(),
-            )
-
-            self._log_step(
-                f"Finished creating MLP activation graph (edge_threshold={edge_threshold})"
-            )
-
-    def _load_trained_mlp(self, trainer_cfg: TrainerConfig) -> MLP:
-        """Return the trained MLP restored from the trainer checkpoint."""
-
-        if trainer_cfg.mlp_config is None:
-            raise ValueError("Trainer configuration is missing an MLP config")
-        checkpoint_dir = trainer_cfg.home_dir / "checkpoints"
-        checkpoint = Checkpoint.from_dir(checkpoint_dir)
-        mlp = MLP(trainer_cfg.mlp_config)
-        checkpoint.load(model=mlp)
-        mlp.eval()
-        self._log_step("Loaded trained MLP checkpoint")
-        return mlp
-
-    @staticmethod
-    def _edge_threshold_dir_name(edge_threshold: float) -> str:
-        threshold_label = format(edge_threshold, "g")
-        return f"mlp_graph_{threshold_label}"
 
     def _log_step(self, message: str) -> None:
         timestamp = datetime.now(UTC).isoformat(timespec="seconds")
