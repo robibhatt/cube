@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import math
-from typing import Iterable, List
+from typing import Iterable, List, Set, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -73,7 +73,7 @@ def sparsify_mlp(model: MLP, threshold: float) -> MLP:
     return sparsified
 
 
-def prune(model: MLP) -> MLP:
+def prune(model: MLP) -> Tuple[MLP, Set[int]]:
     """Remove neurons that are not path connected to both inputs and output.
 
     Parameters
@@ -84,10 +84,12 @@ def prune(model: MLP) -> MLP:
 
     Returns
     -------
-    MLP
-        A new MLP containing only the neurons that participate in at least one
-        path from an input neuron to the output neuron. All preserved weights
-        and biases are copied from ``model``.
+    tuple[MLP, set[int]]
+        A pair consisting of the pruned model and the set of input indices that
+        remain connected to the rest of the neuron graph. The model contains
+        only the neurons that participate in at least one path from an input
+        neuron to the output neuron. All preserved weights and biases are
+        copied from ``model``.
     """
 
     if not isinstance(model, MLP):
@@ -98,7 +100,7 @@ def prune(model: MLP) -> MLP:
         config_copy = deepcopy(model.config)
         pruned = MLP(config_copy)
         pruned.load_state_dict(model.state_dict())
-        return pruned
+        return pruned, set()
 
     input_dim = model.config.input_dim
     n_layers = len(linear_layers)
@@ -199,7 +201,21 @@ def prune(model: MLP) -> MLP:
         elif new_out_layer.bias is not None:
             new_out_layer.bias.data.zero_()
 
-    return pruned_model
+    connected_inputs: Set[int]
+    if forward_masks:
+        first_layer_weight = linear_layers[0].weight.detach().to(torch.device("cpu"))
+        first_combined = forward_masks[0] & backward_masks[0]
+        if first_combined.any():
+            active_inputs = (first_layer_weight[first_combined, :] != 0).any(dim=0)
+        else:
+            active_inputs = torch.zeros(first_layer_weight.shape[1], dtype=torch.bool)
+    else:
+        output_weight = linear_layers[0].weight.detach().to(torch.device("cpu"))
+        active_inputs = (output_weight != 0).any(dim=0)
+
+    connected_inputs = {idx for idx, is_active in enumerate(active_inputs.tolist()) if is_active}
+
+    return pruned_model, connected_inputs
 
 
 def mse_diff(number_of_samples: int, mlp_a: MLP, mlp_b: MLP) -> float:
