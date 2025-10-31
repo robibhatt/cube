@@ -3,10 +3,10 @@ import pytest
 
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
-from src.models.sparsify_mlp import (
+from src.models.pruned_mlp import prune
+from src.models.sparsify import (
     binary_search_sparsify_threshold,
     mse_diff,
-    prune,
     sparsify_mlp,
 )
 
