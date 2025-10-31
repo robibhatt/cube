@@ -33,7 +33,11 @@ def test_trainer_seed_from_experiment_seed(tmp_path):
     trainer_cfg = _make_trainer_config()
     exp_seed = 42
     exp_cfg = TrainMLPExperimentConfig(
-        trainer_config=trainer_cfg, home_directory=tmp_path, seed=exp_seed
+        trainer_config=trainer_cfg,
+        home_directory=tmp_path,
+        seed=exp_seed,
+        mse_threshold=0.05,
+        mse_samples=4,
     )
     experiment = TrainMLPExperiment(exp_cfg)
     trainer_seed = experiment.get_trainer_configs()[0].seed
@@ -52,6 +56,8 @@ def test_train_and_consolidate(tmp_path):
         home_directory=tmp_path,
         seed=0,
         edge_thresholds=edge_thresholds,
+        mse_threshold=0.05,
+        mse_samples=4,
     )
     experiment = TrainMLPExperiment(exp_cfg)
     experiment.train()
@@ -63,10 +69,14 @@ def test_train_and_consolidate(tmp_path):
         reader = csv.DictReader(f)
         data_row = next(reader)
     assert float(data_row['final_train_loss']) == rows[0]['final_train_loss']
+    assert float(data_row['sparsify_threshold']) == rows[0]['sparsify_threshold']
+    assert float(data_row['sparsified_mse']) == rows[0]['sparsified_mse']
 
-    graph_dirs = [
-        path
-        for path in tmp_path.iterdir()
-        if path.is_dir() and path.name.startswith('mlp_graph_')
-    ]
-    assert not graph_dirs, "MLP graph generation should be disabled"
+    sparsified_dir = tmp_path / 'sparsified_mlp'
+    assert sparsified_dir.exists()
+
+    visualization_root = tmp_path / 'visualizations'
+    original_png = visualization_root / 'original' / 'visualization.png'
+    sparsified_png = visualization_root / 'sparsified' / 'visualization.png'
+    assert original_png.exists()
+    assert sparsified_png.exists()

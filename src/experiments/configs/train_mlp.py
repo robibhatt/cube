@@ -18,6 +18,8 @@ class TrainMLPExperimentConfig(ExperimentConfig):
 
     trainer_config: TrainerConfig
     edge_thresholds: List[float] = field(default_factory=lambda: [0.0])
+    mse_threshold: float = 0.01
+    mse_samples: int = 128
 
     def __post_init__(self) -> None:
         self.experiment_type = "TrainMLP"

@@ -8,6 +8,15 @@ from typing import Any, Dict, List
 from src.experiments.experiments import register_experiment
 from src.experiments.experiments.experiment import Experiment
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
+from src.models import (
+    binary_search_sparsify_threshold,
+    mse_diff,
+    prune,
+    sparsify_mlp,
+    visualize_pruned_mlp,
+)
+from src.models.mlp_utils import visualize as visualize_mlp
+from src.training.trainer import Trainer
 from src.training.trainer_config import TrainerConfig
 
 
@@ -52,12 +61,48 @@ class TrainMLPExperiment(Experiment):
 
         self._log_step("Loaded training metrics")
 
+        trainer = Trainer.from_dir(trainer_cfg.home_dir)
+        trained_mlp = trainer._load_model()
+        trained_mlp.eval()
+
+        threshold = binary_search_sparsify_threshold(
+            trained_mlp,
+            self.config.mse_threshold,
+            sample_count=self.config.mse_samples,
+        )
+        if threshold <= 0:
+            threshold = 1e-12
+        sparsified_mlp = sparsify_mlp(trained_mlp, threshold)
+        sparsified_mlp.eval()
+
+        actual_mse = mse_diff(
+            self.config.mse_samples,
+            trained_mlp,
+            sparsified_mlp,
+        )
+
+        pruned_mlp, active_inputs = prune(sparsified_mlp)
+        sparsified_dir = Path(self.config.home_directory) / "sparsified_mlp"
+        visualize_pruned_mlp(pruned_mlp, active_inputs, sparsified_dir)
+
+        visualization_root = Path(self.config.home_directory) / "visualizations"
+        original_viz_dir = visualization_root / "original"
+        sparsified_viz_dir = visualization_root / "sparsified"
+        visualize_mlp(trained_mlp, original_viz_dir)
+        visualize_mlp(sparsified_mlp, sparsified_viz_dir)
+
+        self._log_step(
+            "Generated sparsified MLP artefacts and visualizations"
+        )
+
         row = {
             "train_size": trainer_cfg.train_size if trainer_cfg.train_size is not None else 0,
             "trial_number": 0,
             "mean_output_loss": metrics["mean_output_loss"],
             "final_test_loss": metrics["final_test_loss"],
             "final_train_loss": metrics["final_train_loss"],
+            "sparsify_threshold": threshold,
+            "sparsified_mse": actual_mse,
         }
 
         out_file = Path(self.config.home_directory) / "results.csv"
@@ -70,6 +115,8 @@ class TrainMLPExperiment(Experiment):
                     "mean_output_loss",
                     "final_test_loss",
                     "final_train_loss",
+                    "sparsify_threshold",
+                    "sparsified_mse",
                 ],
             )
             writer.writeheader()

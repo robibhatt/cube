@@ -68,7 +68,6 @@ class DkwlExperiment(BatchExperiment):
 
                     sub_cfg = TrainMLPExperimentConfig(
                         trainer_config=trainer_cfg,
-                        edge_thresholds=list(self.config.edge_thresholds),
                         home_directory=self._subdirectory_for(
                             d=d,
                             k=k,
@@ -81,6 +80,8 @@ class DkwlExperiment(BatchExperiment):
                             l1_decay=l1_decay,
                         ),
                         seed=self.seed_mgr.spawn_seed(),
+                        mse_threshold=self.config.mse_threshold,
+                        mse_samples=self.config.mse_samples,
                     )
                     configs.append(sub_cfg)
 
@@ -113,7 +114,8 @@ class DkwlExperiment(BatchExperiment):
             "l1_decay": trainer_cfg.weight_decay_l1,
             "learning_rate": learning_rate,
             "batch_size": trainer_cfg.batch_size,
-            "edge_thresholds": list(config.edge_thresholds),
+            "mse_threshold": config.mse_threshold,
+            "mse_samples": config.mse_samples,
             "seed": config.seed,
         }
 
