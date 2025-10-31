@@ -1,5 +1,7 @@
-import torch
+from unittest import mock
+
 import pytest
+import torch
 
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
@@ -9,6 +11,7 @@ from src.models.sparsify import (
     mse_diff,
     sparsify_mlp,
 )
+import src.models.sparsify as sparsify_module
 
 
 @pytest.fixture()
@@ -150,6 +153,26 @@ def test_mse_diff_detects_bias_shift() -> None:
     assert mse_diff(32, mlp_a, mlp_b) == pytest.approx(1.0, rel=1e-6, abs=1e-6)
 
 
+def test_mse_diff_accepts_explicit_inputs() -> None:
+    config = MLPConfig(input_dim=2, hidden_dims=[])
+    mlp_a = MLP(config)
+    mlp_b = MLP(config)
+
+    with torch.no_grad():
+        out_a = mlp_a.linear_layers[0]
+        out_a.weight.zero_()
+        out_a.bias.zero_()
+
+        out_b = mlp_b.linear_layers[0]
+        out_b.weight.zero_()
+        out_b.bias.fill_(1.0)
+
+    provided_inputs = torch.zeros((3, config.input_dim))
+    mse = mse_diff(3, mlp_a, mlp_b, inputs=provided_inputs)
+
+    assert mse == pytest.approx(1.0)
+
+
 def test_mse_diff_validates_arguments(small_mlp_config: MLPConfig) -> None:
     mlp = MLP(small_mlp_config)
     other_config = MLPConfig(input_dim=3, hidden_dims=[2])
@@ -164,6 +187,18 @@ def test_mse_diff_validates_arguments(small_mlp_config: MLPConfig) -> None:
     with pytest.raises(ValueError):
         mse_diff(1, mlp, other_mlp)
 
+    with pytest.raises(TypeError):
+        mse_diff(1, mlp, mlp, inputs=[1, 2])  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError):
+        mse_diff(1, mlp, mlp, inputs=torch.zeros(2))
+
+    with pytest.raises(ValueError):
+        mse_diff(2, mlp, mlp, inputs=torch.zeros((1, mlp.config.input_dim)))
+
+    with pytest.raises(ValueError):
+        mse_diff(1, mlp, mlp, inputs=torch.zeros((1, mlp.config.input_dim + 1)))
+
 
 def test_binary_search_sparsify_threshold_respects_budget(populated_mlp: MLP) -> None:
     torch.manual_seed(0)
@@ -172,7 +207,8 @@ def test_binary_search_sparsify_threshold_respects_budget(populated_mlp: MLP) ->
     threshold = binary_search_sparsify_threshold(
         populated_mlp,
         mse_budget,
-        tolerance_ratio=0.02,
+        sample_count=512,
+        relative_tolerance=0.02,
     )
 
     sparsified = sparsify_mlp(populated_mlp, threshold)
@@ -191,13 +227,29 @@ def test_binary_search_sparsify_threshold_respects_budget(populated_mlp: MLP) ->
 
 def test_binary_search_sparsify_threshold_validates_inputs(populated_mlp: MLP) -> None:
     with pytest.raises(ValueError):
-        binary_search_sparsify_threshold(populated_mlp, 0.0)
+        binary_search_sparsify_threshold(populated_mlp, 0.0, sample_count=32)
 
     with pytest.raises(ValueError):
-        binary_search_sparsify_threshold(populated_mlp, 0.1, sample_multiplier=0.0)
+        binary_search_sparsify_threshold(populated_mlp, 0.1, sample_count=0)
+
+    with pytest.raises(ValueError):
+        binary_search_sparsify_threshold(
+            populated_mlp,
+            0.1,
+            sample_count=32,
+            max_iterations=0,
+        )
+
+    with pytest.raises(ValueError):
+        binary_search_sparsify_threshold(
+            populated_mlp,
+            0.1,
+            sample_count=32,
+            relative_tolerance=0.0,
+        )
 
     with pytest.raises(TypeError):
-        binary_search_sparsify_threshold(object(), 0.1)  # type: ignore[arg-type]
+        binary_search_sparsify_threshold(object(), 0.1, sample_count=32)  # type: ignore[arg-type]
 
 
 def test_binary_search_returns_zero_for_zero_weights(small_mlp_config: MLPConfig) -> None:
@@ -208,6 +260,26 @@ def test_binary_search_returns_zero_for_zero_weights(small_mlp_config: MLPConfig
             if weight is not None:
                 weight.zero_()
 
-    threshold = binary_search_sparsify_threshold(model, 0.1)
+    threshold = binary_search_sparsify_threshold(model, 0.1, sample_count=16)
 
     assert threshold == 0.0
+
+
+def test_binary_search_reuses_single_sample(populated_mlp: MLP, monkeypatch: pytest.MonkeyPatch) -> None:
+    call_counter = mock.Mock()
+
+    def fake_sample(*args, **kwargs):
+        call_counter()
+        sample_count = args[0]
+        input_dim = args[1]
+        return torch.ones((sample_count, input_dim), dtype=torch.float32)
+
+    monkeypatch.setattr(
+        sparsify_module,
+        "_generate_binary_hypercube_samples",
+        fake_sample,
+    )
+
+    binary_search_sparsify_threshold(populated_mlp, 0.05, sample_count=8)
+
+    assert call_counter.call_count == 1
