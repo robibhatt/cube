@@ -30,24 +30,10 @@ from src.training.sgd import Sgd
 from src.checkpoints.checkpoint import Checkpoint
 
 
-def detect_mup(optimizer: TorchOptimizer) -> bool:
-    """Return ``True`` if *optimizer* comes from the ``mup`` package."""
-
-    try:
-        from mup.optim import MuSGD  # type: ignore
-
-        return isinstance(optimizer, MuSGD)
-    except Exception:
-        cls = optimizer.__class__.__name__
-        mod = optimizer.__class__.__module__
-        return cls.startswith("Mu") or "mup" in mod
-
-
 def dump_optimizer_values(
     optimizer: TorchOptimizer,
     model: MLP,
     out_dir: Path,
-    mup_used: bool = False,
 ) -> None:
     """Write a JSON summary of *optimizer* parameter groups and parameters.
 
@@ -85,7 +71,7 @@ def dump_optimizer_values(
 
     payload = {
         "optimizer": optimizer.__class__.__name__,
-        "mup_used": mup_used,
+        "mup_used": True,
         "groups": groups,
         "params": params,
     }
@@ -316,12 +302,10 @@ class Trainer:
         model.to(self.device)
         self._move_optimizer_state_to_device(optimizer.stepper)
 
-        mup_flag = getattr(model, "mup", False) or detect_mup(optimizer.stepper)
         dump_optimizer_values(
             optimizer.stepper,
             model,
             self.config.home_dir,
-            mup_flag,
         )
 
         train_loader = self.get_iterator("train")
