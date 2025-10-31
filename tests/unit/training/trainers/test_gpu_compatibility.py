@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import torch
 
@@ -28,6 +30,16 @@ def _cube_config(input_dim: int = 3) -> CubeDistributionConfig:
         weights=[1.0 for _ in range(input_dim)],
         noise_std=0.0,
     )
+
+
+def _assert_on_cpu(model, optimizer):
+    cpu = torch.device("cpu")
+    for param in model.parameters():
+        assert param.device == cpu
+    for state in optimizer.stepper.state.values():
+        for value in state.values():
+            if isinstance(value, torch.Tensor):
+                assert value.device == cpu
 
 
 @pytest.mark.gpu
@@ -91,3 +103,44 @@ def test_trainer_runs_on_gpu(tmp_path, mlp_config, sgd_config):
     assert param_device == device
     assert xb.device == device
     assert yb.device == device
+
+
+@pytest.mark.gpu
+def test_cross_device_loading(tmp_path, mlp_config, sgd_config):
+    device = available_gpu()
+    if device is None:
+        pytest.skip("GPU not available")
+
+    home = tmp_path / "trainer_gpu"
+    home.mkdir()
+
+    cfg = TrainerConfig(
+        mlp_config=mlp_config,
+        optimizer_config=sgd_config,
+        cube_distribution_config=_cube_config(mlp_config.input_dim),
+        train_size=4,
+        test_size=2,
+        batch_size=2,
+        epochs=1,
+        home_dir=home,
+        seed=0,
+    )
+
+    trainer = Trainer(cfg)
+    trainer.train()
+
+    cfg_dict = json.loads((home / "trainer_config.json").read_text())
+    reloaded_cfg = TrainerConfig.from_dict(cfg_dict)
+    reloaded_cfg.home_dir = home
+
+    torch_device_available = torch.cuda.is_available
+    try:
+        torch.cuda.is_available = lambda: False  # type: ignore[assignment]
+        cpu_trainer = Trainer(reloaded_cfg)
+    finally:
+        torch.cuda.is_available = torch_device_available
+
+    model, optimizer = cpu_trainer._load_model_and_optimizer()
+    _assert_on_cpu(model, optimizer)
+
+    cpu_trainer.test_loss()
