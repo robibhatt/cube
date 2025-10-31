@@ -26,7 +26,6 @@ from src.training.trainer_config import TrainerConfig
 from src.data.cube_distribution import CubeDistribution
 from src.data.noisy_data_provider import NoisyProvider
 from src.models.mlp import MLP
-from src.models.mlp_utils import visualize
 from src.training.sgd import Sgd
 from src.checkpoints.checkpoint import Checkpoint
 
@@ -400,10 +399,6 @@ class Trainer:
                 with open(out_path, "w") as f:
                     json.dump(drifts, f, indent=2)
 
-            # ------------------------------------------------------------------
-            # gradient statistics and visualization
-            # ------------------------------------------------------------------
-            visualize(model, self.config.home_dir)
 
     def train(self) -> None:
         if not self.started_training or not self.finished_training:
