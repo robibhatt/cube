@@ -67,6 +67,7 @@ class TrainMLPExperiment(Experiment):
     def _consolidate_results(self) -> List[Dict[str, Any]]:
         """Collect training metrics and generate auxiliary artefacts."""
 
+        self._log_step("Starting consolidation of training artefacts")
         trainer_cfg = self.get_trainer_configs()[0]
 
         results_path = trainer_cfg.home_dir / "results.json"
@@ -88,6 +89,7 @@ class TrainMLPExperiment(Experiment):
         )
         if threshold <= 0:
             threshold = 1e-12
+        self._log_step(f"Computed sparsify threshold: {threshold:.6g}")
         sparsified_mlp = sparsify_mlp(trained_mlp, threshold)
         sparsified_mlp.eval()
 
@@ -96,6 +98,7 @@ class TrainMLPExperiment(Experiment):
             trained_mlp,
             sparsified_mlp,
         )
+        self._log_step(f"Measured sparsified MSE difference: {actual_mse:.6g}")
 
         pruned_mlp, active_inputs = prune(sparsified_mlp)
         sparsified_dir = Path(self.config.home_directory) / "sparsified_mlp"
@@ -196,6 +199,8 @@ class TrainMLPExperiment(Experiment):
 
     def _log_step(self, message: str) -> None:
         timestamp = datetime.now(UTC).isoformat(timespec="seconds")
+        line = f"[{timestamp} UTC] {message}\n"
         with self._log_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"[{timestamp} UTC] {message}\n")
+            log_file.write(line)
+        print(f"[{timestamp} UTC] [TrainMLPExperiment] {message}", flush=True)
 
