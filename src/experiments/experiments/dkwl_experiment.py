@@ -39,11 +39,15 @@ class DkwlExperiment(BatchExperiment):
         )
 
     def get_experiment_configs(self) -> List[TrainMLPExperimentConfig]:
+        self._log("Generating DKWL sub-experiment configurations")
+
         configs: List[TrainMLPExperimentConfig] = []
+        skipped_invalid = 0
 
         for d in self.config.ds:
             for k in self.config.ks:
                 if k <= 0 or k > d:
+                    skipped_invalid += 1
                     continue
 
                 for (
@@ -102,11 +106,20 @@ class DkwlExperiment(BatchExperiment):
                     )
                     configs.append(sub_cfg)
 
+        self._log(
+            "Completed configuration generation: "
+            f"{len(configs)} configs created, {skipped_invalid} invalid combinations skipped"
+        )
+
         return configs
 
     def get_config_params(
         self, config: TrainMLPExperimentConfig
     ) -> Dict[str, Any]:
+        self._log(
+            "Preparing configuration parameters for consolidation from "
+            f"{config.home_directory}"
+        )
         trainer_cfg = config.trainer_config
         if trainer_cfg.mlp_config is None:
             raise ValueError("Trainer config is missing an MLP config")
