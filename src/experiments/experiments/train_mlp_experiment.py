@@ -9,6 +9,7 @@ from src.experiments.experiments import register_experiment
 from src.experiments.experiments.experiment import Experiment
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.config_defaults import (
+    DEFAULT_ANCESTOR_THRESHOLD,
     DEFAULT_MSE_SAMPLES,
     DEFAULT_MSE_THRESHOLD,
     ensure_config_value,
@@ -37,6 +38,9 @@ class TrainMLPExperiment(Experiment):
         )
         self._mse_samples = ensure_config_value(
             self.config, "mse_samples", DEFAULT_MSE_SAMPLES
+        )
+        self._ancestor_threshold = ensure_config_value(
+            self.config, "ancestor_threshold", DEFAULT_ANCESTOR_THRESHOLD
         )
 
         self._log_path = Path(self.config.home_directory) / "steps.log"
@@ -136,7 +140,59 @@ class TrainMLPExperiment(Experiment):
 
         self._log_step("Wrote results.csv")
 
+        self._flag_insufficient_ancestors(sparsified_dir)
+
         return [row]
+
+    def _flag_insufficient_ancestors(self, sparsified_dir: Path) -> None:
+        if not sparsified_dir.exists():
+            return
+
+        ancestor_flag_path = sparsified_dir / "ANCESTOR_FLAG"
+        if ancestor_flag_path.exists():
+            ancestor_flag_path.unlink()
+
+        flagged_neurons = []
+        for layer_dir in sorted(sparsified_dir.glob("layer_*")):
+            if not layer_dir.is_dir():
+                continue
+
+            for node_file in sorted(layer_dir.glob("*.json")):
+                with open(node_file, "r", encoding="utf-8") as f:
+                    node_data = json.load(f)
+
+                ancestors = node_data.get("ancestors", [])
+                if ancestors is None:
+                    ancestors = []
+
+                if len(ancestors) < self._ancestor_threshold:
+                    layer_index = node_data.get("layer_index")
+                    neuron_index = node_data.get("neuron_index")
+                    flagged_neurons.append(
+                        (
+                            layer_index,
+                            neuron_index,
+                            len(ancestors),
+                        )
+                    )
+
+        if not flagged_neurons:
+            return
+
+        lines = [
+            (
+                "layer {layer} neuron {neuron} has {count} ancestors, "
+                "below threshold {threshold}"
+            ).format(
+                layer=layer_index,
+                neuron=neuron_index,
+                count=count,
+                threshold=self._ancestor_threshold,
+            )
+            for layer_index, neuron_index, count in flagged_neurons
+        ]
+
+        ancestor_flag_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def _log_step(self, message: str) -> None:
         timestamp = datetime.now(UTC).isoformat(timespec="seconds")

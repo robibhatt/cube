@@ -26,6 +26,7 @@ l1_decays:
   - 0.1
 mse_threshold: 0.01
 mse_samples: 8192
+ancestor_threshold: 2
 learning_rates:
   - 0.0005
   - 0.001
