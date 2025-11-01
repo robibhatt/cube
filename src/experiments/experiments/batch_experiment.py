@@ -20,6 +20,18 @@ class BatchExperiment(Experiment, ABC):
     def __init__(self, config: ExperimentConfig) -> None:
         super().__init__(config)
 
+    # ------------------------------------------------------------------
+    # Logging helpers
+    # ------------------------------------------------------------------
+    def _log(self, message: str) -> None:
+        """Emit a timestamped log message with the experiment class name."""
+
+        now = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(
+            f"[{now}] [{self.__class__.__name__}] {message}",
+            flush=True,
+        )
+
     @abstractmethod
     def get_experiment_configs(self) -> List[ExperimentConfig]:
         """Return a list of sub-experiment configs to run."""
@@ -38,20 +50,36 @@ class BatchExperiment(Experiment, ABC):
 
         from src.experiments.experiments.experiment_factory import create_experiment
 
+        self._log("Preparing for sequential execution")
         skip, _ = self.prepare_for_execution()
         if skip:
+            self._log("Execution skipped because experiment is already complete")
             return
 
         configs = self.get_experiment_configs()
 
+        self._log(f"Running {len(configs)} sub-experiments sequentially")
+
         for cfg in configs:
             if cfg.home_directory.exists():
+                self._log(
+                    f"Loading existing sub-experiment from {cfg.home_directory}"
+                )
                 exp = Experiment.from_dir(cfg.home_directory)
             else:
+                self._log(
+                    f"Creating new sub-experiment at {cfg.home_directory}"
+                )
                 exp = create_experiment(cfg)
+            self._log(
+                f"Starting sub-experiment in {cfg.home_directory.name}"
+            )
             exp.run()
 
+        self._log("Sequential execution finished; consolidating results")
         self.consolidate_results()
+
+        self._log("Result consolidation complete")
 
     def get_trainer_configs(self) -> List[TrainerConfig]:
         """Return trainer configs from all sub-experiments.
@@ -62,6 +90,7 @@ class BatchExperiment(Experiment, ABC):
 
         configs = self.get_experiment_configs()
         if not configs:
+            self._log("No sub-experiment configs found; consolidating results")
             return []
 
         from src.experiments.experiments.experiment_factory import create_experiment
@@ -142,17 +171,29 @@ class BatchExperiment(Experiment, ABC):
     ) -> None:
         """Check running jobs and resubmit failed ones."""
 
-        
+        if not active_configs:
+            self._log("No active parallel jobs to update")
+            return
 
+        self._log(
+            f"Updating status for {len(active_configs)} active parallel jobs"
+        )
         remaining: list[tuple[ExperimentConfig, str]] = []
 
         for cfg, job_id in active_configs:
             results_file = cfg.home_directory / "results.csv"
             if results_file.exists():
+                self._log(
+                    f"Detected completed results for job {job_id} at {cfg.home_directory}"
+                )
                 continue
 
             state, _ = self._get_job_status(job_id)
             if state and not state.startswith(("PENDING", "RUNNING", "CONFIGURING")):
+                self._log(
+                    f"Job {job_id} for {cfg.home_directory} finished in state {state};"
+                    " resubmitting"
+                )
                 for item in cfg.home_directory.iterdir():
                     if item.is_dir():
                         shutil.rmtree(item)
@@ -162,8 +203,15 @@ class BatchExperiment(Experiment, ABC):
                 time.sleep(15)
                 create_experiment(cfg)
                 new_id = Experiment.server_run(cfg.home_directory)
+                self._log(
+                    f"Resubmitted job {new_id} for {cfg.home_directory}"
+                )
                 remaining.append((cfg, new_id))
             else:
+                if state:
+                    self._log(
+                        f"Job {job_id} for {cfg.home_directory} still in state {state}"
+                    )
                 remaining.append((cfg, job_id))
 
         active_configs[:] = remaining
@@ -171,11 +219,16 @@ class BatchExperiment(Experiment, ABC):
     def run_parallel(self, configs: List[ExperimentConfig]) -> None:
         """Run sub-experiments in parallel using the cluster scheduler."""
 
+        self._log(
+            f"Preparing to launch {len(configs)} sub-experiments in parallel"
+        )
         skip, _ = self.prepare_for_execution()
         if skip:
+            self._log("Parallel execution skipped because experiment is complete")
             return
 
         if not configs:
+            self._log("No configs provided for parallel execution; consolidating")
             self.consolidate_results()
             return
 
@@ -188,12 +241,19 @@ class BatchExperiment(Experiment, ABC):
 
             # continually wait and reactivate stuff if we are stuck
             while len(active) >= 10:
+                self._log(
+                    "Scheduler queue full (>=10 active jobs); waiting before"
+                    " submitting more"
+                )
                 time.sleep(10)
                 self._update_parallel_experiments(active)
 
             # active is small so it is time to add some new jobs
             if cfg.home_directory.exists():
                 try:
+                    self._log(
+                        f"Attempting to load existing sub-experiment at {cfg.home_directory}"
+                    )
                     sub_experiment = Experiment.from_dir(cfg.home_directory)
                 except Exception:
                     for item in cfg.home_directory.iterdir():
@@ -204,22 +264,37 @@ class BatchExperiment(Experiment, ABC):
                     sub_experiment = create_experiment(cfg)
             else:
                 cfg.home_directory.mkdir(parents=True, exist_ok=True)
+                self._log(
+                    f"Creating sub-experiment directory at {cfg.home_directory}"
+                )
                 sub_experiment = create_experiment(cfg)
 
             skip_sub, _ = sub_experiment.prepare_for_execution()
             if skip_sub:
+                self._log(
+                    f"Skipping already completed sub-experiment at {cfg.home_directory}"
+                )
                 continue
 
             # only add this experiment to the queue if it hasn't already been run
             results_file = cfg.home_directory / "results.csv"
             if not results_file.exists():
                 job_id = Experiment.server_run(cfg.home_directory)
+                self._log(
+                    f"Submitted job {job_id} for sub-experiment at {cfg.home_directory}"
+                )
                 time.sleep(15)
                 active.append((cfg, job_id))
 
         # once we added everything, we sit and wait
         while not all((cfg.home_directory / "results.csv").exists() for cfg in configs):
+            self._log(
+                f"Waiting for {sum(not (cfg.home_directory / 'results.csv').exists() for cfg in configs)}"
+                " remaining sub-experiments to finish"
+            )
             self._update_parallel_experiments(active)
             time.sleep(15)
 
+        self._log("All parallel sub-experiments completed; consolidating results")
         self.consolidate_results()
+        self._log("Parallel result consolidation complete")
