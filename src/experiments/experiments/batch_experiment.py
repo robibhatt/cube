@@ -181,10 +181,9 @@ class BatchExperiment(Experiment, ABC):
         remaining: list[tuple[ExperimentConfig, str]] = []
 
         for cfg, job_id in active_configs:
-            results_file = cfg.home_directory / "results.csv"
-            if results_file.exists():
+            if self._is_sub_experiment_complete(cfg):
                 self._log(
-                    f"Detected completed results for job {job_id} at {cfg.home_directory}"
+                    f"Detected completion markers for job {job_id} at {cfg.home_directory}"
                 )
                 continue
 
@@ -215,6 +214,12 @@ class BatchExperiment(Experiment, ABC):
                 remaining.append((cfg, job_id))
 
         active_configs[:] = remaining
+
+    def _is_sub_experiment_complete(self, cfg: ExperimentConfig) -> bool:
+        """Return ``True`` if ``cfg`` has both ``results.csv`` and ``done.txt``."""
+
+        home = cfg.home_directory
+        return (home / "results.csv").exists() and (home / "done.txt").exists()
 
     def run_parallel(self, configs: List[ExperimentConfig]) -> None:
         """Run sub-experiments in parallel using the cluster scheduler."""
@@ -285,30 +290,36 @@ class BatchExperiment(Experiment, ABC):
                 )
                 continue
 
-            # only add this experiment to the queue if it hasn't already been run
+            # skip completed sub-experiments; otherwise submit to scheduler
+            done_file = cfg.home_directory / "done.txt"
             results_file = cfg.home_directory / "results.csv"
-            if not results_file.exists():
-                job_id = Experiment.server_run(cfg.home_directory)
-                self._log(
-                    f"Submitted job {job_id} for sub-experiment at {cfg.home_directory}"
-                )
-                time.sleep(15)
-                active.append((cfg, job_id))
-                tracked = ", ".join(
-                    f"{job_cfg.home_directory.name}:{job_id}" for job_cfg, job_id in active
+            if done_file.exists():
+                assert results_file.exists(), (
+                    f"Expected results.csv to accompany done.txt at {cfg.home_directory}"
                 )
                 self._log(
-                    f"Active job set now contains {len(active)} entries: {tracked}"
+                    f"Skipping submission for {cfg.home_directory} because results.csv and done.txt already exist"
                 )
-            else:
-                self._log(
-                    f"Skipping submission for {cfg.home_directory} because results.csv already exists"
-                )
+                continue
+
+            job_id = Experiment.server_run(cfg.home_directory)
+            self._log(
+                f"Submitted job {job_id} for sub-experiment at {cfg.home_directory}"
+            )
+            time.sleep(15)
+            active.append((cfg, job_id))
+            tracked = ", ".join(
+                f"{job_cfg.home_directory.name}:{job_id}" for job_cfg, job_id in active
+            )
+            self._log(
+                f"Active job set now contains {len(active)} entries: {tracked}"
+            )
 
         # once we added everything, we sit and wait
-        while not all((cfg.home_directory / "results.csv").exists() for cfg in configs):
+        while not all(self._is_sub_experiment_complete(cfg) for cfg in configs):
             self._log(
-                f"Waiting for {sum(not (cfg.home_directory / 'results.csv').exists() for cfg in configs)}"
+                "Waiting for "
+                f"{sum(not self._is_sub_experiment_complete(cfg) for cfg in configs)}"
                 " remaining sub-experiments to finish"
             )
             self._update_parallel_experiments(active)
