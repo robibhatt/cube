@@ -273,6 +273,11 @@ class Experiment(ABC):
         script_path.chmod(0o755)
         script_rel = os.path.relpath(script_path, project_root)
 
+        cls._log_debug(
+            "Submitting sbatch job for parallel sub-experiment with command "
+            f"'sbatch {script_rel}' from {project_root}"
+        )
+
         result = subprocess.run(
             ["sbatch", script_rel],
             cwd=project_root,
@@ -280,10 +285,20 @@ class Experiment(ABC):
             text=True,
             check=True,
         )
+
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+        if stdout:
+            cls._log_debug(f"sbatch stdout: {stdout}")
+        if stderr:
+            cls._log_debug(f"sbatch stderr: {stderr}")
         match = re.search(r"(\d+)", result.stdout)
         if not match:
             raise RuntimeError(
                 f"Could not parse job ID from sbatch output: {result.stdout!r}"
             )
+        cls._log_debug(
+            f"Successfully submitted sbatch job {match.group(1)} for {experiment_dir}"
+        )
         return match.group(1)
     
