@@ -54,8 +54,10 @@ def main() -> None:
     if server_train:
         configs = experiment.get_experiment_configs()
         experiment.run_parallel(configs)
+        print('running parallel')
     else:
         experiment.run()
+        print('running solo')
 
 
 if __name__ == "__main__":
