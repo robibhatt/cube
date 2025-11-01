@@ -88,3 +88,17 @@ def test_run_script_invokes_experiment(monkeypatch, tmp_path: Path):
     run_script.main()
 
     assert calls == ["run"]
+
+
+def test_build_experiment_config_ignores_unknown_fields(tmp_path: Path):
+    cfg = build_experiment_config(
+        "DummyExperiment",
+        home_directory=tmp_path / "exp",
+        seed=5,
+        edge_thresholds=[0.1],
+        extraneous_flag=True,
+    )
+
+    assert isinstance(cfg, DummyExperimentConfig)
+    assert not hasattr(cfg, "edge_thresholds")
+    assert not hasattr(cfg, "extraneous_flag")

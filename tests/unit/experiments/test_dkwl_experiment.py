@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from src.experiments.configs.dkwl import DkwlExperimentConfig
 from src.experiments.experiments import create_experiment
 from src.experiments.experiments.dkwl_experiment import DkwlExperiment
@@ -110,3 +112,35 @@ def test_get_config_params_reports_hyperparameters(tmp_path: Path) -> None:
         "mse_samples": cfg.mse_samples,
         "seed": sub_cfg.seed,
     }
+
+
+@pytest.mark.parametrize("missing_strategy", ["delattr", "none"])
+def test_defaults_applied_for_missing_mse_params(tmp_path: Path, missing_strategy):
+    cfg = DkwlExperimentConfig(
+        ds=[2],
+        ks=[1],
+        widths=[8],
+        layers=[1],
+        train_sizes=[32],
+        epochs=[5],
+        l1_decays=[0.0],
+        learning_rates=[0.1],
+        batch_sizes=[16],
+        home_directory=tmp_path / "exp",
+        seed=11,
+    )
+
+    if missing_strategy == "delattr":
+        delattr(cfg, "mse_threshold")
+        delattr(cfg, "mse_samples")
+    else:
+        cfg.mse_threshold = None
+        cfg.mse_samples = None
+
+    experiment = create_experiment(cfg)
+    assert experiment.config.mse_threshold == pytest.approx(0.01)
+    assert experiment.config.mse_samples == 8192
+
+    sub_cfg = experiment.get_experiment_configs()[0]
+    assert sub_cfg.mse_threshold == pytest.approx(0.01)
+    assert sub_cfg.mse_samples == 8192

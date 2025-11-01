@@ -1,6 +1,8 @@
 from __future__ import annotations
 
   # pragma: no cover - only for type hints
+from dataclasses import fields
+
 from src.experiments.configs.experiment import ExperimentConfig
 
 EXPERIMENT_CONFIG_REGISTRY: dict[str, ExperimentConfig] = {}
@@ -25,8 +27,13 @@ def build_experiment_config(name: str, **kwargs) -> ExperimentConfig:
     # ``fully_initialized`` used to be managed internally and may still
     # appear in old configuration files
     kwargs.pop("fully_initialized", None)
+    valid_fields = {f.name for f in fields(cfg_cls)}
+    filtered_kwargs = {
+        key: value for key, value in kwargs.items() if key in valid_fields
+    }
+
     # use dataclasses_json for encoding/decoding
-    return cfg_cls.from_dict({"experiment_type": name, **kwargs})
+    return cfg_cls.from_dict({"experiment_type": name, **filtered_kwargs})
 
 
 def build_experiment_config_from_dict(data: dict) -> ExperimentConfig:

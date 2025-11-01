@@ -27,4 +27,4 @@ trainer_config:
 home_directory: experiment_runs/test/5
 seed: 1
 mse_threshold: 0.01
-mse_samples: 128
+mse_samples: 8192

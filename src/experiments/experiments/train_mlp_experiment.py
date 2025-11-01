@@ -8,6 +8,11 @@ from typing import Any, Dict, List
 from src.experiments.experiments import register_experiment
 from src.experiments.experiments.experiment import Experiment
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
+from src.experiments.config_defaults import (
+    DEFAULT_MSE_SAMPLES,
+    DEFAULT_MSE_THRESHOLD,
+    ensure_config_value,
+)
 from src.models import (
     binary_search_sparsify_threshold,
     mse_diff,
@@ -26,6 +31,13 @@ class TrainMLPExperiment(Experiment):
 
     def __init__(self, config: TrainMLPExperimentConfig) -> None:
         super().__init__(config)
+
+        self._mse_threshold = ensure_config_value(
+            self.config, "mse_threshold", DEFAULT_MSE_THRESHOLD
+        )
+        self._mse_samples = ensure_config_value(
+            self.config, "mse_samples", DEFAULT_MSE_SAMPLES
+        )
 
         self._log_path = Path(self.config.home_directory) / "steps.log"
         self._log_path.write_text("")
@@ -67,8 +79,8 @@ class TrainMLPExperiment(Experiment):
 
         threshold = binary_search_sparsify_threshold(
             trained_mlp,
-            self.config.mse_threshold,
-            sample_count=self.config.mse_samples,
+            self._mse_threshold,
+            sample_count=self._mse_samples,
         )
         if threshold <= 0:
             threshold = 1e-12
@@ -76,7 +88,7 @@ class TrainMLPExperiment(Experiment):
         sparsified_mlp.eval()
 
         actual_mse = mse_diff(
-            self.config.mse_samples,
+            self._mse_samples,
             trained_mlp,
             sparsified_mlp,
         )

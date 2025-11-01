@@ -1,5 +1,7 @@
 import csv
 
+import pytest
+
 from src.data.cube_distribution_config import CubeDistributionConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments.train_mlp_experiment import TrainMLPExperiment
@@ -80,3 +82,25 @@ def test_train_and_consolidate(tmp_path):
     sparsified_png = visualization_root / 'sparsified' / 'visualization.png'
     assert original_png.exists()
     assert sparsified_png.exists()
+
+
+@pytest.mark.parametrize("missing_strategy", ["delattr", "none"])
+def test_defaults_applied_for_missing_mse_params(tmp_path, missing_strategy):
+    trainer_cfg = _make_trainer_config()
+    exp_cfg = TrainMLPExperimentConfig(
+        trainer_config=trainer_cfg,
+        home_directory=tmp_path,
+        seed=7,
+    )
+
+    if missing_strategy == "delattr":
+        delattr(exp_cfg, "mse_threshold")
+        delattr(exp_cfg, "mse_samples")
+    else:
+        exp_cfg.mse_threshold = None
+        exp_cfg.mse_samples = None
+
+    experiment = TrainMLPExperiment(exp_cfg)
+
+    assert experiment.config.mse_threshold == pytest.approx(0.01)
+    assert experiment.config.mse_samples == 8192

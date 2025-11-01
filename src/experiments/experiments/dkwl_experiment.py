@@ -8,6 +8,11 @@ from src.data.cube_distribution_config import CubeDistributionConfig
 from src.experiments.configs.dkwl import DkwlExperimentConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments import BatchExperiment, register_experiment
+from src.experiments.config_defaults import (
+    DEFAULT_MSE_SAMPLES,
+    DEFAULT_MSE_THRESHOLD,
+    ensure_config_value,
+)
 from src.models.mlp_config import MLPConfig
 from src.training.sgd_config import SgdConfig
 from src.training.trainer_config import TrainerConfig
@@ -21,6 +26,13 @@ class DkwlExperiment(BatchExperiment):
 
     def __init__(self, config: DkwlExperimentConfig) -> None:
         super().__init__(config)
+
+        self._mse_threshold = ensure_config_value(
+            self.config, "mse_threshold", DEFAULT_MSE_THRESHOLD
+        )
+        self._mse_samples = ensure_config_value(
+            self.config, "mse_samples", DEFAULT_MSE_SAMPLES
+        )
 
     def get_experiment_configs(self) -> List[TrainMLPExperimentConfig]:
         configs: List[TrainMLPExperimentConfig] = []
@@ -80,8 +92,8 @@ class DkwlExperiment(BatchExperiment):
                             l1_decay=l1_decay,
                         ),
                         seed=self.seed_mgr.spawn_seed(),
-                        mse_threshold=self.config.mse_threshold,
-                        mse_samples=self.config.mse_samples,
+                        mse_threshold=self._mse_threshold,
+                        mse_samples=self._mse_samples,
                     )
                     configs.append(sub_cfg)
 
