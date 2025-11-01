@@ -170,18 +170,15 @@ class Experiment(ABC):
             return True, None
 
         trainer_dirs = [d for d in self._trainer_directories() if d.exists()]
-        if trainer_dirs and all((d / "results.json").exists() for d in trainer_dirs):
-            self._log_debug(
-                f"Detected {len(trainer_dirs)} completed trainer directories; consolidating"
-            )
-            self._cleanup_non_trainer_items(trainer_dirs)
-            result = self.consolidate_results()
-            return True, result
-
         if trainer_dirs:
-            self._log_debug(
-                f"Found {len(trainer_dirs)} incomplete trainer directories; resetting"
-            )
+            if all((d / "results.json").exists() for d in trainer_dirs):
+                self._log_debug(
+                    "Detected completed trainer directories without done.txt; resetting"
+                )
+            else:
+                self._log_debug(
+                    f"Found {len(trainer_dirs)} incomplete trainer directories; resetting"
+                )
             self._reset_experiment_directory()
 
         self._log_debug("Experiment directory ready for execution")

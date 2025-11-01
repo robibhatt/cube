@@ -262,6 +262,18 @@ class BatchExperiment(Experiment, ABC):
                 time.sleep(10)
                 self._update_parallel_experiments(active)
 
+            # skip completed sub-experiments; otherwise submit to scheduler
+            done_file = cfg.home_directory / "done.txt"
+            results_file = cfg.home_directory / "results.csv"
+            if done_file.exists():
+                assert results_file.exists(), (
+                    f"Expected results.csv to accompany done.txt at {cfg.home_directory}"
+                )
+                self._log(
+                    f"Skipping submission for {cfg.home_directory} because results.csv and done.txt already exist"
+                )
+                continue
+
             # active is small so it is time to add some new jobs
             if cfg.home_directory.exists():
                 try:
@@ -283,24 +295,7 @@ class BatchExperiment(Experiment, ABC):
                 )
                 sub_experiment = create_experiment(cfg)
 
-            skip_sub, _ = sub_experiment.prepare_for_execution()
-            if skip_sub:
-                self._log(
-                    f"Skipping already completed sub-experiment at {cfg.home_directory}"
-                )
-                continue
-
-            # skip completed sub-experiments; otherwise submit to scheduler
-            done_file = cfg.home_directory / "done.txt"
-            results_file = cfg.home_directory / "results.csv"
-            if done_file.exists():
-                assert results_file.exists(), (
-                    f"Expected results.csv to accompany done.txt at {cfg.home_directory}"
-                )
-                self._log(
-                    f"Skipping submission for {cfg.home_directory} because results.csv and done.txt already exist"
-                )
-                continue
+            sub_experiment.prepare_for_execution()
 
             job_id = Experiment.server_run(cfg.home_directory)
             self._log(
