@@ -6,6 +6,7 @@ import csv
 import json
 from copy import deepcopy
 from itertools import product
+import random
 from pathlib import Path
 from typing import Dict, Iterable, List, Set, Tuple
 
@@ -16,8 +17,38 @@ from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
 
 
+MAX_EXACT_ANCESTOR_COUNT = 7
+MAX_ANCESTOR_ASSIGNMENT_SAMPLES = 128
+MAX_NEURONS_PER_LAYER = 64
+
+
 def _node_basename(layer_index: int, neuron_index: int) -> str:
     return f"layer_{layer_index:02d}_neuron_{neuron_index:03d}"
+
+
+def _assignment_from_index(index: int, length: int) -> Tuple[int, ...]:
+    return tuple(
+        1 if (index >> shift) & 1 else -1 for shift in reversed(range(length))
+    )
+
+
+def _sample_binary_assignments(
+    num_variables: int, max_samples: int, rng: random.Random
+) -> List[Tuple[int, ...]]:
+    total_combinations = 1 << num_variables
+    sample_count = min(max_samples, total_combinations)
+    if sample_count <= 0:
+        return []
+
+    if sample_count == total_combinations:
+        return [_assignment_from_index(idx, num_variables) for idx in range(sample_count)]
+
+    assignments: Set[Tuple[int, ...]] = set()
+    while len(assignments) < sample_count:
+        choice = rng.randrange(total_combinations)
+        assignments.add(_assignment_from_index(choice, num_variables))
+
+    return sorted(assignments)
 
 
 def prune(model: MLP) -> Tuple[MLP, Set[int]]:
@@ -228,7 +259,14 @@ def visualize_pruned_mlp(
         layer_dir = output_root / f"layer_{layer_idx:02d}"
         layer_dir.mkdir(parents=True, exist_ok=True)
 
-        for neuron_idx in range(weight.size(0)):
+        neuron_indices = list(range(weight.size(0)))
+        if len(neuron_indices) > MAX_NEURONS_PER_LAYER:
+            neuron_rng = random.Random(f"layer-{layer_idx}-neuron-sample")
+            neuron_indices = sorted(
+                neuron_rng.sample(neuron_indices, MAX_NEURONS_PER_LAYER)
+            )
+
+        for neuron_idx in neuron_indices:
             parents = layer_connections[layer_idx - 1][neuron_idx]
             ancestors = sorted(layer_ancestors[layer_idx - 1][neuron_idx])
 
@@ -236,7 +274,17 @@ def visualize_pruned_mlp(
 
             if ancestors:
                 fieldnames = [str(idx) for idx in ancestors] + ["activation"]
-                assignments = list(product([-1, 1], repeat=len(ancestors)))
+                if len(ancestors) >= MAX_EXACT_ANCESTOR_COUNT:
+                    assignment_rng = random.Random(
+                        f"layer-{layer_idx}-neuron-{neuron_idx}-assignments"
+                    )
+                    assignments = _sample_binary_assignments(
+                        len(ancestors),
+                        MAX_ANCESTOR_ASSIGNMENT_SAMPLES,
+                        assignment_rng,
+                    )
+                else:
+                    assignments = list(product([-1, 1], repeat=len(ancestors)))
             else:
                 fieldnames = ["activation"]
                 assignments = [tuple()]
