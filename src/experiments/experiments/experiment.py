@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import re
+import time
 
 from src.training.trainer_config import TrainerConfig
 
@@ -30,6 +31,16 @@ class Experiment(ABC):
         self.config.home_directory.mkdir(parents=True, exist_ok=True)
         self.save()
 
+    # ------------------------------------------------------------------
+    # Logging helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _log_debug(message: str) -> None:
+        """Emit a timestamped debug message for base experiment flow."""
+
+        now = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{now}] [Experiment] {message}", flush=True)
+
     @abstractmethod
     def get_trainer_configs(self) -> List[TrainerConfig]:
         """Return the trainer configs to execute in order."""
@@ -47,16 +58,25 @@ class Experiment(ABC):
         if not cfg_file.exists():
             raise FileNotFoundError(f"No experiment_config.json at {cfg_file}")
 
+        cls._log_debug(
+            f"Loading experiment configuration from {cfg_file.resolve()}"
+        )
         cfg = build_experiment_config_from_dict(
             json.loads(cfg_file.read_text())
         )
         cfg.home_directory = Path(home_directory)
+        cls._log_debug(
+            f"Reconstructed experiment config for {cfg.__class__.__name__}"
+        )
         return create_experiment(cfg)
 
     def train(self) -> None:
         configs = self.get_trainer_configs()
 
         if not configs:
+            self._log_debug(
+                f"No trainer configs for {self.config.home_directory}; consolidating"
+            )
             self.consolidate_results()
             return
 
@@ -65,6 +85,9 @@ class Experiment(ABC):
                 raise RuntimeError("TrainerConfig.home_dir must be set")
 
             if cfg.home_dir.exists():
+                self._log_debug(
+                    f"Loading trainer state from {cfg.home_dir.resolve()}"
+                )
                 try:
                     trainer = Trainer.from_dir(cfg.home_dir)
                 except Exception as exc:  # pragma: no cover - defensive branch
@@ -72,11 +95,20 @@ class Experiment(ABC):
                         f"Failed to load trainer from {cfg.home_dir}: {exc}"
                     ) from exc
             else:
+                self._log_debug(
+                    f"Creating trainer directory at {cfg.home_dir.resolve()}"
+                )
                 cfg.home_dir.mkdir(parents=True, exist_ok=True)
                 trainer = Trainer(cfg)
 
+            self._log_debug(
+                f"Starting training run for trainer at {cfg.home_dir.resolve()}"
+            )
             trainer.train()
             trainer.save_results()
+            self._log_debug(
+                f"Completed training run for trainer at {cfg.home_dir.resolve()}"
+            )
 
     def _done_file(self) -> Path:
         return self.config.home_directory / "done.txt"
@@ -128,18 +160,31 @@ class Experiment(ABC):
         self.save()
 
     def prepare_for_execution(self) -> Tuple[bool, Optional[Any]]:
+        self._log_debug(
+            f"Preparing experiment execution in {self.config.home_directory}"
+        )
         if self._done_file().exists():
+            self._log_debug(
+                "Found done.txt marker; skipping execution and returning cached results"
+            )
             return True, None
 
         trainer_dirs = [d for d in self._trainer_directories() if d.exists()]
         if trainer_dirs and all((d / "results.json").exists() for d in trainer_dirs):
+            self._log_debug(
+                f"Detected {len(trainer_dirs)} completed trainer directories; consolidating"
+            )
             self._cleanup_non_trainer_items(trainer_dirs)
             result = self.consolidate_results()
             return True, result
 
         if trainer_dirs:
+            self._log_debug(
+                f"Found {len(trainer_dirs)} incomplete trainer directories; resetting"
+            )
             self._reset_experiment_directory()
 
+        self._log_debug("Experiment directory ready for execution")
         return False, None
 
     def run(self) -> Any:
@@ -147,10 +192,20 @@ class Experiment(ABC):
 
         skip, result = self.prepare_for_execution()
         if skip:
+            self._log_debug(
+                f"Execution skipped for {self.config.home_directory}"
+            )
             return result
 
+        self._log_debug(
+            f"Starting local execution for {self.config.home_directory}"
+        )
         self.train()
-        return self.consolidate_results()
+        results = self.consolidate_results()
+        self._log_debug(
+            f"Local execution finished for {self.config.home_directory}"
+        )
+        return results
 
     def consolidate_results(self) -> Any:
         """Run subclass consolidation and ensure ``results.csv`` exists."""
@@ -218,6 +273,11 @@ class Experiment(ABC):
         script_path.chmod(0o755)
         script_rel = os.path.relpath(script_path, project_root)
 
+        cls._log_debug(
+            "Submitting sbatch job for parallel sub-experiment with command "
+            f"'sbatch {script_rel}' from {project_root}"
+        )
+
         result = subprocess.run(
             ["sbatch", script_rel],
             cwd=project_root,
@@ -225,10 +285,20 @@ class Experiment(ABC):
             text=True,
             check=True,
         )
+
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+        if stdout:
+            cls._log_debug(f"sbatch stdout: {stdout}")
+        if stderr:
+            cls._log_debug(f"sbatch stderr: {stderr}")
         match = re.search(r"(\d+)", result.stdout)
         if not match:
             raise RuntimeError(
                 f"Could not parse job ID from sbatch output: {result.stdout!r}"
             )
+        cls._log_debug(
+            f"Successfully submitted sbatch job {match.group(1)} for {experiment_dir}"
+        )
         return match.group(1)
     

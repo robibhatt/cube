@@ -224,7 +224,9 @@ class BatchExperiment(Experiment, ABC):
         )
         skip, _ = self.prepare_for_execution()
         if skip:
-            self._log("Parallel execution skipped because experiment is complete")
+            self._log(
+                "Parallel execution skipped because experiment is already marked complete"
+            )
             return
 
         if not configs:
@@ -238,6 +240,13 @@ class BatchExperiment(Experiment, ABC):
 
             # gets rid of old jobs, and resubmits jobs that were just lame
             self._update_parallel_experiments(active)
+            if active:
+                tracked = ", ".join(
+                    f"{job_cfg.home_directory.name}:{job_id}" for job_cfg, job_id in active
+                )
+                self._log(
+                    f"Currently tracking {len(active)} active jobs after update: {tracked}"
+                )
 
             # continually wait and reactivate stuff if we are stuck
             while len(active) >= 10:
@@ -285,6 +294,16 @@ class BatchExperiment(Experiment, ABC):
                 )
                 time.sleep(15)
                 active.append((cfg, job_id))
+                tracked = ", ".join(
+                    f"{job_cfg.home_directory.name}:{job_id}" for job_cfg, job_id in active
+                )
+                self._log(
+                    f"Active job set now contains {len(active)} entries: {tracked}"
+                )
+            else:
+                self._log(
+                    f"Skipping submission for {cfg.home_directory} because results.csv already exists"
+                )
 
         # once we added everything, we sit and wait
         while not all((cfg.home_directory / "results.csv").exists() for cfg in configs):
