@@ -9,6 +9,7 @@ from src.experiments.configs.dkwl import DkwlExperimentConfig
 from src.experiments.configs.train_mlp import TrainMLPExperimentConfig
 from src.experiments.experiments import BatchExperiment, register_experiment
 from src.experiments.config_defaults import (
+    DEFAULT_ANCESTOR_THRESHOLD,
     DEFAULT_MSE_SAMPLES,
     DEFAULT_MSE_THRESHOLD,
     ensure_config_value,
@@ -32,6 +33,9 @@ class DkwlExperiment(BatchExperiment):
         )
         self._mse_samples = ensure_config_value(
             self.config, "mse_samples", DEFAULT_MSE_SAMPLES
+        )
+        self._ancestor_threshold = ensure_config_value(
+            self.config, "ancestor_threshold", DEFAULT_ANCESTOR_THRESHOLD
         )
 
     def get_experiment_configs(self) -> List[TrainMLPExperimentConfig]:
@@ -94,6 +98,7 @@ class DkwlExperiment(BatchExperiment):
                         seed=self.seed_mgr.spawn_seed(),
                         mse_threshold=self._mse_threshold,
                         mse_samples=self._mse_samples,
+                        ancestor_threshold=self._ancestor_threshold,
                     )
                     configs.append(sub_cfg)
 
@@ -128,6 +133,7 @@ class DkwlExperiment(BatchExperiment):
             "batch_size": trainer_cfg.batch_size,
             "mse_threshold": config.mse_threshold,
             "mse_samples": config.mse_samples,
+            "ancestor_threshold": config.ancestor_threshold,
             "seed": config.seed,
         }
 

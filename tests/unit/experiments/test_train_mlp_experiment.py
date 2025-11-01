@@ -60,6 +60,7 @@ def test_train_and_consolidate(tmp_path):
         edge_thresholds=edge_thresholds,
         mse_threshold=0.05,
         mse_samples=4,
+        ancestor_threshold=5,
     )
     experiment = TrainMLPExperiment(exp_cfg)
     experiment.train()
@@ -96,11 +97,35 @@ def test_defaults_applied_for_missing_mse_params(tmp_path, missing_strategy):
     if missing_strategy == "delattr":
         delattr(exp_cfg, "mse_threshold")
         delattr(exp_cfg, "mse_samples")
+        delattr(exp_cfg, "ancestor_threshold")
     else:
         exp_cfg.mse_threshold = None
         exp_cfg.mse_samples = None
+        exp_cfg.ancestor_threshold = None
 
     experiment = TrainMLPExperiment(exp_cfg)
 
     assert experiment.config.mse_threshold == pytest.approx(0.01)
     assert experiment.config.mse_samples == 8192
+    assert experiment.config.ancestor_threshold == 2
+
+
+def test_ancestor_flag_created_when_threshold_not_met(tmp_path):
+    trainer_cfg = _make_trainer_config()
+    exp_cfg = TrainMLPExperimentConfig(
+        trainer_config=trainer_cfg,
+        home_directory=tmp_path,
+        seed=0,
+        mse_threshold=0.05,
+        mse_samples=4,
+        ancestor_threshold=10,
+    )
+    experiment = TrainMLPExperiment(exp_cfg)
+    experiment.train()
+    experiment.consolidate_results()
+
+    flag_path = tmp_path / "sparsified_mlp" / "ANCESTOR_FLAG"
+    assert flag_path.exists()
+    contents = flag_path.read_text(encoding="utf-8").strip().splitlines()
+    assert contents
+    assert any("threshold 10" in line for line in contents)

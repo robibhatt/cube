@@ -20,6 +20,7 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
         l1_decays=[0.001],
         mse_threshold=0.05,
         mse_samples=64,
+        ancestor_threshold=3,
         learning_rates=[0.01],
         batch_sizes=[32],
         home_directory=tmp_path / "dkwl",
@@ -59,6 +60,7 @@ def test_get_experiment_configs_builds_expected_sub_configs(tmp_path: Path) -> N
 
     assert sub_cfg.mse_threshold == 0.05
     assert sub_cfg.mse_samples == 64
+    assert sub_cfg.ancestor_threshold == 3
 
     expected_dir = (
         tmp_path
@@ -90,6 +92,7 @@ def test_get_config_params_reports_hyperparameters(tmp_path: Path) -> None:
         l1_decays=[0.0],
         learning_rates=[0.1],
         batch_sizes=[64],
+        ancestor_threshold=4,
         home_directory=tmp_path / "exp",
         seed=7,
     )
@@ -110,6 +113,7 @@ def test_get_config_params_reports_hyperparameters(tmp_path: Path) -> None:
         "batch_size": 64,
         "mse_threshold": cfg.mse_threshold,
         "mse_samples": cfg.mse_samples,
+        "ancestor_threshold": cfg.ancestor_threshold,
         "seed": sub_cfg.seed,
     }
 
@@ -133,14 +137,18 @@ def test_defaults_applied_for_missing_mse_params(tmp_path: Path, missing_strateg
     if missing_strategy == "delattr":
         delattr(cfg, "mse_threshold")
         delattr(cfg, "mse_samples")
+        delattr(cfg, "ancestor_threshold")
     else:
         cfg.mse_threshold = None
         cfg.mse_samples = None
+        cfg.ancestor_threshold = None
 
     experiment = create_experiment(cfg)
     assert experiment.config.mse_threshold == pytest.approx(0.01)
     assert experiment.config.mse_samples == 8192
+    assert experiment.config.ancestor_threshold == 2
 
     sub_cfg = experiment.get_experiment_configs()[0]
     assert sub_cfg.mse_threshold == pytest.approx(0.01)
     assert sub_cfg.mse_samples == 8192
+    assert sub_cfg.ancestor_threshold == 2
