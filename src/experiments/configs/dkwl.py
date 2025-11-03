@@ -24,7 +24,7 @@ class DkwlExperimentConfig(ExperimentConfig):
     l1_decays: List[float] = field(default_factory=list)
     mse_threshold: float = 0.01
     mse_samples: int = 8192
-    ancestor_threshold: int = 2
+    ancestor_threshold: int = 4
     learning_rates: List[float] = field(default_factory=list)
     batch_sizes: List[int] = field(default_factory=list)
 

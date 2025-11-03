@@ -108,7 +108,7 @@ class TrainMLPExperiment(Experiment):
         original_viz_dir = visualization_root / "original"
         sparsified_viz_dir = visualization_root / "sparsified"
         visualize_mlp(trained_mlp, original_viz_dir)
-        visualize_mlp(sparsified_mlp, sparsified_viz_dir)
+        visualize_mlp(pruned_mlp, sparsified_viz_dir)
 
         self._log_step(
             "Generated sparsified MLP artefacts and visualizations"
