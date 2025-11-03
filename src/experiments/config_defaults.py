@@ -7,6 +7,7 @@ from typing import Any, TypeVar
 DEFAULT_MSE_THRESHOLD: float = 0.01
 DEFAULT_MSE_SAMPLES: int = 64
 DEFAULT_ANCESTOR_THRESHOLD: int = 4
+FINAL_MSE_AVERAGE_SAMPLES: int = 1024
 
 _T = TypeVar("_T")
 _MISSING = object()

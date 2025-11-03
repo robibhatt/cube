@@ -74,6 +74,7 @@ def test_train_and_consolidate(tmp_path):
     assert float(data_row['final_train_loss']) == rows[0]['final_train_loss']
     assert float(data_row['sparsify_threshold']) == rows[0]['sparsify_threshold']
     assert float(data_row['sparsified_mse']) == rows[0]['sparsified_mse']
+    assert float(data_row['sparsified_mean_mse']) == rows[0]['sparsified_mean_mse']
 
     sparsified_dir = tmp_path / 'sparsified_mlp'
     assert sparsified_dir.exists()
