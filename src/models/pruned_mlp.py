@@ -106,9 +106,21 @@ def prune(model: MLP) -> Tuple[MLP, Set[int]]:
     filtered_indices = [kept_indices[idx] for idx in layer_mapping]
     new_hidden_dims = [len(indices) for indices in filtered_indices]
 
-    new_config = MLPConfig(input_dim=input_dim, hidden_dims=new_hidden_dims)
+    new_config = deepcopy(model.config)
+    new_config.input_dim = input_dim
+    new_config.hidden_dims = new_hidden_dims
 
     pruned_model = MLP(new_config)
+
+    output_scale: float | None = None
+    try:
+        original_readout = linear_layers[-1]
+    except IndexError:
+        original_readout = None
+    if original_readout is not None and hasattr(original_readout, "width_mult"):
+        width_mult = float(original_readout.width_mult())
+        if width_mult != 0.0 and hasattr(original_readout, "output_mult"):
+            output_scale = float(original_readout.output_mult) / width_mult
 
     try:
         sample_param = next(model.parameters())
@@ -162,6 +174,15 @@ def prune(model: MLP) -> Tuple[MLP, Set[int]]:
             new_out_layer.bias.data.copy_(old_out_layer.bias.detach().to(device=device, dtype=dtype))
         elif new_out_layer.bias is not None:
             new_out_layer.bias.data.zero_()
+
+        if (
+            output_scale is not None
+            and hasattr(new_out_layer, "width_mult")
+            and hasattr(new_out_layer, "output_mult")
+        ):
+            new_width_mult = float(new_out_layer.width_mult())
+            if new_width_mult != 0.0:
+                new_out_layer.output_mult = output_scale * new_width_mult
 
     connected_inputs: Set[int]
     if forward_masks:

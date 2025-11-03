@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 import torch
+from torch.testing import assert_close
 
 from src.models.mlp import MLP
 from src.models.mlp_config import MLPConfig
@@ -126,6 +127,104 @@ def test_prune_handles_models_without_hidden_layers() -> None:
 
     assert pruned.config.hidden_dims == []
     assert connected == {1, 2}
+
+
+def test_prune_preserves_outputs_after_sparsification() -> None:
+    torch.manual_seed(42)
+    config = MLPConfig(input_dim=4, hidden_dims=[8, 6, 5])
+    model = MLP(config)
+
+    with torch.no_grad():
+        for param in model.parameters():
+            param.uniform_(-0.5, 0.5)
+
+    sparsified = sparsify_mlp(model, threshold=0.25)
+    pruned, _ = prune(sparsified)
+
+    inputs = torch.randint(0, 2, (128, config.input_dim), dtype=torch.float32)
+    inputs.mul_(2.0).sub_(1.0)
+
+    with torch.no_grad():
+        expected = sparsified(inputs)
+        actual = pruned(inputs)
+
+    assert torch.allclose(actual, expected, atol=1e-6, rtol=1e-6)
+
+
+def test_prune_preserves_config_attributes_and_outputs() -> None:
+    torch.manual_seed(7)
+    config = MLPConfig(input_dim=5, hidden_dims=[9, 7, 4])
+    config.base_width = 32
+    config.annotation = {"keep": True}
+
+    model = MLP(config)
+
+    with torch.no_grad():
+        for param in model.parameters():
+            param.normal_(mean=0.0, std=0.2)
+
+    sparsified = sparsify_mlp(model, threshold=0.15)
+    pruned, _ = prune(sparsified)
+
+    assert hasattr(pruned.config, "base_width")
+    assert pruned.config.base_width == config.base_width
+    assert getattr(pruned.config, "annotation", None) == config.annotation
+
+    inputs = torch.randn(256, config.input_dim)
+
+    with torch.no_grad():
+        expected = sparsified(inputs)
+        actual = pruned(inputs)
+
+    assert_close(actual, expected, rtol=0.0, atol=1e-7)
+
+
+def test_prune_reduces_structure_but_matches_outputs() -> None:
+    config = MLPConfig(input_dim=3, hidden_dims=[4, 5])
+    model = MLP(config)
+
+    with torch.no_grad():
+        first = model.linear_layers[0]
+        second = model.linear_layers[1]
+        out = model.linear_layers[-1]
+
+        first.weight.zero_()
+        first.bias.zero_()
+        first.weight[2, 1] = 0.75
+
+        second.weight.zero_()
+        second.bias.zero_()
+        second.weight[4, 2] = -0.5
+
+        out.weight.zero_()
+        if out.bias is not None:
+            out.bias.zero_()
+        out.weight[0, 4] = 1.2
+
+    sparsified = sparsify_mlp(model, threshold=0.05)
+    pruned, connected = prune(sparsified)
+
+    assert sparsified.config.hidden_dims == [4, 5]
+    assert pruned.config.hidden_dims == [1, 1]
+    assert connected == {1}
+
+    first_sparse = sparsified.linear_layers[0].weight
+    first_pruned = pruned.linear_layers[0].weight
+    second_sparse = sparsified.linear_layers[1].weight
+    second_pruned = pruned.linear_layers[1].weight
+
+    assert first_sparse.shape == (4, 3)
+    assert first_pruned.shape == (1, 3)
+    assert second_sparse.shape == (5, 4)
+    assert second_pruned.shape == (1, 1)
+
+    inputs = torch.randn(32, config.input_dim)
+
+    with torch.no_grad():
+        expected = sparsified(inputs)
+        actual = pruned(inputs)
+
+    assert_close(actual, expected, rtol=0.0, atol=1e-8)
 
 
 def test_mse_diff_returns_zero_for_identical_models(small_mlp_config: MLPConfig) -> None:
