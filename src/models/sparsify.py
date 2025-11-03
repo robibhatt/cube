@@ -7,7 +7,6 @@ import math
 from typing import Iterable, Optional
 
 import torch
-import torch.nn.functional as F
 
 from src.models.mlp import MLP
 
@@ -88,7 +87,7 @@ def mse_diff(
     *,
     inputs: Optional[torch.Tensor] = None,
 ) -> float:
-    """Estimate the mean squared error between two MLPs on shared inputs."""
+    """Estimate the maximum squared error between two MLPs on shared inputs."""
 
     if number_of_samples <= 0:
         raise ValueError("number_of_samples must be a positive integer")
@@ -126,8 +125,18 @@ def mse_diff(
         outputs_a = mlp_a(inputs_a)
         outputs_b = mlp_b(inputs_b)
 
-    mse = F.mse_loss(outputs_a, outputs_b.to(device_a, dtype=outputs_a.dtype))
-    return float(mse.detach().cpu().item())
+    comparison_device = _select_device_prefer_gpu(device_a)
+    outputs_a = outputs_a.to(device=comparison_device)
+    outputs_b = outputs_b.to(device=comparison_device, dtype=outputs_a.dtype)
+
+    squared_diff = (outputs_a - outputs_b).pow_(2)
+    if squared_diff.ndim == 0:
+        max_squared = squared_diff
+    else:
+        flat = squared_diff.view(squared_diff.shape[0], -1)
+        max_squared = flat.max(dim=1).values.max()
+
+    return float(max_squared.detach().cpu().item())
 
 
 def _mse_for_threshold(

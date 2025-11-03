@@ -106,7 +106,7 @@ def test_defaults_applied_for_missing_mse_params(tmp_path, missing_strategy):
     experiment = TrainMLPExperiment(exp_cfg)
 
     assert experiment.config.mse_threshold == pytest.approx(0.01)
-    assert experiment.config.mse_samples == 8192
+    assert experiment.config.mse_samples == 64
     assert experiment.config.ancestor_threshold == 4
 
 
