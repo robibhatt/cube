@@ -44,7 +44,7 @@ class TrainMLPExperiment(Experiment):
         )
 
         self._log_path = Path(self.config.home_directory) / "steps.log"
-        self._log_path.write_text("")
+        self._log_path.write_text("", encoding="utf-8")
         self._log_step("Initialized TrainMLPExperiment")
 
         trainer_cfg = self.config.trainer_config.deep_copy()
@@ -61,7 +61,9 @@ class TrainMLPExperiment(Experiment):
         return self._trainer_configs
 
     def train(self) -> None:
+        self._log_step("Starting training run")
         super().train()
+        self._log_step("Completed base training flow")
         self._log_step("Finished training")
 
     def _consolidate_results(self) -> List[Dict[str, Any]]:
@@ -144,6 +146,8 @@ class TrainMLPExperiment(Experiment):
         self._log_step("Wrote results.csv")
 
         self._flag_insufficient_ancestors(sparsified_dir)
+
+        self._log_step("Completed consolidation of training artefacts")
 
         return [row]
 
