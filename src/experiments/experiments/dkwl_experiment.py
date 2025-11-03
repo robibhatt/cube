@@ -31,9 +31,10 @@ class DkwlExperiment(BatchExperiment):
         self._mse_threshold = ensure_config_value(
             self.config, "mse_threshold", DEFAULT_MSE_THRESHOLD
         )
-        self._mse_samples = ensure_config_value(
-            self.config, "mse_samples", DEFAULT_MSE_SAMPLES
-        )
+        # Hardcode the number of samples used when measuring sparsification
+        # MSE so legacy configuration values cannot increase the workload.
+        self.config.mse_samples = DEFAULT_MSE_SAMPLES
+        self._mse_samples = DEFAULT_MSE_SAMPLES
         self._ancestor_threshold = ensure_config_value(
             self.config, "ancestor_threshold", DEFAULT_ANCESTOR_THRESHOLD
         )

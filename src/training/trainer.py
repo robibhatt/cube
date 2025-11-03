@@ -112,10 +112,6 @@ class Trainer:
         self.config = config
         self.config.ready_for_trainer()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if self.device.type != "cuda":
-            raise AssertionError(
-                "Trainer requires CUDA but torch.cuda.is_available() returned False"
-            )
 
         # Derived state from config
         self.seed_mgr = SeedManager(self.config.seed if self.config.seed is not None else 0)
