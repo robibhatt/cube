@@ -139,6 +139,101 @@ def mse_diff(
     return float(max_squared.detach().cpu().item())
 
 
+def mse_average_diff(
+    number_of_samples: int,
+    mlp_a: MLP,
+    mlp_b: MLP,
+    *,
+    batch_size: Optional[int] = None,
+) -> float:
+    """Estimate the mean squared error between two MLPs on shared inputs."""
+
+    if number_of_samples <= 0:
+        raise ValueError("number_of_samples must be a positive integer")
+    if not isinstance(mlp_a, MLP) or not isinstance(mlp_b, MLP):
+        raise TypeError("mlp_a and mlp_b must be instances of MLP")
+    if mlp_a.config.input_dim != mlp_b.config.input_dim:
+        raise ValueError("mlp_a and mlp_b must have the same input dimension")
+
+    if batch_size is None:
+        batch_size = min(256, number_of_samples)
+    if batch_size <= 0:
+        raise ValueError("batch_size must be a positive integer")
+
+    batch_size = min(batch_size, number_of_samples)
+
+    device_a, dtype_a = _model_device_and_dtype(mlp_a)
+    device_b, dtype_b = _model_device_and_dtype(mlp_b)
+
+    prefer_gpu = torch.cuda.is_available()
+    evaluation_device = (
+        torch.device("cuda")
+        if prefer_gpu
+        else _select_device_prefer_gpu(device_a)
+    )
+
+    restore_specs: list[tuple[MLP, torch.device, torch.dtype]] = []
+
+    try:
+        if prefer_gpu:
+            if device_a != evaluation_device:
+                mlp_a.to(device=evaluation_device, dtype=dtype_a)
+                restore_specs.append((mlp_a, device_a, dtype_a))
+                device_a = evaluation_device
+            if device_b != evaluation_device:
+                mlp_b.to(device=evaluation_device, dtype=dtype_b)
+                restore_specs.append((mlp_b, device_b, dtype_b))
+                device_b = evaluation_device
+
+        shared_inputs = _generate_binary_hypercube_samples(
+            number_of_samples,
+            mlp_a.config.input_dim,
+            device=evaluation_device,
+        )
+
+        comparison_device = evaluation_device
+        total_elements = 0
+        accumulated_error = 0.0
+
+        with torch.no_grad():
+            for start in range(0, number_of_samples, batch_size):
+                end = min(start + batch_size, number_of_samples)
+                batch_inputs = shared_inputs[start:end]
+
+                inputs_a = batch_inputs.to(
+                    device=device_a,
+                    dtype=dtype_a,
+                    non_blocking=prefer_gpu,
+                )
+                inputs_b = batch_inputs.to(
+                    device=device_b,
+                    dtype=dtype_b,
+                    non_blocking=prefer_gpu,
+                )
+
+                outputs_a = mlp_a(inputs_a)
+                outputs_b = mlp_b(inputs_b)
+
+                outputs_a = outputs_a.to(device=comparison_device)
+                outputs_b = outputs_b.to(
+                    device=comparison_device,
+                    dtype=outputs_a.dtype,
+                )
+
+                diff = outputs_a - outputs_b
+                squared = diff.pow_(2)
+                accumulated_error += float(squared.sum().item())
+                total_elements += squared.numel()
+
+        if total_elements == 0:
+            return 0.0
+
+        return accumulated_error / float(total_elements)
+    finally:
+        for module, original_device, original_dtype in restore_specs:
+            module.to(device=original_device, dtype=original_dtype)
+
+
 def _mse_for_threshold(
     model: MLP,
     threshold: float,

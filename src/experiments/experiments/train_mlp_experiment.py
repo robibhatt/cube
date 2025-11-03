@@ -12,10 +12,12 @@ from src.experiments.config_defaults import (
     DEFAULT_ANCESTOR_THRESHOLD,
     DEFAULT_MSE_SAMPLES,
     DEFAULT_MSE_THRESHOLD,
+    FINAL_MSE_AVERAGE_SAMPLES,
     ensure_config_value,
 )
 from src.models import (
     binary_search_sparsify_threshold,
+    mse_average_diff,
     mse_diff,
     prune,
     sparsify_mlp,
@@ -116,6 +118,16 @@ class TrainMLPExperiment(Experiment):
             "Generated sparsified MLP artefacts and visualizations"
         )
 
+        average_mse = mse_average_diff(
+            FINAL_MSE_AVERAGE_SAMPLES,
+            trained_mlp,
+            pruned_mlp,
+        )
+        self._log_step(
+            "Measured sparsified mean MSE difference over "
+            f"{FINAL_MSE_AVERAGE_SAMPLES} samples: {average_mse:.6g}"
+        )
+
         row = {
             "train_size": trainer_cfg.train_size if trainer_cfg.train_size is not None else 0,
             "trial_number": 0,
@@ -124,6 +136,7 @@ class TrainMLPExperiment(Experiment):
             "final_train_loss": metrics["final_train_loss"],
             "sparsify_threshold": threshold,
             "sparsified_mse": actual_mse,
+            "sparsified_mean_mse": average_mse,
         }
 
         out_file = Path(self.config.home_directory) / "results.csv"
@@ -138,6 +151,7 @@ class TrainMLPExperiment(Experiment):
                     "final_train_loss",
                     "sparsify_threshold",
                     "sparsified_mse",
+                    "sparsified_mean_mse",
                 ],
             )
             writer.writeheader()
