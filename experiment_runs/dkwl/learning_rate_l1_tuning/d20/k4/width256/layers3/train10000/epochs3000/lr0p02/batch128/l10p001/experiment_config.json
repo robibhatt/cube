@@ -5,14 +5,11 @@
   "trainer_config": {
     "mlp_config": {
       "input_dim": 20,
-      "output_dim": 1,
       "hidden_dims": [
         256,
         256,
         256
-      ],
-      "start_activation": false,
-      "end_activation": false
+      ]
     },
     "cube_distribution_config": {
       "input_dim": 20,
@@ -28,7 +25,6 @@
         1.0
       ],
       "normalize": false,
-      "noise_mean": 0.0,
       "noise_std": 0.0,
       "distribution_type": "CubeDistribution",
       "target_function_config": {
@@ -62,7 +58,6 @@
     "test_size": 10000,
     "batch_size": 128,
     "epochs": 3000,
-    "use_full_batch": false,
     "weight_decay_l1": 0.001,
     "home_dir": null,
     "seed": null
@@ -73,5 +68,8 @@
     0.001,
     0.01,
     0.1
-  ]
+  ],
+  "mse_threshold": 0.01,
+  "mse_samples": 8192,
+  "ancestor_threshold": 2
 }
