@@ -146,9 +146,9 @@ def test_defaults_applied_for_missing_mse_params(tmp_path: Path, missing_strateg
     experiment = create_experiment(cfg)
     assert experiment.config.mse_threshold == pytest.approx(0.01)
     assert experiment.config.mse_samples == 8192
-    assert experiment.config.ancestor_threshold == 2
+    assert experiment.config.ancestor_threshold == 4
 
     sub_cfg = experiment.get_experiment_configs()[0]
     assert sub_cfg.mse_threshold == pytest.approx(0.01)
     assert sub_cfg.mse_samples == 8192
-    assert sub_cfg.ancestor_threshold == 2
+    assert sub_cfg.ancestor_threshold == 4
