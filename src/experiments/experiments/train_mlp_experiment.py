@@ -38,9 +38,10 @@ class TrainMLPExperiment(Experiment):
         self._mse_threshold = ensure_config_value(
             self.config, "mse_threshold", DEFAULT_MSE_THRESHOLD
         )
-        self._mse_samples = ensure_config_value(
-            self.config, "mse_samples", DEFAULT_MSE_SAMPLES
-        )
+        # Always measure the sparsification MSE difference with a fixed
+        # number of samples so old configuration files cannot override it.
+        self.config.mse_samples = DEFAULT_MSE_SAMPLES
+        self._mse_samples = DEFAULT_MSE_SAMPLES
         self._ancestor_threshold = ensure_config_value(
             self.config, "ancestor_threshold", DEFAULT_ANCESTOR_THRESHOLD
         )

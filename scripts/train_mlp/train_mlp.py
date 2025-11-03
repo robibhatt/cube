@@ -29,6 +29,11 @@ CONFIG_FILE = SCRIPT_DIR / "train_mlp.yaml"
 
 
 def main() -> None:
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "CUDA is required to run TrainMLP experiments; torch.cuda.is_available() returned False"
+        )
+
     with open(CONFIG_FILE, "r") as f:
         cfg_dict = yaml.safe_load(f)
 

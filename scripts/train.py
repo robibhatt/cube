@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import torch
+
 # Ensure project root is on the path so `src` can be imported
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
@@ -28,6 +30,11 @@ def main() -> None:
     cfg_path = trainer_dir / "trainer_config.json"
     if not cfg_path.exists():
         raise FileNotFoundError(f"No trainer_config.json at {cfg_path}")
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "CUDA is required to run training; torch.cuda.is_available() returned False"
+        )
+
     trainer = Trainer.from_dir(trainer_dir)
     trainer.train()
     trainer.save_results()

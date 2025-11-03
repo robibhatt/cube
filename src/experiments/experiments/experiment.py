@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import json
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
-import torch
 import os
 import shutil
 import subprocess
@@ -23,9 +22,6 @@ class Experiment(ABC):
     def __init__(self, config: ExperimentConfig) -> None:
         """Create a new experiment using ``config``."""
 
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
         self.seed_mgr = SeedManager(config.seed)
         self.config = config
         self.config.home_directory.mkdir(parents=True, exist_ok=True)

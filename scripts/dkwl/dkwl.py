@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import time
 import yaml
+import torch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
@@ -42,6 +43,11 @@ def main() -> None:
     _log(f"Loading configuration from {CONFIG_FILE}")
     with open(CONFIG_FILE, "r") as f:
         cfg_dict = yaml.safe_load(f)
+
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "CUDA is required to run DKWL experiments; torch.cuda.is_available() returned False"
+        )
 
     server_train = bool(cfg_dict.pop("server_train", False))
     _log("Building experiment configuration object")
