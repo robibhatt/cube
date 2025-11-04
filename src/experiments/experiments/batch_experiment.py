@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 import csv
-import shutil
 import time
 import subprocess
 
@@ -193,11 +192,7 @@ class BatchExperiment(Experiment, ABC):
                     f"Job {job_id} for {cfg.home_directory} finished in state {state};"
                     " resubmitting"
                 )
-                for item in cfg.home_directory.iterdir():
-                    if item.is_dir():
-                        shutil.rmtree(item)
-                    else:
-                        item.unlink()
+                Experiment._cleanup_directory_preserving_trainers(cfg.home_directory)
 
                 time.sleep(15)
                 create_experiment(cfg)
@@ -282,11 +277,9 @@ class BatchExperiment(Experiment, ABC):
                     )
                     sub_experiment = Experiment.from_dir(cfg.home_directory)
                 except Exception:
-                    for item in cfg.home_directory.iterdir():
-                        if item.is_dir():
-                            shutil.rmtree(item)
-                        else:
-                            item.unlink()
+                    Experiment._cleanup_directory_preserving_trainers(
+                        cfg.home_directory
+                    )
                     sub_experiment = create_experiment(cfg)
             else:
                 cfg.home_directory.mkdir(parents=True, exist_ok=True)
