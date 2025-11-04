@@ -166,3 +166,56 @@ def test_consolidate_results(tmp_path: Path):
             {"param": "1", "a": "1", "b": "2"},
             {"param": "2", "a": "1", "b": "2"},
         ]
+
+
+def test_update_parallel_preserves_trainer_data(tmp_path: Path, monkeypatch):
+    sub_cfg = build_experiment_config(
+        "DummyBatchSub", home_directory=tmp_path / "sub", seed=0
+    )
+    batch_cfg = SimpleBatchExperimentConfig(
+        home_directory=tmp_path / "batch", seed=0, sub_configs=[sub_cfg]
+    )
+    batch_exp = create_experiment(batch_cfg)
+
+    trainer = sub_cfg.home_directory / "trainer-0"
+    trainer.mkdir(parents=True)
+    (trainer / "trainer_config.json").write_text("{}")
+    (trainer / "checkpoint.pt").write_text("ckpt")
+
+    stray_file = sub_cfg.home_directory / "stale.log"
+    stray_file.write_text("old")
+    stray_dir = sub_cfg.home_directory / "artifacts"
+    stray_dir.mkdir()
+    (stray_dir / "tmp.txt").write_text("data")
+
+    active = [(sub_cfg, "12345")]
+
+    monkeypatch.setattr(batch_exp, "_is_sub_experiment_complete", lambda cfg: False)
+    monkeypatch.setattr(
+        batch_exp, "_get_job_status", lambda job_id: ("FAILED", "0:0")
+    )
+    monkeypatch.setattr(
+        "src.experiments.experiments.batch_experiment.time.sleep", lambda *_: None
+    )
+    created = {}
+
+    def fake_create_experiment(cfg):
+        created["called"] = cfg
+
+    monkeypatch.setattr(
+        "src.experiments.experiments.batch_experiment.create_experiment",
+        fake_create_experiment,
+    )
+    monkeypatch.setattr(
+        "src.experiments.experiments.batch_experiment.Experiment.server_run",
+        staticmethod(lambda _: "67890"),
+    )
+
+    batch_exp._update_parallel_experiments(active)
+
+    assert trainer.exists()
+    assert (trainer / "checkpoint.pt").exists()
+    assert not stray_file.exists()
+    assert not stray_dir.exists()
+    assert created.get("called") is sub_cfg
+    assert active == [(sub_cfg, "67890")]

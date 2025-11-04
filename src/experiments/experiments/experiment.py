@@ -97,20 +97,46 @@ class Experiment(ABC):
                 cfg.home_dir.mkdir(parents=True, exist_ok=True)
                 trainer = Trainer(cfg)
 
+            trainer_home = cfg.home_dir.resolve()
+            starting_epoch = trainer.epochs_trained
+            finished_before = trainer.finished_training
+
+            if finished_before:
+                self._log_debug(
+                    f"Trainer at {trainer_home} already completed {starting_epoch} epochs; "
+                    "skipping new training run and reusing results"
+                )
+                trainer.save_results()
+                self._log_debug(
+                    f"Trainer at {trainer_home} already complete at epoch {starting_epoch};"
+                    " no additional training required"
+                )
+                continue
+
+            if starting_epoch > 0:
+                self._log_debug(
+                    f"Resuming trainer at {trainer_home} from epoch {starting_epoch + 1}"
+                )
+            else:
+                self._log_debug(
+                    f"Starting fresh training for trainer at {trainer_home} from epoch 1"
+                )
+
             self._log_debug(
-                f"Starting training run for trainer at {cfg.home_dir.resolve()}"
+                f"Starting training run for trainer at {trainer_home}"
             )
             trainer.train()
             trainer.save_results()
             self._log_debug(
-                f"Completed training run for trainer at {cfg.home_dir.resolve()}"
+                f"Trainer at {trainer_home} completed training up to epoch "
+                f"{trainer.epochs_trained}"
             )
 
     def _done_file(self) -> Path:
         return self.config.home_directory / "done.txt"
 
-    def _trainer_directories(self) -> List[Path]:
-        home = self.config.home_directory
+    @staticmethod
+    def _discover_trainer_directories(home: Path) -> List[Path]:
         if not home.exists():
             return []
 
@@ -122,7 +148,16 @@ class Experiment(ABC):
                 trainer_dirs.append(child)
         return trainer_dirs
 
-    def _cleanup_non_trainer_items(self, trainer_dirs: List[Path]) -> None:
+    def _trainer_directories(self) -> List[Path]:
+        return self._discover_trainer_directories(self.config.home_directory)
+
+    @staticmethod
+    def _cleanup_directory_preserving_trainers(
+        home: Path, trainer_dirs: Optional[List[Path]] = None
+    ) -> None:
+        if trainer_dirs is None:
+            trainer_dirs = Experiment._discover_trainer_directories(home)
+
         keep_names = {
             "experiment_config.json",
             "steps.log",
@@ -132,7 +167,10 @@ class Experiment(ABC):
         }
 
         trainer_set = {path.resolve() for path in trainer_dirs}
-        home = self.config.home_directory
+
+        if not home.exists():
+            return
+
         for item in home.iterdir():
             if item.resolve() in trainer_set:
                 continue
@@ -142,6 +180,11 @@ class Experiment(ABC):
                 shutil.rmtree(item)
             else:
                 item.unlink()
+
+    def _cleanup_non_trainer_items(self, trainer_dirs: List[Path]) -> None:
+        self._cleanup_directory_preserving_trainers(
+            self.config.home_directory, trainer_dirs
+        )
 
     def _reset_experiment_directory(self) -> None:
         home = self.config.home_directory
@@ -169,13 +212,13 @@ class Experiment(ABC):
         if trainer_dirs:
             if all((d / "results.json").exists() for d in trainer_dirs):
                 self._log_debug(
-                    "Detected completed trainer directories without done.txt; resetting"
+                    "Detected completed trainer directories without done.txt; cleaning"
                 )
             else:
                 self._log_debug(
-                    f"Found {len(trainer_dirs)} incomplete trainer directories; resetting"
+                    f"Found {len(trainer_dirs)} incomplete trainer directories; cleaning"
                 )
-            self._reset_experiment_directory()
+            self._cleanup_non_trainer_items(trainer_dirs)
 
         self._log_debug("Experiment directory ready for execution")
         return False, None
