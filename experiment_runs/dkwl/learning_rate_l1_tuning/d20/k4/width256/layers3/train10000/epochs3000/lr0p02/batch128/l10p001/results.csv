@@ -1,2 +1,2 @@
-train_size,trial_number,mean_output_loss,final_test_loss,final_train_loss,sparsify_threshold,sparsified_mse
-10000,0,0.9999921878814697,8.664592658169567e-06,8.66986272885697e-06,0.2850785235350486,1.0665314675861737e-06
+train_size,trial_number,mean_output_loss,final_test_loss,final_train_loss,sparsify_threshold,sparsified_mse,sparsified_mean_mse
+10000,0,0.9999921878814697,8.664592658169567e-06,8.66986272885697e-06,0.2850785235350486,8.841683666105382e-06,0.26343218982219696
