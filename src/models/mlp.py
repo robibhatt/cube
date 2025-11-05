@@ -27,7 +27,9 @@ class MLP(nn.Module):
         self.net = nn.Sequential(*self.layers)
 
         # μP base-shape setup for compatible parameter shapes
-        if not getattr(self.config, "_is_base", False):
+        use_mup_shapes = not getattr(self.config, "_is_base", False)
+
+        if use_mup_shapes:
             base = self.get_base_model()
             set_base_shapes(self, base)
 
@@ -47,7 +49,7 @@ class MLP(nn.Module):
                         if getattr(m, "bias", None) is not None and m.bias is not None:
                             nn.init.constant_(m.bias, 0.01)
 
-        if not getattr(self.config, "_is_base", False):
+        if use_mup_shapes:
             self._mup_post_init_sanity_check()
 
     # ------------------------------------------------------------------
@@ -212,9 +214,12 @@ class MLP(nn.Module):
         - Uses a stable small width for all hidden layers (default 64), or a user-
         specified `base_width` attribute on the config if present.
         """
-        # Allow an optional config.base_width override; default to 64.
-        base_w = getattr(self.config, "base_width", 64)
-        base_hidden = [base_w] * len(self.config.hidden_dims)
+        if getattr(self.config, "exact_base_shapes", False):
+            base_hidden = list(self.config.hidden_dims)
+        else:
+            # Allow an optional config.base_width override; default to 64.
+            base_w = getattr(self.config, "base_width", 64)
+            base_hidden = [base_w] * len(self.config.hidden_dims)
 
         # Build a fresh config with μP on.
         base_cfg = replace(

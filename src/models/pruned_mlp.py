@@ -60,6 +60,7 @@ def prune(model: MLP) -> Tuple[MLP, Set[int]]:
     linear_layers = list(model.linear_layers)
     if not linear_layers:
         config_copy = deepcopy(model.config)
+        setattr(config_copy, "exact_base_shapes", True)
         pruned = MLP(config_copy)
         pruned.load_state_dict(model.state_dict())
         return pruned, set()
@@ -109,6 +110,7 @@ def prune(model: MLP) -> Tuple[MLP, Set[int]]:
     new_config = deepcopy(model.config)
     new_config.input_dim = input_dim
     new_config.hidden_dims = new_hidden_dims
+    setattr(new_config, "exact_base_shapes", True)
 
     pruned_model = MLP(new_config)
 

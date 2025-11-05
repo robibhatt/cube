@@ -47,6 +47,9 @@ def test_sparsify_mlp_zeroes_weights_below_threshold(populated_mlp: MLP) -> None
 
     result = sparsify_mlp(populated_mlp, threshold)
 
+    assert result.config.exact_base_shapes is True
+    assert result.get_base_model().config.hidden_dims == result.config.hidden_dims
+
     expected_first = torch.tensor(
         [
             [0.0, -0.25],
@@ -111,6 +114,8 @@ def test_prune_returns_connected_inputs(populated_mlp: MLP) -> None:
 
     assert pruned.config.hidden_dims == [1]
     assert connected == {1}
+    assert pruned.config.exact_base_shapes is True
+    assert pruned.get_base_model().config.hidden_dims == pruned.config.hidden_dims
 
 
 def test_prune_handles_models_without_hidden_layers() -> None:
