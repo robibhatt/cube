@@ -59,6 +59,16 @@ def test_mup_get_base_model(basic_config):
     assert base.config.hidden_dims == [64] * len(basic_config.hidden_dims)
 
 
+def test_mup_get_base_model_respects_exact_base_shapes():
+    config = MLPConfig(input_dim=5, hidden_dims=[3, 7, 5], exact_base_shapes=True)
+    model = MLP(config)
+
+    base = model.get_base_model()
+
+    assert isinstance(base, MLP)
+    assert base.config.hidden_dims == config.hidden_dims
+
+
 def test_linear_layers_include_bias_parameters(basic_config):
     """Every μP linear layer should include a bias parameter."""
     model = MLP(basic_config)

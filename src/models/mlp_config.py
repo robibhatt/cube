@@ -21,6 +21,10 @@ class MLPConfig:
     hidden_dims: List[int] = field(
         metadata=config(mm_field=fields.List(fields.Integer()))
     )
+    exact_base_shapes: bool = field(
+        default=False,
+        metadata=config(mm_field=fields.Boolean(), exclude=lambda v: v is False),
+    )
 
     @property
     def output_dim(self) -> int:
