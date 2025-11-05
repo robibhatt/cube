@@ -22,3 +22,15 @@ def test_roundtrip_via_json(example_args):
     json_str = original.to_json()
     restored = MLPConfig.from_json(json_str)
     assert restored == original
+
+
+def test_exact_base_shapes_defaults_to_false(example_args):
+    cfg = MLPConfig(**example_args)
+
+    assert cfg.exact_base_shapes is False
+
+    as_dict = cfg.to_dict()
+    assert "exact_base_shapes" not in as_dict
+
+    restored = MLPConfig.from_dict(as_dict)
+    assert restored.exact_base_shapes is False
