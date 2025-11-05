@@ -50,7 +50,11 @@ class MLP(nn.Module):
                             nn.init.constant_(m.bias, 0.01)
 
         if use_mup_shapes:
-            self._mup_post_init_sanity_check()
+            # The scale guardrail is tuned for the default base-shape heuristics.
+            # When callers request exact base shapes (e.g. for sparsified/pruned
+            # models), skip the within-model scale comparison to avoid false alarms.
+            skip_scale_check = getattr(self.config, "exact_base_shapes", False)
+            self._mup_post_init_sanity_check(skip_scale_check=skip_scale_check)
 
     # ------------------------------------------------------------------
     # helpers
@@ -84,6 +88,7 @@ class MLP(nn.Module):
         max_report: int = 6,
         min_cos_numel: int = 256,
         bias_tol: float = 1e-6,
+        skip_scale_check: bool = False,
     ) -> None:
         """
         Post-__init__ μP sanity checks (only when mup=True and not on the base).
@@ -130,26 +135,27 @@ class MLP(nn.Module):
                         )
 
         # ---- (4) Within-model scale plausibility for hidden weights (std * sqrt(fan_in)) ----
-        with torch.no_grad():
-            scales = []
-            labels = []
-            for mod in self.modules():
-                if isinstance(mod, MuLinear) and not isinstance(mod, MuReadout):
-                    w = mod.weight.detach().float()
-                    if w.ndim == 2 and w.numel() > 1:
-                        fan_in = w.shape[1]
-                        s = w.std(unbiased=False).item() * math.sqrt(max(1, fan_in))
-                        scales.append(s)
-                        labels.append(mod.__class__.__name__)
-            if scales:
-                import torch as _t
-                med = float(_t.tensor(scales).median().item())
-                lo, hi = 0.3 * med, 3.0 * med  # very generous
-                for s, lab in zip(scales, labels):
-                    if not (lo <= s <= hi) or not math.isfinite(s):
-                        problems.append(
-                            f"Hidden weight scale outlier in {lab}: std*sqrt(fan_in)={s:.4g} (median {med:.4g})"
-                        )
+        if not skip_scale_check:
+            with torch.no_grad():
+                scales = []
+                labels = []
+                for mod in self.modules():
+                    if isinstance(mod, MuLinear) and not isinstance(mod, MuReadout):
+                        w = mod.weight.detach().float()
+                        if w.ndim == 2 and w.numel() > 1:
+                            fan_in = w.shape[1]
+                            s = w.std(unbiased=False).item() * math.sqrt(max(1, fan_in))
+                            scales.append(s)
+                            labels.append(mod.__class__.__name__)
+                if scales:
+                    import torch as _t
+                    med = float(_t.tensor(scales).median().item())
+                    lo, hi = 0.3 * med, 3.0 * med  # very generous
+                    for s, lab in zip(scales, labels):
+                        if not (lo <= s <= hi) or not math.isfinite(s):
+                            problems.append(
+                                f"Hidden weight scale outlier in {lab}: std*sqrt(fan_in)={s:.4g} (median {med:.4g})"
+                            )
 
         if problems:
             msg = "\n  - " + "\n  - ".join(problems[:max_report])

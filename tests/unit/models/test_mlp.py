@@ -79,3 +79,44 @@ def test_linear_layers_include_bias_parameters(basic_config):
     assert all(layer.bias is not None for layer in linear_layers)
 
 
+def test_mup_sanity_scale_guardrail_toggle():
+    """Scale guardrail can be bypassed when explicitly requested."""
+    config = MLPConfig(input_dim=2, hidden_dims=[2, 2, 2])
+    model = MLP(config)
+
+    with torch.no_grad():
+        model.linear_layers[0].weight.fill_(0.0)
+        pattern = torch.tensor(
+            [[1.0, -1.0], [-1.0, 1.0]],
+            dtype=model.linear_layers[1].weight.dtype,
+            device=model.linear_layers[1].weight.device,
+        )
+        model.linear_layers[1].weight.copy_(pattern)
+        model.linear_layers[2].weight.copy_(pattern)
+
+    with pytest.raises(RuntimeError):
+        model._mup_post_init_sanity_check(skip_scale_check=False)
+
+    # Should not raise when the scale check is disabled
+    model._mup_post_init_sanity_check(skip_scale_check=True)
+
+
+def test_exact_base_shapes_skip_scale_guardrail(monkeypatch):
+    """Custom base shapes should skip the scale guardrail during init."""
+
+    config = MLPConfig(input_dim=4, hidden_dims=[5, 3], exact_base_shapes=True)
+
+    calls: dict[str, bool] = {}
+    original = MLP._mup_post_init_sanity_check
+
+    def spy(self, **kwargs):
+        calls.update(kwargs)
+        return original(self, **kwargs)
+
+    monkeypatch.setattr(MLP, "_mup_post_init_sanity_check", spy)
+
+    MLP(config)
+
+    assert calls.get("skip_scale_check") is True
+
+
