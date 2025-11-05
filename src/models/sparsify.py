@@ -11,6 +11,31 @@ import torch
 from src.models.mlp import MLP
 
 
+def _match_readout_scaling(target: MLP, source: MLP) -> None:
+    """Align the μP readout scaling between ``target`` and ``source``."""
+
+    if not target.linear_layers or not source.linear_layers:
+        return
+
+    target_layer = target.linear_layers[-1]
+    source_layer = source.linear_layers[-1]
+
+    if not hasattr(target_layer, "width_mult") or not hasattr(source_layer, "width_mult"):
+        return
+
+    if not hasattr(target_layer, "output_mult") or not hasattr(source_layer, "output_mult"):
+        return
+
+    source_width = float(source_layer.width_mult())
+    target_width = float(target_layer.width_mult())
+
+    if source_width == 0.0:
+        return
+
+    desired_scale = float(source_layer.output_mult) / source_width
+    target_layer.output_mult = desired_scale * target_width
+
+
 def _zero_small_weights(linear_layers: Iterable[torch.nn.Module], threshold: float) -> None:
     """Zero out weights whose absolute value falls below ``threshold``."""
     with torch.no_grad():
@@ -31,8 +56,10 @@ def sparsify_mlp(model: MLP, threshold: float) -> MLP:
         raise ValueError("threshold must be a positive float")
 
     config_copy = deepcopy(model.config)
+    setattr(config_copy, "exact_base_shapes", True)
     sparsified = MLP(config_copy)
     sparsified.load_state_dict(model.state_dict())
+    _match_readout_scaling(sparsified, model)
     _zero_small_weights(sparsified.linear_layers, threshold)
     return sparsified
 
@@ -319,5 +346,8 @@ def binary_search_sparsify_threshold(
 
         if (high - low) / high <= relative_tolerance:
             break
+
+    if best <= 0.0:
+        best = math.nextafter(0.0, 1.0)
 
     return best
