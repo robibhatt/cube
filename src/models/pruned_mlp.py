@@ -217,11 +217,36 @@ def visualize_pruned_mlp(
     if not linear_layers:
         return
 
-    weight_tensors = [layer.weight.detach().cpu().clone() for layer in linear_layers]
-    bias_tensors = [
-        layer.bias.detach().cpu().clone() if layer.bias is not None else None
-        for layer in linear_layers
-    ]
+    def _effective_readout_scale(layer: torch.nn.Module) -> float:
+        """Return the scale factor that maps μP readout weights to real outputs."""
+
+        width_mult_fn = getattr(layer, "width_mult", None)
+        if callable(width_mult_fn):
+            width_mult = float(width_mult_fn())
+            if width_mult != 0.0:
+                output_mult = getattr(layer, "output_mult", 1.0)
+                if isinstance(output_mult, torch.Tensor):
+                    output_mult = float(output_mult.detach().cpu())
+                else:
+                    output_mult = float(output_mult)
+                return output_mult / width_mult
+        return 1.0
+
+    weight_tensors: List[torch.Tensor] = []
+    bias_tensors: List[torch.Tensor | None] = []
+
+    for idx, layer in enumerate(linear_layers):
+        weight = layer.weight.detach().cpu().clone()
+
+        if idx == len(linear_layers) - 1:
+            scale = _effective_readout_scale(layer)
+            if scale != 1.0:
+                weight.mul_(scale)
+
+        bias = layer.bias.detach().cpu().clone() if layer.bias is not None else None
+
+        weight_tensors.append(weight)
+        bias_tensors.append(bias)
 
     input_dim = pruned_mlp.config.input_dim
     dtype = weight_tensors[0].dtype
